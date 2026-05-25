@@ -499,4 +499,58 @@ Examples:
 - True cloud save is still blocked until the real Firebase web app values are filled into `js/firebase-public-config.js`
 - Firebase Console still needs Authentication enabled for Anonymous and Email/Password, plus Firestore enabled with `backend/firestore.rules` published
 
+## 2026-05-24 - Codex - Merge Safe Cowork Batch And Fix Cloudflare Wrangler Deploy
+
+**Status:** Complete
+
+**Files modified:**
+- package.json
+- package-lock.json
+- scripts/build.js
+- scripts/test.js
+- wrangler.jsonc
+- sessions.md
+
+**Files added from Cowork batch:**
+- ACCESSIBILITY_AUDIT.md
+- ARCHITECTURE.md
+- ASSET_INVENTORY.md
+- ASSET_MANIFEST.md
+- BALANCE_SPREADSHEET.md
+- CHANGELOG.md
+- CLAUDE_CODE_AGENT.md
+- CODEX_AGENT.md
+- COWORK_AGENT.md
+- CRITICAL_PATH_UPDATE.md
+- CSS_AUDIT.md
+- DATA_DICTIONARY.md
+- DEPENDENCY_MATRIX.md
+- DEPLOYMENT_REVIEW.md
+- DESIGN_NOTES.md
+- ENV_SETUP.md
+- FIREBASE_VERIFICATION.md
+- FONT_AND_COLOR_GUIDE.md
+- GAME_DESIGN_DOCUMENT.md
+- INDEX.md
+- KNOWN_BUGS.md
+- PACKAGE_AUDIT.md
+- SESSIONS_AUDIT.md
+- TESTING_CHECKLIST.md
+
+**What was done:**
+- Merged the safe Cowork repo batch into the git-backed Core Surge repo without overwriting the newer Firebase config work
+- Upgraded the build pipeline to output a minified `dist/` bundle with `esbuild`
+- Added a local verification test suite and wired `npm run test`
+- Added `wrangler.jsonc` so Cloudflare Wrangler deploys from `dist/` instead of treating the repo root and `node_modules/` as public assets
+- Verified that the Cloudflare failure cause was the wrong asset directory, not game code
+
+**Verification:**
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+- `npm.cmd run test` passed with `237 passed, 0 failed`
+
+**Blockers:**
+- Cloudflare must deploy this updated repo state before the fix takes effect
+- The current failing deploy logs are from the old repo state that still had root asset upload behavior
+
 ---
