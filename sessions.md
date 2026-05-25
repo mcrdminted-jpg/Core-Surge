@@ -328,6 +328,31 @@ Codex:
 
 ---
 
+## 2026-05-25 - Codex - Cloudflare Live Host Audit And Pages Settings Fix
+
+**Status:** Complete
+
+**Files modified:**
+- sessions.md
+
+**What was done:**
+- Audited the live Cloudflare deployment path through the dashboard and browser automation
+- Fixed the stale Pages project production build configuration so it now uses `npm run build` and `dist`
+- Verified the GitHub installation for Cloudflare has repository access on the GitHub side
+- Confirmed the real current live host is the Worker deployment at `https://tower-game.mcrdminted.workers.dev/`
+- Verified the Worker host serves the current Core Surge app shell, `manifest.webmanifest`, and `service-worker.js`
+
+**Verification:**
+- Browser-loaded `https://tower-game.mcrdminted.workers.dev/` and confirmed the playable Core Surge UI renders
+- Browser-loaded `https://tower-game.mcrdminted.workers.dev/manifest.webmanifest`
+- Browser-loaded `https://tower-game.mcrdminted.workers.dev/service-worker.js`
+- Confirmed Cloudflare Pages project `tower-game-3k2.pages.dev` still shows `The repository cannot be accessed`
+
+**Blockers:**
+- The stale Pages project is still attached to `mcrdminted-jpg/tower-game` instead of the renamed canonical repo `mcrdminted-jpg/Core-Surge`
+- Because of that stale source link, Pages is still old even after the build configuration fix
+- For phone testing, use the Worker URL until the Pages project is recreated or reconnected to the renamed repo
+
 ## 2026-05-24 - Codex - Git Account Rule Recorded
 
 **Status:** Complete
