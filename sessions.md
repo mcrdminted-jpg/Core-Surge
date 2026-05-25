@@ -328,6 +328,16 @@ Codex:
 
 ---
 
+## 2026-05-24 - Codex - Git Account Rule Recorded
+
+**Status:** Complete
+
+**What was recorded:**
+- Added project-level git account guidance in `AGENTS.md`
+- For Core Surge / Tower Game, the required GitHub account is `MCRDminted`
+- Future agents should not push this repo with other GitHub identities
+- If auth resolves to a different account, fix auth before pushing
+
 ## 2026-05-24 - Codex - Git Reconnect And Live Push Lane
 
 **Status:** Complete
