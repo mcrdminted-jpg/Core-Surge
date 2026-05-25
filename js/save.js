@@ -50,7 +50,12 @@ const defaultSave = {
     sustainSystems: false,
     multishotSystems: false,
     bounceSystems: false,
-    comboSystems: false
+    comboSystems: false,
+    fortification: false,
+    barrierSystems: false,
+    coinMastery: false,
+    tacticalSystems: false,
+    overcharge: false
   },
   ranks: {
     // Starter — unlocked from game start
@@ -72,8 +77,24 @@ const defaultSave = {
     multiTargets: { level: 0 },
     bounceChance: { level: 0 },
     bouncePower:  { level: 0 },
-    bounceTargets:{ level: 0 }
+    bounceTargets:{ level: 0 },
+    // v0.7.24: new research stats
+    comboBonus:       { level: 0 },
+    comboDuration:    { level: 0 },
+    thorns:           { level: 0 },
+    knockback:        { level: 0 },
+    shieldHP:         { level: 0 },
+    shieldRegen:      { level: 0 },
+    coinMultiplier:   { level: 0 },
+    gemFind:          { level: 0 },
+    projSpeed:        { level: 0 },
+    pierce:           { level: 0 },
+    overchargeChance: { level: 0 },
+    overchargePower:  { level: 0 }
   },
+  // v0.7.24: extended stats
+  totalBossesDefeated: 0,
+  totalGemsEarned: 0,
 
   lastSaveTime: Date.now(),
   version: 8,
@@ -88,7 +109,17 @@ const defaultSave = {
 
   // Skins (v0.7.14+): null = default CSS Core/background, else skin id.
   equippedCoreSkin: null,
-  equippedBgSkin: null
+  equippedBgSkin: null,
+
+  // v0.7.25: Tutorial / progressive unlock
+  // 0 = fresh, show "start battle" prompt
+  // 1 = first battle started (waiting for death)
+  // 2 = first death done, guide to buy damage rank
+  // 3 = first rank bought, prompt second battle
+  // 4 = second battle started
+  // 5 = second run done, show feature overview
+  // 99 = tutorial complete
+  tutorialStep: 0
 };
 
 let save;
@@ -135,6 +166,10 @@ function hydrateSaveState(loaded) {
   nextSave.storeEntitlements = source.storeEntitlements || {};
   nextSave.equippedCoreSkin = source.equippedCoreSkin || null;
   nextSave.equippedBgSkin = source.equippedBgSkin || null;
+  // v0.7.25: auto-complete tutorial for existing players who already have runs
+  if (source.tutorialStep === undefined && (source.totalRuns || 0) > 0) {
+    nextSave.tutorialStep = 99;
+  }
   return nextSave;
 }
 

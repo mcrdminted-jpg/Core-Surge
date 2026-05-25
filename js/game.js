@@ -343,11 +343,10 @@ function getWaveBonusMulNext() {
   return (1 + (game.upgrades.waveBonus.level + 1) * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus'));
 }
 function getComboMaxMul() {
-  // Combo bonus has no rank in the spec yet — comboSystems unlock just reveals the in-run combo upgrade.
-  return (1 + game.upgrades.combo.level * 0.075) * (1 + getCardBucket('comboMax'));
+  return (1 + game.upgrades.combo.level * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax'));
 }
 function getComboMaxMulNext() {
-  return (1 + (game.upgrades.combo.level + 1) * 0.075) * (1 + getCardBucket('comboMax'));
+  return (1 + (game.upgrades.combo.level + 1) * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax'));
 }
 function getCurrentComboMul() {
   if (game.upgrades.combo.level === 0) return 1;
@@ -355,9 +354,9 @@ function getCurrentComboMul() {
   const progress = Math.min(1, game.comboCount / 20);
   return 1 + (max - 1) * progress;
 }
-// Combo decay: base 5000ms, card adds milliseconds of decay window
+// Combo decay: base 5000ms, rank adds flat ms, card adds ms of decay window
 function getComboDecayMs() {
-  return 5000 + getCardBucket('comboDecay');
+  return 5000 + rankFlatBonus('comboDuration') + getCardBucket('comboDecay');
 }
 function getBossBountyMul() {
   return (1 + game.upgrades.bossBounty.level * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty'));
@@ -378,6 +377,32 @@ function getCoinBonusMul() {
 function getCoinBonusMulNext() {
   return 1 + Math.min(0.5, (game.upgrades.coinBonus.level + 1) * 0.01);
 }
+
+// === Thorns === (reflect % of melee damage back to attacker)
+function getThornsFraction() { return rankFlatBonus('thorns'); }
+
+// === Knockback === (chance to push melee attacker back)
+function getKnockbackChance() { return rankFlatBonus('knockback'); }
+
+// === Barrier / Permanent Shield ===
+function getBarrierShieldMax() { return Math.floor(rankFlatBonus('shieldHP')); }
+function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen'); }
+
+// === Coin Multiplier === (permanent end-run multiplier from ranks)
+function getCoinMultiplierBonus() { return rankFlatBonus('coinMultiplier'); }
+
+// === Gem Find === (chance for non-boss kills to drop a gem)
+function getGemFindChance() { return rankFlatBonus('gemFind'); }
+
+// === Projectile Speed === (multiplier on base 900 speed)
+function getProjSpeedMul() { return 1 + rankFlatBonus('projSpeed'); }
+
+// === Pierce === (chance for projectile to pass through and hit another enemy)
+function getPierceChance() { return rankFlatBonus('pierce'); }
+
+// === Overcharge === (chance for a shot to deal bonus damage)
+function getOverchargeChance() { return rankFlatBonus('overchargeChance'); }
+function getOverchargePower() { return 1 + rankFlatBonus('overchargePower'); }
 
 // === Heal ===
 function getHealAmount() { return Math.floor(game.hpMax * 0.25); }
@@ -474,7 +499,11 @@ function coinRewardForRun(maxWave, totalCash) {
   const bossPart = game.bossesDefeated * 8 * Math.pow(1.10, game.tier - 1);
   const coinBonus = (game.upgrades && game.upgrades.coinBonus) ? getCoinBonusMul() : 1;
   const cardCoinGain = 1 + getCardBucket('coinGain');
-  return Math.floor((wavePart + cashPart + bossPart) * coinBonus * cardCoinGain);
+  const permCoinMul = 1 + getCoinMultiplierBonus();
+  let reward = Math.floor((wavePart + cashPart + bossPart) * coinBonus * cardCoinGain * permCoinMul);
+  // Guarantee first run always affords at least one damage rank (cost0 = 10)
+  if (save.totalRuns === 0 && reward < 10) reward = 10;
+  return reward;
 }
 
 // ============================================================
@@ -523,12 +552,20 @@ function startBattle(startingWave) {
   game.comboLastKillTime = 0;
   // Apex card state reset
   game.shotCount = 0;
-  game.shield = 0;
-  game.shieldMax = 0;
+  // Initialize permanent shield from Barrier ranks (separate from Bulwark Veil)
+  const barrierMax = getBarrierShieldMax();
+  game.shield = barrierMax;
+  game.shieldMax = barrierMax;
+  game.barrierCap = barrierMax; // track barrier cap for regen
   game.timeLockLastTrigger = Date.now();
   game.enemySlowUntil = 0;
   game.enemySlowFrac = 0;
   game.lastStandUsed = false;
+  // Tutorial step transitions
+  if (save.tutorialStep === 0) { save.tutorialStep = 1; persistSave(); }
+  else if (save.tutorialStep === 3) { save.tutorialStep = 4; persistSave(); }
+  // Dismiss any tutorial tooltip before switching screens
+  if (typeof dismissTutorial === 'function') dismissTutorial();
   document.getElementById('endOverlay').classList.remove('active');
   document.getElementById('liveStats').classList.remove('open');
   stopPassiveAccrual();
@@ -578,6 +615,11 @@ function endRun() {
   save.totalCashEarned += totalCash;
   save.totalEnemiesKilled += game.enemiesKilledThisRun;
   save.totalPlaytimeMs += Date.now() - game.startTime;
+  save.totalBossesDefeated = (save.totalBossesDefeated || 0) + game.bossesDefeated;
+  save.totalGemsEarned = (save.totalGemsEarned || 0) + (game.gemsEarnedThisRun || 0);
+  // Tutorial: advance after first/second death
+  if (save.tutorialStep === 1) save.tutorialStep = 2;
+  else if (save.tutorialStep === 4) save.tutorialStep = 5;
   // Tournament: submit score if this was flagged as a tournament run
   if (game.isTourneyRun && typeof tourneySubmitScore === 'function') {
     tourneySubmitScore(maxWave, Date.now() - game.startTime);
@@ -593,18 +635,29 @@ function endRun() {
   const stats = document.getElementById('endStats');
   const isNewBest = maxWave > prevBest;
   const tierJustUnlocked = (game.tier < MAX_TIER && prevBest < 100 && maxWave >= 100);
+  const runDurationMs = Date.now() - game.startTime;
+  const runSec = Math.floor(runDurationMs / 1000);
+  const runMin = Math.floor(runSec / 60);
+  const runSecRem = runSec % 60;
+  const durationStr = runMin > 0 ? `${runMin}m ${runSecRem}s` : `${runSecRem}s`;
+  const kps = runSec > 0 ? (game.enemiesKilledThisRun / runSec).toFixed(1) : '0';
   stats.innerHTML = `
+    ${isNewBest ? '<div class="end-banner new-best">★ NEW BEST WAVE ★</div>' : ''}
+    ${tierJustUnlocked ? `<div class="end-banner tier-unlock">⚡ TIER ${game.tier + 1} UNLOCKED ⚡</div>` : ''}
+    <div class="end-section-label">Run Overview</div>
     <div class="end-stat-row"><span class="end-stat-label">Difficulty</span><span class="end-stat-value">T${game.tier}</span></div>
     <div class="end-stat-row"><span class="end-stat-label">Wave reached</span><span class="end-stat-value">${maxWave}</span></div>
-    <div class="end-stat-row"><span class="end-stat-label">Cash earned</span><span class="end-stat-value">${formatNum(totalCash)}</span></div>
+    <div class="end-stat-row"><span class="end-stat-label">Duration</span><span class="end-stat-value">${durationStr}</span></div>
+    <div class="end-section-label">Combat</div>
     <div class="end-stat-row"><span class="end-stat-label">Enemies killed</span><span class="end-stat-value">${game.enemiesKilledThisRun}</span></div>
+    <div class="end-stat-row"><span class="end-stat-label">Kills / sec</span><span class="end-stat-value">${kps}</span></div>
     <div class="end-stat-row"><span class="end-stat-label">Bosses defeated</span><span class="end-stat-value">${game.bossesDefeated}</span></div>
-    ${(game.gemsEarnedThisRun || 0) > 0 ? `<div class="end-stat-row"><span class="end-stat-label">Gems earned</span><span class="end-stat-value" style="color:var(--purple)">+${game.gemsEarnedThisRun} 💎</span></div>` : ''}
     <div class="end-stat-row"><span class="end-stat-label">Damage blocked</span><span class="end-stat-value">${formatNum(game.damageBlockedThisRun)}</span></div>
+    <div class="end-section-label">Rewards</div>
+    <div class="end-stat-row"><span class="end-stat-label">Cash earned</span><span class="end-stat-value">${formatNum(totalCash)}</span></div>
     <div class="end-stat-row"><span class="end-stat-label">Coins earned</span><span class="end-stat-value gold">+${formatNum(coinsEarned)}</span></div>
-    <div class="end-stat-row"><span class="end-stat-label">Total coins</span><span class="end-stat-value gold">${formatNum(save.coins)}</span></div>
-    ${isNewBest ? '<div class="end-stat-row"><span class="end-stat-label" style="color:var(--good)">★ NEW BEST WAVE</span><span></span></div>' : ''}
-    ${tierJustUnlocked ? `<div class="end-stat-row"><span class="end-stat-label" style="color:var(--accent)">⚡ T${game.tier + 1} UNLOCKED</span><span></span></div>` : ''}
+    ${(game.gemsEarnedThisRun || 0) > 0 ? `<div class="end-stat-row"><span class="end-stat-label">Gems earned</span><span class="end-stat-value" style="color:var(--purple)">+${game.gemsEarnedThisRun} 💎</span></div>` : ''}
+    <div class="end-stat-row end-total"><span class="end-stat-label">Total coins</span><span class="end-stat-value gold">${formatNum(save.coins)}</span></div>
   `;
   document.getElementById('endOverlay').classList.add('active');
   document.getElementById('endTitle').textContent = game.hp <= 0 ? 'Core Lost' : 'Run Ended';
@@ -626,10 +679,19 @@ function endRun() {
 
 function returnToMenu() {
   document.getElementById('endOverlay').classList.remove('active');
+  // Tutorial: after first death, redirect to Research to buy damage rank
+  if (save.tutorialStep === 2) {
+    activeSubmenu = 'labs';
+    activeResearchTab = 'combat';
+  }
   showScreen('menu');
   renderMenu();
   renderHud();
   startPassiveAccrual();
+  // Tutorial: show appropriate tooltip after menu renders
+  if (typeof checkTutorial === 'function') {
+    setTimeout(checkTutorial, 200);
+  }
 }
 
 // ============================================================
@@ -682,6 +744,23 @@ function update(dt, rawDt) {
       const inc = Math.floor(game.regenAccum);
       applyHealToTower(inc);
       game.regenAccum -= inc;
+    }
+  }
+
+  // Barrier shield regen (from Barrier Systems ranks)
+  const barrierRegen = getBarrierRegenPerSec();
+  if (barrierRegen > 0 && game.barrierCap > 0) {
+    // Regen shield up to barrier cap (doesn't exceed Bulwark Veil cap if present)
+    const bulwarkCap = Math.floor(game.hpMax * getBulwarkShieldCap());
+    const totalCap = Math.max(game.barrierCap, bulwarkCap);
+    if (game.shield < totalCap) {
+      game.shieldRegenAccum = (game.shieldRegenAccum || 0) + barrierRegen * dt;
+      if (game.shieldRegenAccum >= 1) {
+        const inc = Math.floor(game.shieldRegenAccum);
+        game.shield = Math.min(totalCap, game.shield + inc);
+        game.shieldMax = Math.max(game.shieldMax, game.shield);
+        game.shieldRegenAccum -= inc;
+      }
     }
   }
 
@@ -753,6 +832,27 @@ function update(dt, rawDt) {
         if (save.settings.showFloatingDamage) {
           spawnFloat(game.towerX, game.towerY - 30, '-' + Math.floor(reduced), 'tower-dmg');
         }
+        // Thorns: reflect fraction of incoming damage back to attacker
+        const thornsFrac = getThornsFraction();
+        if (thornsFrac > 0 && !e.dead) {
+          const thornsDmg = baseDmg * thornsFrac;
+          e.hp -= thornsDmg;
+          if (save.settings.showFloatingDamage) {
+            spawnFloat(e.x, e.y - 12, Math.floor(thornsDmg), 'crit');
+          }
+          if (e.hp <= 0) { e.dead = true; game.enemiesKilledInWave++; game.enemiesKilledThisRun++; }
+        }
+        // Knockback: chance to push attacker back to interrupt melee
+        const kbChance = getKnockbackChance();
+        if (kbChance > 0 && !e.dead && Math.random() < kbChance) {
+          const kbDist = 60;
+          const kbDx = e.x - game.towerX;
+          const kbDy = e.y - game.towerY;
+          const kbLen = Math.hypot(kbDx, kbDy) || 1;
+          e.x += (kbDx / kbLen) * kbDist;
+          e.y += (kbDy / kbLen) * kbDist;
+          e.lastMeleeAt = now; // reset melee cooldown
+        }
         if (!alive) { game.hp = 0; cleanDeadEnemies(); endRun(); return; }
       }
     } else {
@@ -796,6 +896,19 @@ function update(dt, rawDt) {
       if (save.settings.showFloatingDamage) {
         spawnFloat(game.towerX, game.towerY - 30, '-' + Math.floor(reduced), 'tower-dmg');
       }
+      // Thorns on enemy projectiles: find nearest shooter and reflect
+      const thornsFrac2 = getThornsFraction();
+      if (thornsFrac2 > 0) {
+        const shooter = pickClosestEnemy(game.towerX, game.towerY, null, 250);
+        if (shooter && !shooter.dead) {
+          const thornsDmg = baseDmg * thornsFrac2;
+          shooter.hp -= thornsDmg;
+          if (save.settings.showFloatingDamage) {
+            spawnFloat(shooter.x, shooter.y - 12, Math.floor(thornsDmg), 'crit');
+          }
+          if (shooter.hp <= 0) { shooter.dead = true; game.enemiesKilledInWave++; game.enemiesKilledThisRun++; }
+        }
+      }
       if (!alive) { game.hp = 0; cleanDeadEnemies(); endRun(); return; }
     } else {
       const speed = 250;
@@ -837,7 +950,7 @@ function update(dt, rawDt) {
     const dx = p.target.x - p.x;
     const dy = p.target.y - p.y;
     const dist = Math.hypot(dx, dy);
-    const speed = 900;
+    const speed = 900 * getProjSpeedMul();
     const move = speed * dt;
     if (move >= dist) {
       hitEnemy(p.target, p.damage, p.crit);
@@ -849,6 +962,13 @@ function update(dt, rawDt) {
           p.bouncesLeft--;
           p.damage *= bouncePower;
           if (p.el) p.el.classList.add('bounce');
+        } else { p.dead = true; }
+      } else if (Math.random() < getPierceChance()) {
+        // Pierce: projectile passes through to the next enemy
+        const next = pickClosestEnemy(p.target.x, p.target.y, p.alreadyHit, getRange());
+        if (next) {
+          p.target = next;
+          p.damage *= 0.75; // pierce reduces damage by 25%
         } else { p.dead = true; }
       } else { p.dead = true; }
     } else {
@@ -964,6 +1084,10 @@ function fireAt(target, dmgMul) {
   let dmg = baseDmg * dmgMul;
   if (isFocus) { dmg *= 1.5; game.focusShotsRemaining--; }
   if (isCrit) dmg *= getCritPower();
+  // Overcharge: chance for a power-boosted shot
+  if (Math.random() < getOverchargeChance()) {
+    dmg *= getOverchargePower();
+  }
   // Boss damage bonus card (Boss Breaker)
   if (target.type === 'boss') dmg *= (1 + getBossDamageBonus());
   // Roll bounce — if passed, the projectile gets `bounceTargets` bounces
@@ -1033,11 +1157,20 @@ function hitEnemy(e, dmg, crit) {
     if (e.type === 'boss') {
       game.bossesDefeated++;
       bossClearEffect(e.x, e.y);
+      if (typeof haptic === 'function') haptic('heavy');
       // Gem drop: 1 gem at T1, scales modestly with tier. Every 5 bosses = bonus gem.
       const gemReward = Math.max(1, Math.floor(game.tier * 0.5 + (game.bossesDefeated % 5 === 0 ? 2 : 0)));
       save.gems += gemReward;
       game.gemsEarnedThisRun = (game.gemsEarnedThisRun || 0) + gemReward;
       spawnFloat(e.x, e.y - 20, '+' + gemReward + ' 💎', 'lifesteal');
+    } else {
+      // Gem Find: non-boss enemies have a small chance to drop 1 gem
+      const gemChance = getGemFindChance();
+      if (gemChance > 0 && Math.random() < gemChance) {
+        save.gems += 1;
+        game.gemsEarnedThisRun = (game.gemsEarnedThisRun || 0) + 1;
+        spawnFloat(e.x, e.y - 20, '+1 💎', 'lifesteal');
+      }
     }
     const ls = getLifestealFraction();
     if (ls > 0) {

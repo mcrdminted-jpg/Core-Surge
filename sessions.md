@@ -376,6 +376,84 @@ Codex:
 - The old Pages project `tower-game-3k2.pages.dev` remains stale and is still wired to the old repo path
 - Future Pages testing should use `https://core-surge.pages.dev/`
 
+## 2026-05-25 - Codex - Merge Claude Code v0.7.24-v0.7.25 Batch And Cowork Docs
+
+**Status:** Complete
+
+**Files modified:**
+- index.html
+- package.json
+- js/game.js
+- js/save.js
+- js/render.js
+- js/main.js
+- js/ui.js
+- css/base.css
+- css/menu.css
+- KNOWN_BUGS.md
+- COWORK_AGENT.md
+- sessions.md
+
+**Files added:**
+- BUILD.md
+- ACCESSIBILITY_STATEMENT.md
+- AD_POLICY.md
+- APPLE_DEVELOPER_SETUP.md
+- APPLE_REVIEW_NOTES.md
+- APPLE_STORE_DESCRIPTION.md
+- APP_ICON_SPEC.md
+- APP_STORE_PRIVACY_QUESTIONNAIRE.md
+- APP_STORE_SCREENSHOT_SPEC.md
+- BETA_FEEDBACK_FORM.md
+- COMMUNITY_GUIDELINES.md
+- CONTENT_RATING_JUSTIFICATION.md
+- COOKIE_POLICY.md
+- COPPA_COMPLIANCE_CHECKLIST.md
+- DATA_RETENTION_POLICY.md
+- FEATURE_GRAPHIC_SPEC.md
+- GDPR_DATA_REQUEST_PROCESS.md
+- GOOGLE_PLAY_DATA_SAFETY.md
+- GOOGLE_PLAY_DESCRIPTION.md
+- GOOGLE_PLAY_DEVELOPER_SETUP.md
+- GOOGLE_PLAY_REVIEW_NOTES.md
+- IARC_QUESTIONNAIRE_PREP.md
+- IN_APP_PURCHASE_COMPLIANCE.md
+- LOCALIZATION_PLAN.md
+- LOOT_BOX_DISCLOSURE.md
+- POST_LAUNCH_CONTENT_CALENDAR.md
+- PRESS_KIT.md
+- PRIVACY_POLICY.md
+- PRIVACY_REVIEW.md
+- PROMO_TEXT.md
+- REFUND_POLICY.md
+- REVIEW_NOTES.md
+- SCREENSHOT_CAPTIONS.md
+- SECURITY_DISCLOSURE_POLICY.md
+- SOCIAL_MEDIA_LAUNCH.md
+- STORE_CATEGORY_SELECTION.md
+- SUPPORT_EMAIL_TEMPLATES.md
+- SUPPORT_FAQ.md
+- TERMS_OF_SERVICE.md
+- THIRD_PARTY_SERVICES.md
+- TOS_REVIEW.md
+- WHATS_NEW_TEXT.md
+
+**What was done:**
+- Merged the detached Claude Code v0.7.24 and v0.7.25 gameplay/UI batch into the git-backed repo
+- Added splash boot flow, tutorial/progressive unlock system, daily objective strip, richer settings stats, card detail popup, improved battle HUD, extended rank/gameplay wiring, and updated save schema
+- Preserved the shared Firebase tester path by restoring `js/firebase-public-config.js` in `index.html` after merging the detached frontend files
+- Imported the newer Cowork documentation batch for store, support, compliance, review, and beta operations
+- Updated the repo to version `0.7.25`
+
+**Verification:**
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+- `npm.cmd run test` passed with `237 passed, 0 failed`
+
+**Blockers:**
+- True cloud save is still blocked until the real Firebase web app values are filled into `js/firebase-public-config.js`
+- Old stale host `tower-game-3k2.pages.dev` should still be ignored in favor of `https://core-surge.pages.dev/`
+
 ## 2026-05-24 - Codex - Git Account Rule Recorded
 
 **Status:** Complete

@@ -318,6 +318,16 @@
 </head>
 <body>
 
+<!-- Loading splash screen -->
+<div class="splash-screen" id="splashScreen">
+  <div class="splash-content">
+    <div class="splash-icon">⚡</div>
+    <div class="splash-title">CORE SURGE</div>
+    <div class="splash-sub">ENDLESS TOWER DEFENSE</div>
+    <div class="splash-bar"><div class="splash-fill" id="splashFill"></div></div>
+  </div>
+</div>
+
 <div class="hud" id="hud"></div>
 
 <div class="install-banner hidden" id="installBanner" aria-live="polite">
@@ -346,10 +356,6 @@
     <div class="menu-tagline" id="menuTagline"></div>
   </div>
   <div class="tier-select">
-    <div class="tier-select-header">
-      <span class="tier-select-label">Difficulty Tier</span>
-      <span class="tier-select-info" id="tierInfo"></span>
-    </div>
     <div class="tier-row">
       <button class="tier-arrow" id="tierDown">‹</button>
       <div class="tier-display">
@@ -358,23 +364,15 @@
       </div>
       <button class="tier-arrow" id="tierUp">›</button>
     </div>
+    <div class="tier-unlock-hint" id="tierInfo"></div>
     <button class="start-btn" id="startBtn">Begin Defense</button>
   </div>
 
+  <!-- Daily objective -->
+  <div class="home-daily" id="homeDaily"></div>
+
   <!-- Home info panels (progress + milestones + loadout preview) -->
   <div class="home-panels" id="homePanels"></div>
-
-  <!-- Home battlefield preview (decorative; shows equipped core + bg) -->
-  <div class="menu-preview" id="menuPreview">
-    <div class="menu-preview-bg" id="menuPreviewBg"></div>
-    <div class="menu-preview-core" id="menuPreviewCore"></div>
-    <div class="menu-preview-enemy menu-preview-enemy-1"></div>
-    <div class="menu-preview-enemy menu-preview-enemy-2"></div>
-    <div class="menu-preview-enemy menu-preview-enemy-3"></div>
-    <div class="menu-preview-enemy menu-preview-enemy-4"></div>
-    <div class="menu-preview-ring"></div>
-    <div class="menu-preview-label" id="menuPreviewLabel">CORE: SENTINEL</div>
-  </div>
 
   <div class="submenu" id="submenu">
     <button class="submenu-btn active" data-tab="labs">Ranks</button>

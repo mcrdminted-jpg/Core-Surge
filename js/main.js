@@ -417,9 +417,23 @@ async function registerAppShell() {
 // ============================================================
 // BOOT
 // ============================================================
+function updateSplash(pct) {
+  const fill = document.getElementById('splashFill');
+  if (fill) fill.style.width = pct + '%';
+}
+function dismissSplash() {
+  const splash = document.getElementById('splashScreen');
+  if (splash) {
+    splash.classList.add('fade-out');
+    setTimeout(() => splash.remove(), 500);
+  }
+}
+
 window.addEventListener('load', async () => {
+  updateSplash(10);
   registerAppShell();
   loadSave();
+  updateSplash(30);
   if (typeof ensureUsername === 'function') ensureUsername();
   if (typeof bootCloudSession === 'function') {
     try {
@@ -431,6 +445,7 @@ window.addEventListener('load', async () => {
   if (typeof initMonetization === 'function') {
     initMonetization();
   }
+  updateSplash(50);
   document.documentElement.dataset.theme = save.settings.theme || 'neon';
   game.bf = document.getElementById('battlefield');
   game.towerEl = document.getElementById('tower');
@@ -455,7 +470,17 @@ window.addEventListener('load', async () => {
   }
   document.querySelectorAll('.submenu-btn').forEach(b => {
     b.addEventListener('click', () => {
-      activeSubmenu = b.dataset.tab;
+      const tab = b.dataset.tab;
+      if (typeof featureUnlocked === 'function' && !featureUnlocked(tab)) {
+        // Show locked feedback
+        const t2 = document.createElement('div');
+        t2.className = 'skin-toast';
+        t2.textContent = tab === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
+        document.body.appendChild(t2);
+        setTimeout(() => t2.remove(), 2000);
+        return;
+      }
+      activeSubmenu = tab;
       renderSubmenu();
     });
   });
@@ -471,12 +496,19 @@ window.addEventListener('load', async () => {
   processOfflineProgress();
   if (save.selectedTier > highestUnlockedTier()) save.selectedTier = highestUnlockedTier();
   if (save.settings.gameSpeed > maxUnlockedSpeed()) save.settings.gameSpeed = maxUnlockedSpeed();
+  updateSplash(80);
   renderHud();
   renderMenu();
   wireBattlefieldSideButtons();
   wireGlobalNav();
   wireInstallBanner();
   startPassiveAccrual();
+  updateSplash(100);
+  setTimeout(dismissSplash, 300);
+  // Tutorial: show first-time tooltip after splash clears
+  if (typeof checkTutorial === 'function') {
+    setTimeout(checkTutorial, 900);
+  }
   window._autoSaveInterval = setInterval(persistSave, 5000);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) persistSave();

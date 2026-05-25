@@ -87,6 +87,10 @@ function render() {
   if (hudCoinsEl) hudCoinsEl.textContent = formatNum(save.coins);
   const hudCashEl = document.getElementById('hudCashValue');
   if (hudCashEl) hudCashEl.textContent = formatNum(game.cash);
+  const hudWaveLabel = document.getElementById('hudWaveLabel');
+  if (hudWaveLabel) hudWaveLabel.textContent = 'W' + game.wave;
+  const hudKillCount = document.getElementById('hudKillCount');
+  if (hudKillCount) hudKillCount.textContent = game.enemiesKilledThisRun + ' kills';
   const coinPreview = document.getElementById('coinPreview');
   const newCoins = formatNum(coinRewardForRun(game.wave, game.cashEarnedThisRun));
   if (coinPreview.textContent !== newCoins) {

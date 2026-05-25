@@ -4,6 +4,180 @@
 // ============================================================
 
 // ============================================================
+// HAPTIC FEEDBACK — lightweight wrapper for Capacitor Haptics
+// Falls back to navigator.vibrate on web. No-op on unsupported.
+// ============================================================
+function haptic(style) {
+  // style: 'light' | 'medium' | 'heavy' | 'success' | 'error'
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+      const h = window.Capacitor.Plugins.Haptics;
+      if (style === 'success' || style === 'error') {
+        h.notification({ type: style === 'success' ? 'SUCCESS' : 'ERROR' });
+      } else {
+        const map = { light: 'LIGHT', medium: 'MEDIUM', heavy: 'HEAVY' };
+        h.impact({ style: map[style] || 'LIGHT' });
+      }
+    } else if (navigator.vibrate) {
+      const ms = { light: 10, medium: 20, heavy: 40, success: [15, 50, 15], error: [30, 40, 30] };
+      navigator.vibrate(ms[style] || 10);
+    }
+  } catch (_) { /* no-op */ }
+}
+
+// ============================================================
+// TUTORIAL SYSTEM — guided first-time player experience
+// ============================================================
+
+// Progressive unlock gate: which features require what
+function featureUnlocked(feature) {
+  const runs = save.totalRuns || 0;
+  const bestW1 = save.bestWavePerTier ? (save.bestWavePerTier[1] || 0) : 0;
+  switch (feature) {
+    case 'labs':       return true;  // always available
+    case 'settings':   return true;  // always available
+    case 'milestones': return runs >= 1;
+    case 'shop':       return runs >= 1;
+    case 'cards':      return runs >= 2;
+    case 'skins':      return runs >= 3;
+    case 'tournament': return bestW1 >= 50;
+    default:           return true;
+  }
+}
+
+// Show a tutorial tooltip anchored to a target element
+function showTutorial(targetEl, message, opts) {
+  dismissTutorial();
+  const options = opts || {};
+  const overlay = document.createElement('div');
+  overlay.className = 'tutorial-overlay';
+  overlay.id = 'tutorialOverlay';
+
+  // Click-blocker backdrop — sits behind the cutout, captures stray clicks
+  const backdrop = document.createElement('div');
+  backdrop.className = 'tutorial-backdrop';
+  backdrop.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+  overlay.appendChild(backdrop);
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tutorial-tooltip';
+
+  const msg = document.createElement('div');
+  msg.className = 'tutorial-msg';
+  msg.textContent = message;
+  tooltip.appendChild(msg);
+
+  if (options.btnText) {
+    const btn = document.createElement('button');
+    btn.className = 'tutorial-btn';
+    btn.textContent = options.btnText;
+    btn.addEventListener('click', () => {
+      dismissTutorial();
+      if (options.onBtn) options.onBtn();
+    });
+    tooltip.appendChild(btn);
+  }
+
+  overlay.appendChild(tooltip);
+  document.body.appendChild(overlay);
+
+  // Position tooltip near target
+  if (targetEl) {
+    targetEl.classList.add('tutorial-highlight');
+    const rect = targetEl.getBoundingClientRect();
+    const ttW = 280;
+    let left = Math.max(10, rect.left + rect.width / 2 - ttW / 2);
+    if (left + ttW > window.innerWidth - 10) left = window.innerWidth - ttW - 10;
+    tooltip.style.width = ttW + 'px';
+
+    // Place above or below depending on space
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow > 140 || spaceBelow > spaceAbove) {
+      tooltip.style.top = (rect.bottom + 12) + 'px';
+      tooltip.classList.add('arrow-top');
+    } else {
+      tooltip.style.bottom = (window.innerHeight - rect.top + 12) + 'px';
+      tooltip.classList.add('arrow-bottom');
+    }
+    tooltip.style.left = left + 'px';
+
+    // Cut-out highlight — make the target clickable through the overlay
+    const cutout = document.createElement('div');
+    cutout.className = 'tutorial-cutout';
+    cutout.style.top = (rect.top - 4) + 'px';
+    cutout.style.left = (rect.left - 4) + 'px';
+    cutout.style.width = (rect.width + 8) + 'px';
+    cutout.style.height = (rect.height + 8) + 'px';
+    overlay.appendChild(cutout);
+  } else {
+    // Center tooltip if no target
+    tooltip.style.left = '50%';
+    tooltip.style.top = '40%';
+    tooltip.style.transform = 'translate(-50%, -50%)';
+  }
+}
+
+function dismissTutorial() {
+  const overlay = document.getElementById('tutorialOverlay');
+  if (overlay) overlay.remove();
+  document.querySelectorAll('.tutorial-highlight').forEach(el => {
+    el.classList.remove('tutorial-highlight');
+  });
+}
+
+// Check tutorial state and show appropriate tooltip
+function checkTutorial() {
+  if (!save || save.tutorialStep >= 99) return;
+  const step = save.tutorialStep;
+
+  if (step === 0) {
+    // Fresh player — point at Begin Defense button
+    const btn = document.getElementById('startBtn');
+    if (btn) {
+      showTutorial(btn, 'Welcome, Commander! Tap here to begin your first defense. Enemies will attack your Core — hold them off as long as you can!');
+    }
+  } else if (step === 2) {
+    // After first death — point at damage rank in Research
+    // Make sure we're on the labs tab
+    if (activeSubmenu !== 'labs') {
+      activeSubmenu = 'labs';
+      activeResearchTab = 'combat';
+      renderSubmenu();
+    }
+    setTimeout(() => {
+      const dmgBtn = document.querySelector('.lab-buy[data-rank="damage"]');
+      if (dmgBtn) {
+        showTutorial(dmgBtn,
+          'Great first run! Now spend your coins on permanent upgrades. Buy Damage to hit harder next time!',
+          { allowClick: true }
+        );
+      }
+    }, 300);
+  } else if (step === 3) {
+    // After first rank buy — point at Begin Defense again
+    const btn = document.getElementById('startBtn');
+    if (btn) {
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        showTutorial(btn, 'Nice upgrade! Now jump back into battle — you\'ll deal more damage this time. Each run makes you stronger!');
+      }, 350);
+    }
+  } else if (step === 5) {
+    // After second run — brief overview, then complete
+    const moreBtn = document.querySelector('.global-nav-btn[data-nav="more"]');
+    showTutorial(moreBtn,
+      'You\'re getting the hang of it! Explore MORE to find Goals, Store, and other features. They\'ll unlock as you progress. Good luck, Commander!',
+      { btnText: 'Got it!', onBtn: () => {
+        save.tutorialStep = 99;
+        persistSave();
+        renderMenu();
+      }}
+    );
+  }
+}
+
+// ============================================================
 // IN-RUN UPGRADES (tabbed)
 // ============================================================
 let activeUpgradeTab = 'offense';
@@ -454,6 +628,13 @@ function renderHud() {
           <div class="hud-resource-value" id="hudCashValue">${formatNum(game.cash)}</div>
         </div>
       </div>
+      <div class="hud-battle-info" id="hudBattleInfo">
+        <span class="hud-bi-item">T${game.tier}</span>
+        <span class="hud-bi-sep">·</span>
+        <span class="hud-bi-item" id="hudWaveLabel">W${game.wave}</span>
+        <span class="hud-bi-sep">·</span>
+        <span class="hud-bi-item" id="hudKillCount">${game.enemiesKilledThisRun} kills</span>
+      </div>
       ${battleDev}
     `;
     const back = document.getElementById('hudBackBtn');
@@ -600,6 +781,15 @@ function wireGlobalNav() {
       }
 
       // Otherwise it's a submenu target (labs/cards etc.)
+      // Gate locked features
+      if (!featureUnlocked(target)) {
+        const t2 = document.createElement('div');
+        t2.className = 'skin-toast';
+        t2.textContent = 'Keep playing to unlock this feature!';
+        document.body.appendChild(t2);
+        setTimeout(() => t2.remove(), 2000);
+        return;
+      }
       if (game.running && isOverlayActive() && activeSubmenu === target) {
         closeMenuOverlay();
         return;
@@ -659,6 +849,15 @@ function openMoreSheet() {
     sheet.querySelectorAll('.more-sheet-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.more;
+        if (!featureUnlocked(target)) {
+          // Show locked feedback
+          const t2 = document.createElement('div');
+          t2.className = 'skin-toast';
+          t2.textContent = target === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
+          document.body.appendChild(t2);
+          setTimeout(() => t2.remove(), 2000);
+          return;
+        }
         activeSubmenu = target;
         closeMoreSheet();
         if (game.running) openMenuOverlay();
@@ -666,6 +865,12 @@ function openMoreSheet() {
       });
     });
   }
+  // Update lock state on each open
+  sheet.querySelectorAll('.more-sheet-btn').forEach(btn => {
+    const target = btn.dataset.more;
+    const locked = !featureUnlocked(target);
+    btn.classList.toggle('more-locked', locked);
+  });
   sheet.classList.add('visible');
 }
 
@@ -740,15 +945,17 @@ function renderMenu() {
   document.getElementById('tierDown').disabled = sel <= 1;
   document.getElementById('tierUp').disabled = sel >= max;
   const info = document.getElementById('tierInfo');
+  const bestOnSel = save.bestWavePerTier[sel] || 0;
   if (sel === max && max < MAX_TIER) {
-    const wavesNeeded = 100 - (save.bestWavePerTier[sel] || 0);
-    info.textContent = wavesNeeded > 0
-      ? `W100 on T${sel} to unlock T${sel + 1}`
-      : `T${sel + 1} ready · complete any run`;
+    const wavesNeeded = 100 - bestOnSel;
+    const pct = Math.min(100, (bestOnSel / 100) * 100);
+    info.innerHTML = wavesNeeded > 0
+      ? `<span>W100 on T${sel} to unlock T${sel + 1}</span><div class="tier-unlock-bar"><div class="tier-unlock-fill" style="width:${pct}%"></div></div>`
+      : `<span style="color:var(--good)">T${sel + 1} ready · complete any run</span>`;
   } else if (sel === MAX_TIER) {
     info.textContent = `Max difficulty`;
   } else {
-    info.textContent = `Best on T${sel}: W${save.bestWavePerTier[sel] || 0}`;
+    info.innerHTML = `Best on T${sel}: <b>W${bestOnSel}</b>`;
   }
   document.getElementById('startBtn').textContent = `Begin Defense (T${sel})`;
   // pick a tagline deterministically (doesn't change every render)
@@ -790,64 +997,57 @@ function renderHomePanels() {
   const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
   const totalSlots = getUnlockedSlots();
 
-  // --- Recent Progress ---
+  // --- Left: Recent Progress ---
   const progressPct = Math.min(100, (bestThisTier / 100) * 100);
   const nextTierReady = bestThisTier >= 100 && sel < MAX_TIER;
 
   let progressHTML = `
     <div class="home-panel home-progress">
       <div class="home-panel-header">
-        <span class="home-panel-icon">📊</span>
-        <span class="home-panel-title">RECENT PROGRESS</span>
+        <span class="home-panel-title">PROGRESS</span>
       </div>
       <div class="home-progress-stats">
         <div class="home-stat">
-          <div class="home-stat-value">W ${bestThisTier}</div>
+          <div class="home-stat-value">W${bestThisTier}</div>
           <div class="home-stat-label">Best T${sel}</div>
         </div>
         <div class="home-stat">
           <div class="home-stat-value">${save.totalRuns}</div>
-          <div class="home-stat-label">Total Runs</div>
-        </div>
-        <div class="home-stat">
-          <div class="home-stat-value">T${maxTier}</div>
-          <div class="home-stat-label">Max Tier</div>
+          <div class="home-stat-label">Runs</div>
         </div>
       </div>
       <div class="home-progress-bar-wrap">
         <div class="home-progress-bar" style="width:${progressPct}%"></div>
-        <div class="home-progress-label">${nextTierReady ? 'T' + (sel + 1) + ' READY' : bestThisTier + ' / 100'}</div>
+        <div class="home-progress-label">${nextTierReady ? 'T' + (sel + 1) + ' READY' : bestThisTier + '/100'}</div>
       </div>
     </div>`;
 
-  // --- Tier Milestones Mini ---
+  // --- Center: Tier Milestones ---
   let claimableCount = 0;
   let milestonesHTML = '';
-  const showWaves = [25, 50, 100, 200, 500];
+  const showWaves = [25, 50, 100, 200, 500, 1000];
   for (const w of showWaves) {
     const key = milestoneKey(sel, w);
     const claimed = save.claimedMilestones[key];
     const ready = milestoneReady(sel, w) && !claimed;
     if (ready) claimableCount++;
     const cls = claimed ? 'claimed' : ready ? 'ready' : 'locked';
-    const icon = claimed ? '✓' : ready ? '!' : w;
-    milestonesHTML += `<div class="home-ms-dot ${cls}">${icon}</div>`;
+    const label = claimed ? '✓' : ready ? '!' : (w >= 1000 ? '1K' : w);
+    milestonesHTML += `<div class="home-ms-dot ${cls}">${label}</div>`;
   }
 
   let tiersHTML = `
     <div class="home-panel home-milestones">
       <div class="home-panel-header">
-        <span class="home-panel-icon">🎯</span>
-        <span class="home-panel-title">T${sel} MILESTONES</span>
+        <span class="home-panel-title">MILESTONES</span>
         ${claimableCount > 0 ? `<span class="home-panel-badge">${claimableCount}</span>` : ''}
       </div>
       <div class="home-ms-row">${milestonesHTML}</div>
-      ${claimableCount > 0 ? `<div class="home-ms-hint">Tap Goals to claim rewards</div>` : ''}
     </div>`;
 
-  // --- Loadout Preview ---
+  // --- Right: Loadout Preview ---
   let cardsHTML = '';
-  for (let i = 0; i < Math.min(totalSlots, 5); i++) {
+  for (let i = 0; i < Math.min(totalSlots, 6); i++) {
     const cid = save.equippedCards[i];
     if (cid && CARD_POOL[cid]) {
       const card = CARD_POOL[cid];
@@ -864,7 +1064,6 @@ function renderHomePanels() {
   let loadoutHTML = `
     <div class="home-panel home-loadout">
       <div class="home-panel-header">
-        <span class="home-panel-icon">🃏</span>
         <span class="home-panel-title">LOADOUT</span>
         <span class="home-panel-count">${equippedCount}/${totalSlots}</span>
       </div>
@@ -891,11 +1090,106 @@ function renderHomePanels() {
       renderSubmenu();
     });
   }
+
+  // --- Daily Objective ---
+  renderDailyObjective();
+}
+
+function renderDailyObjective() {
+  const el = document.getElementById('homeDaily');
+  if (!el) return;
+
+  const objectives = [
+    { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
+    { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
+    { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
+    { task: 'Buy 3 Upgrades', check: () => Object.values(save.ranks).reduce((s, r) => s + r.level, 0), target: 3, reward: { coins: 500, gems: 5 } }
+  ];
+
+  const dayIndex = Math.floor(Date.now() / 86400000) % objectives.length;
+  const obj = objectives[dayIndex];
+  const current = Math.min(obj.check(), obj.target);
+  const pct = Math.min(100, (current / obj.target) * 100);
+  const done = current >= obj.target;
+
+  el.innerHTML = `
+    <div class="home-daily-bar">
+      <div class="home-daily-info">
+        <div class="home-daily-label">DAILY OBJECTIVE</div>
+        <div class="home-daily-task">${obj.task}</div>
+        <div class="home-daily-progress">
+          <div class="home-daily-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="home-daily-rewards">
+        <span class="home-daily-reward">+${obj.reward.coins}⊙ +${obj.reward.gems}💎</span>
+      </div>
+    </div>`;
+}
+
+// Badge counts for submenu tabs — returns object { labs: N, milestones: N, cards: N }
+function getSubmenuBadges() {
+  const badges = {};
+
+  // Ranks: count affordable rank-ups
+  let rankBuyable = 0;
+  for (const rid of Object.keys(RANK_DEFS)) {
+    if (!rankIsAvailable(rid)) continue;
+    const entry = save.ranks[rid] || { level: 0 };
+    if (entry.level >= RANK_DEFS[rid].maxRank) continue;
+    if (save.coins >= rankCost(rid, entry.level)) rankBuyable++;
+  }
+  if (rankBuyable > 0) badges.labs = rankBuyable;
+
+  // Goals: count claimable milestones
+  let claimable = 0;
+  const unlockedTier = typeof highestUnlockedTier === 'function' ? highestUnlockedTier() : save.bestTier || 1;
+  for (let t = 1; t <= unlockedTier; t++) {
+    for (const w of MILESTONE_WAVES) {
+      if (milestoneReady(t, w) && !save.claimedMilestones[milestoneKey(t, w)]) claimable++;
+    }
+  }
+  if (claimable > 0) badges.milestones = claimable;
+
+  // Cards: show badge if player can afford a pull
+  if (save.gems >= (CARD_PRICING ? CARD_PRICING.pullSingle : 20)) badges.cards = '!';
+
+  return badges;
 }
 
 function renderSubmenu() {
+  const badges = getSubmenuBadges();
   document.querySelectorAll('.submenu-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === activeSubmenu);
+    const tab = b.dataset.tab;
+    const unlocked = featureUnlocked(tab);
+    b.classList.toggle('active', tab === activeSubmenu && unlocked);
+    b.classList.toggle('tab-locked', !unlocked);
+    b.disabled = !unlocked;
+    // Update badge
+    let badge = b.querySelector('.submenu-badge');
+    const count = unlocked ? badges[tab] : null;
+    if (count) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'submenu-badge';
+        b.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else if (badge) {
+      badge.remove();
+    }
+    // Lock icon for locked tabs
+    let lockIcon = b.querySelector('.tab-lock-icon');
+    if (!unlocked) {
+      if (!lockIcon) {
+        lockIcon = document.createElement('span');
+        lockIcon.className = 'tab-lock-icon';
+        lockIcon.textContent = '🔒';
+        b.appendChild(lockIcon);
+      }
+    } else if (lockIcon) {
+      lockIcon.remove();
+    }
   });
   const c = document.getElementById('submenuContent');
   // v0.7.16: prepend a big neon panel title matching the mockup
@@ -939,12 +1233,18 @@ const RANK_CATEGORY = {
   critChance: 'combat', critPower: 'combat',
   multiChance: 'combat', multiPower: 'combat', multiTargets: 'combat',
   bounceChance: 'combat', bouncePower: 'combat', bounceTargets: 'combat',
+  comboBonus: 'combat', comboDuration: 'combat',
   // Defense
   coreHealth: 'defense', armor: 'defense', range: 'defense',
   lifesteal: 'defense', regen: 'defense',
+  thorns: 'defense', knockback: 'defense',
+  shieldHP: 'defense', shieldRegen: 'defense',
   // Economy
   cashBonus: 'economy', waveBonus: 'economy', bossBounty: 'economy',
-  // Utility (everything else)
+  coinMultiplier: 'economy', gemFind: 'economy',
+  // Utility
+  projSpeed: 'utility', pierce: 'utility',
+  overchargeChance: 'utility', overchargePower: 'utility',
 };
 function rankCategory(rid) { return RANK_CATEGORY[rid] || 'utility'; }
 
@@ -952,9 +1252,9 @@ function rankCategory(rid) { return RANK_CATEGORY[rid] || 'utility'; }
 // stats relevant to that tab. The painted mockup has 4 family card slots.
 const FAMILIES_BY_CATEGORY = {
   combat:  ['critSystems', 'multishotSystems', 'bounceSystems', 'comboSystems'],
-  defense: ['sustainSystems'],
-  economy: ['economyExpansion'],
-  utility: ['comboSystems']
+  defense: ['sustainSystems', 'fortification', 'barrierSystems'],
+  economy: ['economyExpansion', 'coinMastery'],
+  utility: ['tacticalSystems', 'overcharge']
 };
 
 // Subtab metadata — labels that sit under the painted icons
@@ -1017,6 +1317,18 @@ function renderLabsTab(c) {
   html += `</div>`; // end mockup-bg-research
 
   // =========================================================
+  //  BUY MULTIPLIER TOGGLE — x1 / x10 / MAX
+  // =========================================================
+  const curMul = save.settings.buyMultiplier || 1;
+  html += `<div class="rank-buy-mul-bar">`;
+  for (const opt of [1, 10, 'max']) {
+    const label = opt === 'max' ? 'MAX' : `×${opt}`;
+    const active = (curMul === opt || (curMul === 1 && opt === 1)) ? 'active' : '';
+    html += `<button class="rank-mul-btn ${active}" data-mul="${opt}">${label}</button>`;
+  }
+  html += `</div>`;
+
+  // =========================================================
   //  RANK ROWS — flow below the mockup, filtered by active sub-tab
   // =========================================================
   // Collect rank ids that belong to the active category AND are unlocked
@@ -1066,9 +1378,20 @@ function renderLabsTab(c) {
     btn.addEventListener('click', () => {
       const fid = btn.dataset.morFam;
       if (purchaseUnlockFamily(fid)) {
+        haptic('success');
         renderLabsTab(c);
         renderHud();
       }
+    });
+  });
+
+  // --- Wire buy multiplier toggle ---
+  c.querySelectorAll('.rank-mul-btn[data-mul]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.mul;
+      save.settings.buyMultiplier = val === 'max' ? 'max' : parseInt(val, 10);
+      persistSave();
+      renderLabsTab(c);
     });
   });
 
@@ -1083,7 +1406,27 @@ function renderLabsTab(c) {
         if (!purchaseRank(rid)) break;
         bought++;
       }
-      if (bought > 0) { renderLabsTab(c); renderHud(); }
+      if (bought > 0) {
+        haptic('light');
+        // Tutorial: advance after first rank purchase
+        if (save.tutorialStep === 2) {
+          save.tutorialStep = 3;
+          persistSave();
+          dismissTutorial();
+          // Short delay, then show "start battle again" tooltip
+          setTimeout(() => {
+            renderMenu();
+            checkTutorial();
+          }, 400);
+        }
+        renderLabsTab(c); renderHud();
+        // Flash the upgraded rank row
+        const row = c.querySelector(`.lab-buy[data-rank="${rid}"]`);
+        if (row) {
+          const lab = row.closest('.lab');
+          if (lab) { lab.classList.add('rank-bought'); setTimeout(() => lab.classList.remove('rank-bought'), 450); }
+        }
+      }
     });
   });
 }
@@ -1107,7 +1450,20 @@ const RANK_ICON_META = {
   multiTargets:  { icon: '⋮⋮', color: 'var(--accent)' },
   bounceChance:  { icon: '⤢',  color: 'var(--purple)' },
   bouncePower:   { icon: '⤨',  color: 'var(--purple)' },
-  bounceTargets: { icon: '⋰⋱', color: 'var(--purple)' }
+  bounceTargets: { icon: '⋰⋱', color: 'var(--purple)' },
+  // New research stats
+  comboBonus:       { icon: '🔥', color: 'var(--danger)' },
+  comboDuration:    { icon: '⏱',  color: 'var(--danger)' },
+  thorns:           { icon: '🌿', color: 'var(--good)' },
+  knockback:        { icon: '💨', color: 'var(--accent)' },
+  shieldHP:         { icon: '🔷', color: 'var(--cyan2)' },
+  shieldRegen:      { icon: '♻',  color: 'var(--cyan2)' },
+  coinMultiplier:   { icon: '🪙', color: 'var(--gold)' },
+  gemFind:          { icon: '💎', color: 'var(--purple)' },
+  projSpeed:        { icon: '➤',  color: 'var(--accent)' },
+  pierce:           { icon: '⫸',  color: 'var(--accent)' },
+  overchargeChance: { icon: '⚡', color: 'var(--gold)' },
+  overchargePower:  { icon: '⚡', color: 'var(--danger)' }
 };
 
 function renderRankRow(rid) {
@@ -1124,6 +1480,33 @@ function renderRankRow(rid) {
     return v.toFixed(1);
   };
   const meta = RANK_ICON_META[rid] || { icon: '◆', color: 'var(--accent)' };
+
+  // Calculate buy-N cost for multiplier display
+  const mul = save.settings.buyMultiplier || 1;
+  let buyLabel = 'MAXED';
+  if (!maxed) {
+    if (mul === 'max' || mul > 1) {
+      const limit = mul === 'max' ? (def.maxRank - entry.level) : Math.min(mul, def.maxRank - entry.level);
+      let totalCost = 0, count = 0;
+      for (let i = 0; i < limit; i++) {
+        const c = rankCost(rid, entry.level + i);
+        if (c === Infinity) break;
+        if (totalCost + c > save.coins && mul === 'max') break;
+        totalCost += c;
+        count++;
+      }
+      if (count === 0) count = 1;
+      const costForFirst = rankCost(rid, entry.level);
+      const displayCost = mul === 'max' ? totalCost : totalCost;
+      const canBuy = save.coins >= costForFirst;
+      buyLabel = count > 1
+        ? `Rank Up ×${count} · ${formatNum(displayCost)} coins`
+        : `Rank Up · ${formatNum(costForFirst)} coins`;
+    } else {
+      buyLabel = `Rank Up · ${formatNum(cost)} coins`;
+    }
+  }
+
   return `
     <div class="lab" style="--rank-color:${meta.color}">
       <div class="lab-icon-tile" style="color:${meta.color};border-color:${meta.color}">${meta.icon}</div>
@@ -1134,7 +1517,7 @@ function renderRankRow(rid) {
       <div class="lab-desc">${def.desc}</div>
       <div class="lab-stat">+${fmt(curBonus)} → +${fmt(nextBonus)}</div>
       <button class="lab-buy ${maxed ? 'maxed' : ''}" data-rank="${rid}" ${maxed || !can ? 'disabled' : ''}>
-        ${maxed ? 'MAXED' : `Rank Up · ${formatNum(cost)} coins`}
+        ${buyLabel}
       </button>
     </div>`;
 }
@@ -1228,6 +1611,26 @@ function renderMilestonesTab(c) {
 // them tap an inventory card to fill it.
 let cardSelectingSlot = -1;
 
+function cardBonusLabel(card, inv) {
+  if (card.values && Array.isArray(card.values)) {
+    const v = card.values[Math.max(0, Math.min(4, inv.level - 1))];
+    if (typeof v === 'number') {
+      const pct = v * 100;
+      return `+${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%`;
+    }
+  } else if (card.buckets) {
+    const firstKey = Object.keys(card.buckets)[0];
+    if (firstKey) {
+      const v = card.buckets[firstKey][Math.max(0, Math.min(4, inv.level - 1))];
+      if (typeof v === 'number') {
+        const pct = v * 100;
+        return `+${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%`;
+      }
+    }
+  }
+  return `Lv${inv.level}`;
+}
+
 function renderCardsTab(c) {
   const ownedIds = Object.keys(save.cardInventory).filter(id => CARD_POOL[id]);
   const slots = getUnlockedSlots();
@@ -1249,16 +1652,7 @@ function renderCardsTab(c) {
       const card = CARD_POOL[cardId];
       const inv = save.cardInventory[cardId] || { level: 1 };
       const tierColor = CARD_TIER_COLORS[card.tier];
-      // Special cards have object values; just show the level for them.
-      let bonusLabel;
-      const v = card.values[Math.max(0, Math.min(4, inv.level - 1))];
-      if (typeof v === 'number') {
-        const pct = v * 100;
-        // Small values (under 10%) need one decimal so 0.2% doesn't read "0%"
-        bonusLabel = `+${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%`;
-      } else {
-        bonusLabel = `Lv${inv.level}`;
-      }
+      const bonusLabel = cardBonusLabel(card, inv);
       html += `
         <div class="card-slot filled" data-slot="${i}" style="background:${tierColor.bg};border-color:${tierColor.border}">
           <div class="card-slot-icon">${card.icon}</div>
@@ -1357,15 +1751,7 @@ function renderCardsTab(c) {
         const inv = save.cardInventory[id];
         const tierColor = CARD_TIER_COLORS[card.tier];
         const isEquipped = equipped.includes(id);
-        // Bonus label — handle special vs number values
-        const v = card.values[Math.max(0, Math.min(4, inv.level - 1))];
-        let bonusLabel;
-        if (typeof v === 'number') {
-          const pct = v * 100;
-          bonusLabel = `+${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%`;
-        } else {
-          bonusLabel = `Lv${inv.level}`;
-        }
+        const bonusLabel = cardBonusLabel(card, inv);
         // Copies progress to next level
         const thresholds = COPIES_TO_LEVEL[card.tier];
         let copyLabel;
@@ -1421,9 +1807,22 @@ function renderCardsTab(c) {
     });
   });
 
-  // Wire card tile taps
+  // Wire card tile taps (short tap = equip/unequip, long press = detail popup)
   c.querySelectorAll('.card-tile').forEach(tileEl => {
-    tileEl.addEventListener('click', () => {
+    let pressTimer = null;
+    let longPressed = false;
+
+    tileEl.addEventListener('pointerdown', (e) => {
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        showCardDetail(tileEl.dataset.card);
+      }, 400);
+    });
+    tileEl.addEventListener('pointerup', () => {
+      clearTimeout(pressTimer);
+      if (longPressed) return;
+      // Normal tap — equip/unequip
       const cardId = tileEl.dataset.card;
       const equippedIdx = save.equippedCards.indexOf(cardId);
       if (equippedIdx !== -1) {
@@ -1441,6 +1840,73 @@ function renderCardsTab(c) {
       persistSave();
       renderCardsTab(c);
     });
+    tileEl.addEventListener('pointercancel', () => clearTimeout(pressTimer));
+    tileEl.addEventListener('pointermove', () => clearTimeout(pressTimer));
+  });
+}
+
+function showCardDetail(cardId) {
+  const card = CARD_POOL[cardId];
+  if (!card) return;
+  const inv = save.cardInventory[cardId] || { level: 1, copies: 1 };
+  const tierColor = CARD_TIER_COLORS[card.tier];
+  const thresholds = COPIES_TO_LEVEL[card.tier];
+
+  let valuesHtml = '';
+  if (card.values && Array.isArray(card.values)) {
+    for (let i = 0; i < 5; i++) {
+      const v = card.values[i];
+      const active = i < inv.level ? 'active' : '';
+      const current = i === inv.level - 1 ? 'current' : '';
+      if (typeof v === 'number') {
+        const pct = v * 100;
+        valuesHtml += `<div class="cd-level ${active} ${current}">Lv${i + 1}: +${pct < 10 ? pct.toFixed(1) : pct.toFixed(0)}%</div>`;
+      } else {
+        valuesHtml += `<div class="cd-level ${active} ${current}">Lv${i + 1}</div>`;
+      }
+    }
+  } else if (card.buckets) {
+    const keys = Object.keys(card.buckets);
+    for (let i = 0; i < 5; i++) {
+      const active = i < inv.level ? 'active' : '';
+      const current = i === inv.level - 1 ? 'current' : '';
+      const parts = keys.map(k => {
+        const v = card.buckets[k][i];
+        return `${k}: +${(v * 100).toFixed(0)}%`;
+      });
+      valuesHtml += `<div class="cd-level ${active} ${current}">Lv${i + 1}: ${parts.join(', ')}</div>`;
+    }
+  }
+
+  let copyBar = '';
+  if (inv.level < 5) {
+    const needed = thresholds[inv.level];
+    const pct = Math.min(100, (inv.copies / needed) * 100);
+    copyBar = `<div class="cd-copy-bar"><div class="cd-copy-fill" style="width:${pct}%"></div></div>
+               <div class="cd-copy-label">${inv.copies} / ${needed} copies to Lv${inv.level + 1}</div>`;
+  } else {
+    copyBar = `<div class="cd-copy-label">MAX LEVEL · ${inv.copies} copies</div>`;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'card-detail-overlay';
+  overlay.innerHTML = `
+    <div class="card-detail-card" style="border-color:${tierColor.border}">
+      <div class="cd-header" style="background:${tierColor.bg}">
+        <span class="cd-icon">${card.icon}</span>
+        <span class="cd-tier" style="color:${tierColor.nameColor}">${tierColor.name}</span>
+      </div>
+      <div class="cd-name">${card.name}</div>
+      <div class="cd-desc">${card.desc}</div>
+      <div class="cd-levels">${valuesHtml}</div>
+      ${copyBar}
+      <button class="cd-close">Close</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.classList.contains('cd-close')) {
+      overlay.remove();
+    }
   });
 }
 
@@ -1874,6 +2340,12 @@ function renderSettingsTab(c) {
   themeWrap.appendChild(Object.assign(document.createElement('div'), { style: 'height:14px' }));
   c.appendChild(themeWrap);
 
+  // --- Display Settings Section ---
+  const displayHeader = document.createElement('div');
+  displayHeader.className = 'settings-section-title';
+  displayHeader.textContent = 'Display';
+  c.appendChild(displayHeader);
+
   const settings = [
     { key: 'showFloatingDamage', label: 'Damage numbers', desc: 'Show floating damage on enemy hits' },
     { key: 'showFloatingCash',   label: 'Cash numbers',   desc: 'Show +$N on kills' },
@@ -1898,21 +2370,35 @@ function renderSettingsTab(c) {
     c.appendChild(row);
   }
 
+  // --- Stats Section ---
+  const statsHeader = document.createElement('div');
+  statsHeader.className = 'settings-section-title';
+  statsHeader.textContent = 'Lifetime Statistics';
+  c.appendChild(statsHeader);
+
   const totalMin = (save.totalPlaytimeMs / 60000).toFixed(1);
+  const totalHrs = (save.totalPlaytimeMs / 3600000);
+  const timeStr = totalHrs >= 1 ? `${totalHrs.toFixed(1)} hrs` : `${totalMin} min`;
   const statsBox = document.createElement('div');
-  statsBox.className = 'lab';
-  statsBox.style.marginTop = '14px';
+  statsBox.className = 'settings-stats-grid';
   statsBox.innerHTML = `
-    <div class="lab-name">Lifetime</div>
-    <div class="lab-stat" style="color:var(--text);font-size:10px;line-height:1.7">
-      Runs: <b>${save.totalRuns}</b> · Best: <b>T${save.bestTier}·W${save.bestWave}</b><br>
-      Tiers unlocked: <b>${highestUnlockedTier()}/${MAX_TIER}</b><br>
-      Enemies killed: <b>${formatNum(save.totalEnemiesKilled)}</b><br>
-      Cash lifetime: <b>${formatNum(save.totalCashEarned)}</b><br>
-      Playtime: <b>${totalMin} min</b> · Offline cap: <b>${offlineCapMinutes().toFixed(0)} min</b>
-    </div>
+    <div class="sstat"><span class="sstat-val">${save.totalRuns}</span><span class="sstat-label">Runs</span></div>
+    <div class="sstat"><span class="sstat-val">T${save.bestTier}·W${save.bestWave}</span><span class="sstat-label">Best</span></div>
+    <div class="sstat"><span class="sstat-val">${highestUnlockedTier()}/${MAX_TIER}</span><span class="sstat-label">Tiers</span></div>
+    <div class="sstat"><span class="sstat-val">${formatNum(save.totalEnemiesKilled)}</span><span class="sstat-label">Kills</span></div>
+    <div class="sstat"><span class="sstat-val">${formatNum(save.totalBossesDefeated || 0)}</span><span class="sstat-label">Bosses</span></div>
+    <div class="sstat"><span class="sstat-val">${timeStr}</span><span class="sstat-label">Playtime</span></div>
+    <div class="sstat"><span class="sstat-val">${formatNum(save.totalCashEarned)}</span><span class="sstat-label">Cash</span></div>
+    <div class="sstat"><span class="sstat-val">${formatNum(save.totalGemsEarned || 0)}</span><span class="sstat-label">Gems</span></div>
   `;
   c.appendChild(statsBox);
+
+  // --- Danger Zone ---
+  const dangerHeader = document.createElement('div');
+  dangerHeader.className = 'settings-section-title';
+  dangerHeader.style.color = 'var(--danger)';
+  dangerHeader.textContent = 'Danger Zone';
+  c.appendChild(dangerHeader);
 
   const resetBtn = document.createElement('button');
   resetBtn.className = 'lab-buy';
@@ -1924,7 +2410,7 @@ function renderSettingsTab(c) {
   // Version text — tap 7 times to unlock dev panel
   const ver = document.createElement('div');
   ver.style.cssText = 'text-align:center;color:var(--muted);font-size:9px;margin-top:12px;line-height:1.5;cursor:pointer;padding:10px;user-select:none';
-  const verDefault = 'Core Surge v0.7.23 · Installable App Shell · tap 7x for dev tools';
+  const verDefault = 'Core Surge v0.7.24 · Installable App Shell · tap 7x for dev tools';
   ver.textContent = verDefault;
   let tapCount = 0;
   let tapTimer = null;
