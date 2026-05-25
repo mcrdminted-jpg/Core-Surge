@@ -78,11 +78,11 @@
 
 ## Gameplay Logic Bugs
 
-### monetization.js references non-existent function `scheduleCloudSync`
-- **Location**: `js/monetization.js` line ~229
-- **Impact**: After a purchase is verified by RevenueCat, the cloud sync call fails silently. Purchased entitlements may not persist to cloud save.
-- **Fix**: Replace `scheduleCloudSync` with `queueCloudSave` (the actual function name in cloud.js)
-- **Found**: 2026-05-25 (code audit)
+### Purchases still rely on client-authoritative reward delivery
+- **Location**: `js/monetization.js`
+- **Impact**: Cloud sync trigger is fixed, but reward granting is still local-first. A tampered client can still fake reward state before server validation exists.
+- **Fix**: Keep RevenueCat for store proof, then add backend validation and entitlement reconciliation before competitive/cloud-authoritative features go live.
+- **Found**: 2026-05-25 (code audit, updated 2026-05-25 after sync-hook fix)
 
 ### devMode/godMode are client-side toggleable with no server validation
 - **Location**: `js/save.js` (save.settings.devMode, save.devState.godMode)
@@ -124,12 +124,11 @@
 
 ## Code Quality Issues
 
-### persistSave() silently swallows errors
-- **Location**: `js/save.js` persistSave() function, line ~189
-- **Impact**: If localStorage is full or write fails, the player gets no warning. Progress appears saved but is lost on next load.
-- **Code**: `try { localStorage.setItem(...); } catch (e) {}`
-- **Fix**: Add error handling -- at minimum log the error, ideally show a toast/warning to the player that save failed. Consider fallback (IndexedDB, reduce save size).
-- **Found**: 2026-05-25 (code audit)
+### Save write failures only log to console
+- **Location**: `js/save.js` persistSave()
+- **Impact**: Local save failures now log instead of failing silently, but testers still get no visible in-game warning if storage is full or blocked.
+- **Fix**: Add a player-facing toast/banner when localStorage writes fail. Consider fallback storage if this becomes common.
+- **Found**: 2026-05-25 (code audit, updated 2026-05-25 after console logging fix)
 
 ### No save data integrity validation on load
 - **Location**: `js/save.js` hydrateSaveState()
@@ -221,14 +220,14 @@
 - Should have custom error page matching game theme
 - Configure in `firebase.json` rewrites/errorPage
 
-### manifest.webmanifest issues
+### manifest.webmanifest still needs real PNG app icons
 - **Location**: `manifest.webmanifest`
 - **Issues (Task 69 audit)**:
-  - Only one icon (SVG). Apple requires PNG at 180x180. Android needs 192x192 and 512x512 PNGs.
-  - `purpose: "any maskable"` is deprecated. Should be two separate icon entries: one `purpose: "any"`, one `purpose: "maskable"`
-  - No `id` field (recommended for stable PWA identity across updates)
-- **Fix**: Generate PNG icons at required sizes. Split icon entry into two. Add `id` field.
-- **Found**: 2026-05-25 (Task 69 audit)
+  - Stable `id` is now present
+  - Deprecated combined purpose string is now split into `any` and `maskable`
+  - Apple still needs a dedicated 180x180 PNG. Android still wants 192x192 and 512x512 PNGs.
+- **Fix**: Generate dedicated square PNG icons and reference them in manifest + `apple-touch-icon`.
+- **Found**: 2026-05-25 (Task 69 audit, updated 2026-05-25 after manifest cleanup)
 
 ### Missing .firebaserc file
 - **Location**: project root
@@ -236,17 +235,17 @@
 - **Fix**: Create `.firebaserc` with `{"projects": {"default": "core-surge---tower-defense"}}`
 - **Found**: 2026-05-25 (Task 65 audit)
 
-### Save version field written but never read
-- **Location**: `js/save.js` persistSave() writes `version: 8`, hydrateSaveState() never checks it
-- **Impact**: No version-based migration path. If save format changes incompatibly in future, no way to detect old vs new saves and migrate.
-- **Fix**: Add version check in hydrateSaveState. Implement migration functions keyed by version number.
-- **Found**: 2026-05-25 (Task 70 audit)
+### Save schema still has no explicit migration table
+- **Location**: `js/save.js`
+- **Impact**: Save version is now normalized on load/save, but there is still no dedicated migration function map for future incompatible schema changes.
+- **Fix**: Add `migrateSave(fromVersion, rawSave)` before `hydrateSaveState()` if another breaking save shape lands.
+- **Found**: 2026-05-25 (Task 70 audit, updated 2026-05-25 after version normalization)
 
-### Rank levels not capped at maxRank during save load
+### Save load sanitization is still local-only
 - **Location**: `js/save.js` hydrateSaveState()
-- **Impact**: Tampered saves with rank levels above maxRank (e.g., level:9999) load without error. Could cause visual bugs or stat calculation overflow.
-- **Fix**: In hydrateSaveState, clamp each rank level: `Math.min(source.ranks[k].level, RANK_DEFS[k].maxRank)`
-- **Found**: 2026-05-25 (Task 70 audit)
+- **Impact**: Rank caps and numeric sanitization now clamp bad local data, but there is still no trusted backend validation for cloud or competitive features.
+- **Fix**: Mirror the same validation rules server-side before accepting leaderboard, tournament, or cloud-authoritative state.
+- **Found**: 2026-05-25 (Task 70 audit, updated 2026-05-25 after local clamp fix)
 
 ## Documentation Mismatches
 

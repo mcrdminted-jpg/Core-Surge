@@ -2,6 +2,7 @@
   "name": "Core Surge",
   "short_name": "Core Surge",
   "description": "Fast mobile-first endless tower defense with installable web app support.",
+  "id": "/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -18,7 +19,13 @@
       "src": "assets/app/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }

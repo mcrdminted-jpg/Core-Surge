@@ -15,6 +15,7 @@ const JS_ORDER = [
   'js/tournament.js',
   'js/render.js',
   'js/ui.js',
+  'js/firebase-public-config.js',
   'js/cloud.js',
   'js/monetization.js',
   'js/main.js',

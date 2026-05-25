@@ -1,4 +1,4 @@
-const CORE_SURGE_CACHE = 'core-surge-shell-v0-7-23';
+const CORE_SURGE_CACHE = 'core-surge-shell-v0-7-27';
 const CORE_SURGE_ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,9 @@ const CORE_SURGE_ASSETS = [
   './js/tournament.js',
   './js/render.js',
   './js/ui.js',
+  './js/firebase-public-config.js',
+  './js/cloud.js',
+  './js/monetization.js',
   './js/main.js',
   './js/skins.js',
   './js/profile.js',

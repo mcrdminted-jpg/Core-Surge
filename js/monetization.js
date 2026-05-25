@@ -226,7 +226,7 @@ function grantProductRewardsLocally(productId) {
   }
   if (rewards.monthlyPass) save.monthlyVaultActive = true;
   persistSave();
-  if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
+  if (typeof queueCloudSave === 'function') queueCloudSave('purchase');
   return true;
 }
 

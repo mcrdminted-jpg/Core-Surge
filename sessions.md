@@ -328,6 +328,42 @@ Codex:
 
 ---
 
+## 2026-05-25 - Codex - Save Hardening And Live Shell Cleanup
+
+**Status:** Complete
+
+**Files modified:**
+- js/monetization.js
+- js/save.js
+- manifest.webmanifest
+- index.html
+- service-worker.js
+- package.json
+- scripts/build.js
+- scripts/test.js
+- KNOWN_BUGS.md
+- sessions.md
+
+**What was done:**
+- Fixed the purchase reward path to call `queueCloudSave('purchase')` instead of the dead `scheduleCloudSync` name
+- Hardened save hydration so numeric fields are sanitized, equipped cards are validated, rank levels are capped to `RANK_DEFS[*].maxRank`, and save schema version now normalizes to v9 on load/save
+- Changed local save failures from silent drop to console-visible errors
+- Updated the app shell to v0.7.27, added a stable manifest `id`, and split icon purposes into separate `any` and `maskable` entries
+- Fixed a build regression where `js/firebase-public-config.js` was missing from the production JS bundle, which would have broken shared Firebase tester config on hosted builds
+- Updated the source service worker asset list so the source-hosted app shell also tracks Firebase config and the cloud/monetization scripts
+- Tightened `KNOWN_BUGS.md` so resolved findings now reflect the remaining real gaps instead of stale pre-fix notes
+
+**Verification:**
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+- `npm.cmd run test` passed with `242 passed, 0 failed`
+
+**Blockers:**
+- PWA still needs dedicated square PNG app icons for Apple touch icon and Android manifest sizes
+- True cloud save still needs the real Firebase web app values in `js/firebase-public-config.js`
+
+---
+
 ## 2026-05-25 - Codex - Cloudflare Live Host Audit And Pages Settings Fix
 
 **Status:** Complete

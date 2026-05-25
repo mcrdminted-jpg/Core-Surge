@@ -1,7 +1,7 @@
 {
   "name": "core-surge",
   "private": true,
-  "version": "0.7.26",
+  "version": "0.7.27",
   "description": "Core Surge static mobile web game",
   "scripts": {
     "typecheck": "node scripts/typecheck.js",

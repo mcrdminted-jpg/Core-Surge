@@ -97,7 +97,7 @@ const defaultSave = {
   totalGemsEarned: 0,
 
   lastSaveTime: Date.now(),
-  version: 8,
+  version: 9,
 
   // Tournament (v0.7.13+): persistent bracket state, league, cycle info.
   // See js/tournament.js for the full shape and helpers.
@@ -123,47 +123,124 @@ const defaultSave = {
 };
 
 let save;
+const SAVE_SCHEMA_VERSION = 9;
 
 function cloneDefaultSave() {
   return JSON.parse(JSON.stringify(defaultSave));
 }
 
+function sanitizeCount(value, fallback = 0) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.floor(num));
+}
+
+function sanitizeChoice(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback;
+}
+
+function sanitizeRankLevel(rankId, level) {
+  const def = RANK_DEFS[rankId];
+  if (!def) return 0;
+  return Math.max(0, Math.min(def.maxRank, sanitizeCount(level, 0)));
+}
+
+function sanitizeCardInventory(rawInventory) {
+  const nextInventory = {};
+  const sourceInventory = rawInventory && typeof rawInventory === 'object' ? rawInventory : {};
+  for (const cardId of Object.keys(sourceInventory)) {
+    if (!CARD_POOL[cardId]) continue;
+    const entry = sourceInventory[cardId] || {};
+    nextInventory[cardId] = {
+      level: Math.max(1, Math.min(5, sanitizeCount(entry.level, 1))),
+      copies: Math.max(1, sanitizeCount(entry.copies, 1))
+    };
+  }
+  return nextInventory;
+}
+
+function sanitizeBooleanMap(rawMap) {
+  const nextMap = {};
+  const sourceMap = rawMap && typeof rawMap === 'object' ? rawMap : {};
+  for (const key of Object.keys(sourceMap)) {
+    if (sourceMap[key]) nextMap[key] = true;
+  }
+  return nextMap;
+}
+
 function hydrateSaveState(loaded) {
   const source = loaded || {};
   const nextSave = { ...defaultSave, ...source };
-  nextSave.settings = { ...defaultSave.settings, ...(source.settings || {}) };
-  nextSave.devState = { ...defaultSave.devState, ...(source.devState || {}) };
-  nextSave.bestWavePerTier = source.bestWavePerTier || { 1: 0 };
-  nextSave.claimedMilestones = source.claimedMilestones || {};
-  nextSave.unlocks = { ...defaultSave.unlocks, ...(source.unlocks || {}) };
+  nextSave.version = SAVE_SCHEMA_VERSION;
+  nextSave.coins = sanitizeCount(source.coins, defaultSave.coins);
+  nextSave.gems = sanitizeCount(source.gems, defaultSave.gems);
+  nextSave.totalRuns = sanitizeCount(source.totalRuns, defaultSave.totalRuns);
+  nextSave.bestTier = Math.max(1, Math.min(MAX_TIER, sanitizeCount(source.bestTier, defaultSave.bestTier)));
+  nextSave.bestWave = Math.max(1, sanitizeCount(source.bestWave, defaultSave.bestWave));
+  nextSave.selectedTier = Math.max(1, Math.min(MAX_TIER, sanitizeCount(source.selectedTier, nextSave.bestTier)));
+  nextSave.totalCashEarned = sanitizeCount(source.totalCashEarned, defaultSave.totalCashEarned);
+  nextSave.totalEnemiesKilled = sanitizeCount(source.totalEnemiesKilled, defaultSave.totalEnemiesKilled);
+  nextSave.totalPlaytimeMs = sanitizeCount(source.totalPlaytimeMs, defaultSave.totalPlaytimeMs);
+  nextSave.totalBossesDefeated = sanitizeCount(source.totalBossesDefeated, defaultSave.totalBossesDefeated);
+  nextSave.totalGemsEarned = sanitizeCount(source.totalGemsEarned, defaultSave.totalGemsEarned);
+  nextSave.lastAdRewardTime = sanitizeCount(source.lastAdRewardTime, defaultSave.lastAdRewardTime);
+  nextSave.lastSaveTime = sanitizeCount(source.lastSaveTime, Date.now());
+  nextSave.tutorialStep = Math.min(99, sanitizeCount(source.tutorialStep, defaultSave.tutorialStep));
+
+  const rawSettings = source.settings && typeof source.settings === 'object' ? source.settings : {};
+  nextSave.settings = {
+    ...defaultSave.settings,
+    ...rawSettings,
+    showFloatingDamage: rawSettings.showFloatingDamage !== false,
+    showFloatingCash: rawSettings.showFloatingCash !== false,
+    showFloatingHeals: rawSettings.showFloatingHeals !== false,
+    theme: typeof rawSettings.theme === 'string' && rawSettings.theme ? rawSettings.theme : defaultSave.settings.theme,
+    gameSpeed: sanitizeChoice(Number(rawSettings.gameSpeed), [1, 2, 3], defaultSave.settings.gameSpeed),
+    devMode: !!rawSettings.devMode,
+    buyMultiplier: sanitizeChoice(rawSettings.buyMultiplier, [1, 10, 100, 'max'], defaultSave.settings.buyMultiplier)
+  };
+  nextSave.devState = {
+    ...defaultSave.devState,
+    ...(source.devState || {}),
+    godMode: !!(source.devState && source.devState.godMode)
+  };
+
+  nextSave.bestWavePerTier = { 1: 0 };
+  if (source.bestWavePerTier && typeof source.bestWavePerTier === 'object') {
+    for (const [tierKey, waveValue] of Object.entries(source.bestWavePerTier)) {
+      const tier = Math.max(1, Math.min(MAX_TIER, sanitizeCount(tierKey, 1)));
+      nextSave.bestWavePerTier[tier] = sanitizeCount(waveValue, 0);
+    }
+  }
+
+  nextSave.claimedMilestones = sanitizeBooleanMap(source.claimedMilestones);
+  nextSave.unlocks = { ...defaultSave.unlocks };
+  if (source.unlocks && typeof source.unlocks === 'object') {
+    for (const key of Object.keys(defaultSave.unlocks)) {
+      nextSave.unlocks[key] = !!source.unlocks[key];
+    }
+  }
   nextSave.ranks = { ...defaultSave.ranks };
   if (source.ranks) {
     for (const k of Object.keys(defaultSave.ranks)) {
       if (source.ranks[k]) {
-        nextSave.ranks[k] = { level: source.ranks[k].level || 0 };
+        nextSave.ranks[k] = { level: sanitizeRankLevel(k, source.ranks[k].level) };
       }
     }
   }
   if (!nextSave.selectedTier || nextSave.selectedTier < 1) nextSave.selectedTier = 1;
-  nextSave.cardInventory = source.cardInventory || {};
-  for (const id of Object.keys(nextSave.cardInventory)) {
-    if (!nextSave.cardInventory[id].copies) nextSave.cardInventory[id].copies = 1;
-  }
-  nextSave.unlockedSlots = Math.max(STARTING_SLOTS, Math.min(MAX_SLOTS, source.unlockedSlots || STARTING_SLOTS));
+  nextSave.cardInventory = sanitizeCardInventory(source.cardInventory);
+  nextSave.unlockedSlots = Math.max(STARTING_SLOTS, Math.min(MAX_SLOTS, sanitizeCount(source.unlockedSlots, STARTING_SLOTS)));
   const loadedEquipped = Array.isArray(source.equippedCards) ? source.equippedCards : [];
   nextSave.equippedCards = [];
   for (let i = 0; i < nextSave.unlockedSlots; i++) {
-    nextSave.equippedCards.push(loadedEquipped[i] || null);
-  }
-  for (let i = 0; i < nextSave.equippedCards.length; i++) {
-    if (nextSave.equippedCards[i] && !nextSave.cardInventory[nextSave.equippedCards[i]]) {
-      nextSave.equippedCards[i] = null;
-    }
+    const cardId = loadedEquipped[i];
+    nextSave.equippedCards.push(cardId && nextSave.cardInventory[cardId] ? cardId : null);
   }
   nextSave.tournament = source.tournament || null;
   nextSave.playerId = source.playerId || source.username || 'You';
   nextSave.monthlyVaultActive = !!source.monthlyVaultActive;
-  nextSave.storeEntitlements = source.storeEntitlements || {};
+  nextSave.storeEntitlements = sanitizeBooleanMap(source.storeEntitlements);
   nextSave.equippedCoreSkin = source.equippedCoreSkin || null;
   nextSave.equippedBgSkin = source.equippedBgSkin || null;
   // v0.7.25: auto-complete tutorial for existing players who already have runs
@@ -199,8 +276,12 @@ function loadSave() {
 
 function persistSave() {
   save.lastSaveTime = Date.now();
-  save.version = 8;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+  save.version = SAVE_SCHEMA_VERSION;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch (e) {
+    console.error('Save persist failed', e);
+  }
   if (typeof queueCloudSave === 'function') queueCloudSave('persist');
 }
 

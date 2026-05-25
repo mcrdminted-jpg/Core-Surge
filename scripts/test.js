@@ -57,7 +57,7 @@ async function runTests() {
   console.log('── Bundle Integrity ──');
 
   const jsFiles = ['data.js', 'save.js', 'game.js', 'tournament.js', 'render.js',
-    'ui.js', 'cloud.js', 'monetization.js', 'main.js', 'skins.js', 'profile.js'];
+    'ui.js', 'firebase-public-config.js', 'cloud.js', 'monetization.js', 'main.js', 'skins.js', 'profile.js'];
   for (const f of jsFiles) {
     const exists = await fs.access(path.join(root, 'js', f)).then(() => true).catch(() => false);
     assert(exists, `js/${f} exists`);
@@ -73,6 +73,14 @@ async function runTests() {
   const indexHtml = await fs.readFile(path.join(root, 'index.html'), 'utf8');
   assert(indexHtml.includes('<!DOCTYPE html>'), 'index.html has DOCTYPE');
   assert(indexHtml.includes('manifest.webmanifest'), 'index.html references manifest');
+  assert(indexHtml.includes('Core Surge v0.7.27'), 'index.html title version is current');
+
+  const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.webmanifest'), 'utf8'));
+  assert(manifest.id === '/', 'manifest id is stable');
+  assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.purpose === 'any'),
+    'manifest has an any-purpose icon');
+  assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.purpose === 'maskable'),
+    'manifest has a maskable-purpose icon');
 
   // ── 2. Card pool integrity ───────────────────────────────
   console.log('── Card Pool ──');
