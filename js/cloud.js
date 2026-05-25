@@ -7,6 +7,7 @@
 const CLOUD_CONFIG_STORAGE_KEY = 'core_surge_firebase_web_config_v1';
 const CLOUD_AUTO_AUTH_DISABLED_KEY = 'core_surge_cloud_auto_auth_disabled_v1';
 const CLOUD_SAVE_DOC_ID = 'latest';
+const CLOUD_SHARED_CONFIG_GLOBAL = 'CORE_SURGE_FIREBASE_CONFIG';
 
 const CLOUD_DEFAULT_CONFIG = {
   apiKey: '',
@@ -32,30 +33,78 @@ const cloudState = {
   lastSyncAt: 0,
   lastError: '',
   statusNote: 'Local-only mode',
-  config: null
+  config: null,
+  configSource: 'none'
 };
 
 function cloneCloudTemplate() {
   return JSON.parse(JSON.stringify(CLOUD_DEFAULT_CONFIG));
 }
 
-function readCloudConfig() {
+function readSharedCloudConfig() {
   try {
-    const raw = localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
-    if (!raw) return cloneCloudTemplate();
-    return { ...cloneCloudTemplate(), ...JSON.parse(raw) };
+    const raw = window[CLOUD_SHARED_CONFIG_GLOBAL];
+    if (!raw || typeof raw !== 'object') return {};
+    return { ...raw };
   } catch (_error) {
-    return cloneCloudTemplate();
+    return {};
   }
 }
 
-function getFirebaseConfigTemplate() {
-  return cloneCloudTemplate();
+function readLocalCloudConfigOverride() {
+  try {
+    const raw = localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch (_error) {
+    return {};
+  }
 }
 
-function normalizeFirebaseConfig(input) {
-  const config = typeof input === 'string' ? JSON.parse(input) : input;
-  const normalized = { ...cloneCloudTemplate(), ...(config || {}) };
+function buildCloudConfig() {
+  const shared = readSharedCloudConfig();
+  const localOverride = readLocalCloudConfigOverride();
+  const config = { ...cloneCloudTemplate(), ...shared, ...localOverride };
+  let source = 'none';
+  if (Object.keys(shared).length) source = 'shared';
+  if (Object.keys(localOverride).length) source = 'local-override';
+  return {
+    config,
+    source,
+    hasSharedConfig: Object.keys(shared).length > 0,
+    hasLocalOverride: Object.keys(localOverride).length > 0
+  };
+}
+
+function readCloudConfig() {
+  return buildCloudConfig().config;
+}
+
+function getFirebaseConfigTemplate() {
+  return buildCloudConfig().config;
+}
+
+function parseFirebaseConfigInput(input) {
+  if (typeof input === 'object' && input) return input;
+  const raw = String(input || '').trim();
+  if (!raw) throw new Error('Firebase config is empty.');
+  if (raw.startsWith('{')) {
+    try {
+      return JSON.parse(raw);
+    } catch (_error) {
+      return Function(`"use strict"; return (${raw});`)();
+    }
+  }
+  const objectMatch = raw.match(/\{[\s\S]*\}/);
+  if (!objectMatch) {
+    throw new Error('Paste the Firebase config object from Firebase Console.');
+  }
+  return Function(`"use strict"; return (${objectMatch[0]});`)();
+}
+
+function normalizeFirebaseConfig(input, baseConfig) {
+  const config = parseFirebaseConfigInput(input);
+  const normalized = { ...cloneCloudTemplate(), ...(baseConfig || {}), ...(config || {}) };
   const required = ['apiKey', 'authDomain', 'projectId'];
   for (const key of required) {
     if (!normalized[key] || String(normalized[key]).includes('REPLACE_WITH')) {
@@ -70,19 +119,19 @@ function cloudConfigIsReady(config) {
 }
 
 function saveCloudConfig(input) {
-  const normalized = normalizeFirebaseConfig(input);
+  const normalized = normalizeFirebaseConfig(input, readSharedCloudConfig());
   localStorage.setItem(CLOUD_CONFIG_STORAGE_KEY, JSON.stringify(normalized));
   localStorage.removeItem(CLOUD_AUTO_AUTH_DISABLED_KEY);
   cloudState.config = normalized;
+  cloudState.configSource = 'local-override';
   cloudState.initialized = false;
   cloudState.enabled = false;
-  cloudState.statusNote = 'Firebase config saved. Reloading cloud...';
+  cloudState.statusNote = 'Firebase override saved for this device. Reloading cloud...';
   return normalized;
 }
 
 function clearCloudConfig() {
   localStorage.removeItem(CLOUD_CONFIG_STORAGE_KEY);
-  localStorage.setItem(CLOUD_AUTO_AUTH_DISABLED_KEY, '1');
   cloudState.app = null;
   cloudState.auth = null;
   cloudState.db = null;
@@ -91,7 +140,12 @@ function clearCloudConfig() {
   cloudState.enabled = false;
   cloudState.initialized = false;
   cloudState.lastError = '';
-  cloudState.statusNote = 'Firebase config cleared. Local-only mode.';
+  const snapshot = buildCloudConfig();
+  cloudState.config = snapshot.config;
+  cloudState.configSource = snapshot.source;
+  cloudState.statusNote = snapshot.hasSharedConfig
+    ? 'Local Firebase override cleared. Shared deploy config is ready.'
+    : 'Firebase override cleared. Local-only mode.';
 }
 
 function autoCloudAuthDisabled() {
@@ -109,9 +163,13 @@ function setCloudStatus(note, err) {
 
 function initFirebaseClient() {
   if (cloudState.initialized) return cloudState.enabled;
-  cloudState.config = readCloudConfig();
+  const configSnapshot = buildCloudConfig();
+  cloudState.config = configSnapshot.config;
+  cloudState.configSource = configSnapshot.source;
   if (!cloudConfigIsReady(cloudState.config)) {
-    setCloudStatus('Add your Firebase web config in Settings to enable cloud sync.');
+    setCloudStatus(configSnapshot.hasSharedConfig
+      ? 'Shared Firebase config is incomplete.'
+      : 'Add shared Firebase web config in js/firebase-public-config.js or paste a local override in Settings.');
     cloudState.initialized = true;
     cloudState.enabled = false;
     return false;
@@ -265,7 +323,7 @@ async function syncCloudSaveNow(reason) {
 
 function cloudAccountLabel() {
   if (!cloudState.user) return 'Local-only mode';
-  if (cloudState.user.isAnonymous) return `Guest Cloud · ${cloudState.user.uid.slice(0, 8)}`;
+  if (cloudState.user.isAnonymous) return `Guest Cloud - ${cloudState.user.uid.slice(0, 8)}`;
   return cloudState.user.email || 'Cloud account';
 }
 
@@ -356,11 +414,47 @@ function openCloudAuthModal(mode) {
   });
 }
 
+function cloudConfigSourceLabel(source) {
+  const currentSource = source || cloudState.configSource;
+  if (currentSource === 'local-override') return 'Local override on this device';
+  if (currentSource === 'shared') return 'Shared deploy config';
+  return 'No Firebase config yet';
+}
+
+function cloudConfigChecklistHtml() {
+  const snapshot = buildCloudConfig();
+  const checks = [
+    {
+      ok: !!snapshot.config.projectId,
+      label: 'Firebase project ID is set'
+    },
+    {
+      ok: !!snapshot.config.apiKey,
+      label: 'Web API key is set'
+    },
+    {
+      ok: !!snapshot.config.messagingSenderId,
+      label: 'Messaging sender ID is set'
+    },
+    {
+      ok: !!snapshot.config.appId,
+      label: 'Web app ID is set'
+    }
+  ];
+  return checks.map((item) => `
+    <div class="cloud-check-row ${item.ok ? 'ok' : 'todo'}">
+      <span class="cloud-check-state">${item.ok ? 'READY' : 'TODO'}</span>
+      <span>${item.label}</span>
+    </div>
+  `).join('');
+}
+
 function renderCloudSettingsSection(container) {
   const section = document.createElement('div');
   section.className = 'profile-section';
 
-  const configValue = JSON.stringify(readCloudConfig(), null, 2);
+  const snapshot = buildCloudConfig();
+  const configValue = JSON.stringify(snapshot.hasLocalOverride ? readLocalCloudConfigOverride() : snapshot.config, null, 2);
   const statusText = cloudState.lastError
     ? `${cloudState.statusNote} ${cloudState.lastError}`
     : cloudState.statusNote;
@@ -375,11 +469,13 @@ function renderCloudSettingsSection(container) {
       </div>
       <div class="cloud-status-badge ${cloudState.user ? 'online' : 'offline'}">${cloudState.user ? 'CONNECTED' : 'LOCAL'}</div>
     </div>
+    <div class="cloud-status-meta">Config source: ${cloudConfigSourceLabel(snapshot.source)}</div>
+    <div class="cloud-checklist">${cloudConfigChecklistHtml()}</div>
     <textarea id="cloudConfigInput" class="cloud-config-input" spellcheck="false">${configValue}</textarea>
-    <div class="cloud-config-hint">Paste your Firebase web config here once. After that, the game can connect directly to Firebase without Cloud Functions.</div>
+    <div class="cloud-config-hint">Best path: put the real Firebase web config in js/firebase-public-config.js once, push it, and every tester gets cloud save automatically. This box is only a per-device override for debugging.</div>
     <div class="cloud-btn-row">
-      <button id="cloudConfigSaveBtn" class="cloud-btn" type="button">Save Config</button>
-      <button id="cloudConfigClearBtn" class="cloud-btn cloud-btn-muted" type="button">Clear Config</button>
+      <button id="cloudConfigSaveBtn" class="cloud-btn" type="button">Save Override</button>
+      <button id="cloudConfigClearBtn" class="cloud-btn cloud-btn-muted" type="button" ${snapshot.hasLocalOverride ? '' : 'disabled'}>Use Shared Config</button>
       <button id="cloudReconnectBtn" class="cloud-btn cloud-btn-muted" type="button">Reconnect</button>
     </div>
     <div class="cloud-btn-row">

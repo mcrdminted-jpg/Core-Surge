@@ -473,4 +473,30 @@ Examples:
 - Recommend legal review of policies before production launch (Week 5-6 gate).
 ```
 
+## 2026-05-24 - Codex - Shared Firebase Tester Config Path
+
+**Status:** Complete
+
+**Files modified:**
+- index.html
+- js/cloud.js
+- js/firebase-public-config.js
+- css/profile.css
+- README.md
+
+**What was done:**
+- Added `js/firebase-public-config.js` as the shared Firebase web config file for deploys
+- Updated `index.html` to load the shared Firebase config before `js/cloud.js`
+- Reworked `js/cloud.js` so deployed builds can use one shared Firebase config for all testers while keeping the in-game config box as a per-device override
+- Added clearer Cloud Save status, config-source labeling, and a checklist for missing Firebase web values
+- Updated README to document the shared-config tester path and the minimum Firebase console setup
+
+**Verification:**
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+
+**Blockers:**
+- True cloud save is still blocked until the real Firebase web app values are filled into `js/firebase-public-config.js`
+- Firebase Console still needs Authentication enabled for Anonymous and Email/Password, plus Firestore enabled with `backend/firestore.rules` published
+
 ---

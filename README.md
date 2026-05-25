@@ -140,25 +140,38 @@ This repo can now connect directly to Firebase Auth + Firestore from the client
 without requiring Cloud Functions first.
 
 - Firebase web SDK scripts load from the CDN in `index.html`
+- `js/firebase-public-config.js` is the shared deploy config for web, PWA, and Capacitor builds
 - `js/cloud.js` handles:
   - Firebase boot
   - anonymous guest cloud login
   - email account creation / sign-in
   - direct Firestore cloud save sync
   - local-only fallback when Firebase config is missing
-- The Firebase web config is pasted in-game through Settings and stored locally
-  on the device, so the app can stay deployable even before the final web keys
-  are filled in.
+- The in-game Settings cloud box is now only a per-device override for debugging
+  or emergency testing
 
-Current blocker for live Firebase sync:
+Best tester path:
 
-- The project still needs real Firebase web app values for:
+- Put the real Firebase web app values in `js/firebase-public-config.js`
+- Push the repo
+- Every tester device gets the same Firebase config automatically
+- Keep Firestore/Auth rules enabled so the public client config stays safe
+
+Shared config still needs the real Firebase web app values for:
   - `apiKey`
   - `messagingSenderId`
   - `appId`
 
-Once those are pasted into the Settings cloud config box, the app can connect
-directly to Firebase on the free Spark path for Auth + Firestore quotas.
+Once those are filled in, the app can connect directly to Firebase on the free
+Spark path for Auth + Firestore quotas.
+
+Minimum Firebase console setup:
+
+- Enable Authentication:
+  - Anonymous
+  - Email/Password
+- Enable Firestore
+- Publish the Firestore rules in `backend/firestore.rules`
 
 ## Native mobile lane
 
