@@ -6,6 +6,8 @@
 // ============================================================
 // PASSIVE + OFFLINE
 // ============================================================
+const INSTALL_BANNER_DISMISS_KEY = 'core_surge_install_banner_dismissed_v1';
+
 let passiveTimer = null;
 function startPassiveAccrual() {
   stopPassiveAccrual();
@@ -295,12 +297,140 @@ function cancelSimulatedAd() {
   adSimState.onComplete = null;
 }
 
+// ============================================================
+// APP SHELL / INSTALL
+// ============================================================
+const installState = {
+  deferredPrompt: null,
+  installed: false
+};
+
+function isStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function isiOSDevice() {
+  const ua = window.navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua);
+}
+
+function dismissInstallBanner() {
+  try {
+    window.localStorage.setItem(INSTALL_BANNER_DISMISS_KEY, '1');
+  } catch (_error) {
+    // Ignore storage failures; banner just becomes session-only.
+  }
+  updateInstallBanner();
+}
+
+function wasInstallBannerDismissed() {
+  try {
+    return window.localStorage.getItem(INSTALL_BANNER_DISMISS_KEY) === '1';
+  } catch (_error) {
+    return false;
+  }
+}
+
+function getInstallBannerState() {
+  if (isStandaloneMode() || installState.installed) {
+    return { visible: false, text: '', button: '' };
+  }
+  if (wasInstallBannerDismissed()) {
+    return { visible: false, text: '', button: '' };
+  }
+  if (installState.deferredPrompt) {
+    return {
+      visible: true,
+      text: 'Add the game to your home screen for full-screen play and faster relaunches.',
+      button: 'Install'
+    };
+  }
+  if (isiOSDevice() && !wasInstallBannerDismissed()) {
+    return {
+      visible: true,
+      text: 'On iPhone, tap Share and then Add to Home Screen for the app-style version.',
+      button: 'How To'
+    };
+  }
+  return { visible: false, text: '', button: '' };
+}
+
+function updateInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  const textEl = document.getElementById('installBannerText');
+  const buttonEl = document.getElementById('installBannerBtn');
+  if (!banner || !textEl || !buttonEl) return;
+
+  const state = getInstallBannerState();
+  if (!state.visible) {
+    banner.classList.add('hidden');
+    return;
+  }
+
+  textEl.textContent = state.text;
+  buttonEl.textContent = state.button;
+  banner.classList.remove('hidden');
+}
+
+async function promptInstallApp() {
+  if (installState.deferredPrompt) {
+    installState.deferredPrompt.prompt();
+    const outcome = await installState.deferredPrompt.userChoice;
+    if (outcome && outcome.outcome !== 'accepted') {
+      updateInstallBanner();
+    }
+    installState.deferredPrompt = null;
+    updateInstallBanner();
+    return;
+  }
+
+  if (isiOSDevice()) {
+    const textEl = document.getElementById('installBannerText');
+    const buttonEl = document.getElementById('installBannerBtn');
+    if (textEl) {
+      textEl.textContent = 'Use Safari Share to Add to Home Screen. That gives you the closest native-style launch on iPhone.';
+    }
+    if (buttonEl) {
+      buttonEl.textContent = 'Got It';
+    }
+  }
+}
+
+function wireInstallBanner() {
+  const installBtn = document.getElementById('installBannerBtn');
+  const dismissBtn = document.getElementById('installDismissBtn');
+  if (installBtn) installBtn.addEventListener('click', promptInstallApp);
+  if (dismissBtn) dismissBtn.addEventListener('click', dismissInstallBanner);
+  updateInstallBanner();
+}
+
+async function registerAppShell() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    await navigator.serviceWorker.register('./service-worker.js');
+  } catch (_error) {
+    // Offline shell is optional. Keep boot resilient.
+  }
+}
+
 
 // ============================================================
 // BOOT
 // ============================================================
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  registerAppShell();
   loadSave();
+  if (typeof ensureUsername === 'function') ensureUsername();
+  if (typeof bootCloudSession === 'function') {
+    try {
+      await bootCloudSession();
+    } catch (error) {
+      console.error('Cloud boot failed', error);
+    }
+  }
+  if (typeof initMonetization === 'function') {
+    initMonetization();
+  }
   document.documentElement.dataset.theme = save.settings.theme || 'neon';
   game.bf = document.getElementById('battlefield');
   game.towerEl = document.getElementById('tower');
@@ -345,11 +475,24 @@ window.addEventListener('load', () => {
   renderMenu();
   wireBattlefieldSideButtons();
   wireGlobalNav();
+  wireInstallBanner();
   startPassiveAccrual();
   window._autoSaveInterval = setInterval(persistSave, 5000);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) persistSave();
   });
+});
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  installState.deferredPrompt = event;
+  updateInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  installState.installed = true;
+  installState.deferredPrompt = null;
+  updateInstallBanner();
 });
 
 window._game = game;

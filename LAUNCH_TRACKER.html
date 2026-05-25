@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Surge Launch Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #ea580c;
+            --danger: #dc2626;
+            --bg-light: #f9fafb;
+            --border: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-light);
+            color: #1f2937;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .timestamp {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .tracks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .track-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .track-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .track-title {
+            font-size: 18px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-blocked {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-light);
+            border-left: 3px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .task-item.complete {
+            border-left-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .task-item.inprogress {
+            border-left-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .task-item.pending {
+            border-left-color: var(--warning);
+            background: #fef3c7;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .task-detail {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .progress-section {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .progress-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            transition: width 0.3s ease;
+        }
+
+        .track-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .breakdown-item {
+            background: var(--bg-light);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .breakdown-label {
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .breakdown-value {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .launch-gate {
+            background: #fee2e2;
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .launch-gate-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .gate-requirement {
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .gate-requirement::before {
+            content: '▢';
+            position: absolute;
+            left: 0;
+            font-size: 16px;
+        }
+
+        .gate-requirement.met::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .standup-section {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .standup-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .standup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .standup-item {
+            border-left: 3px solid var(--primary);
+            padding-left: 16px;
+        }
+
+        .standup-item-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .standup-item-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #6b7280;
+            background: var(--bg-light);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .dependencies {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .dependencies-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .dependency-item {
+            padding: 12px;
+            margin-bottom: 12px;
+            background: var(--bg-light);
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .dependency-item strong {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Core Surge Launch Tracker</h1>
+            <p class="timestamp">Week of May 24, 2026 | Last updated: <span id="currentTime"></span></p>
+        </header>
+
+        <!-- Overall Progress -->
+        <div class="progress-section">
+            <div class="progress-title">Overall Launch Readiness</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="overallProgress" style="width: 35%">35%</div>
+            </div>
+            <div class="track-breakdown">
+                <div class="breakdown-item">
+                    <div class="breakdown-label">Build Track</div>
+                    <div class="breakdown-value">7/14 tasks</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-label">Compliance Track</div>
+                    <div class="breakdown-value">0/14 tasks</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-label">Launch Track</div>
+                    <div class="breakdown-value">0/8 tasks</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-label">Est. Launch</div>
+                    <div class="breakdown-value">Week 6 (Jun 14)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Three Tracks -->
+        <div class="tracks-grid">
+            <!-- BUILD TRACK -->
+            <div class="track-card">
+                <div class="track-header">
+                    <div class="track-title">🔨 Build Track (Claude Code)</div>
+                    <div class="status-badge status-active">Active</div>
+                </div>
+                <ul class="task-list">
+                    <li class="task-item complete">
+                        <input type="checkbox" class="task-checkbox" checked disabled>
+                        <div class="task-content">
+                            <div class="task-title">✓ Setup webpack/esbuild bundler</div>
+                            <div class="task-detail">Target: &lt;500KB minified</div>
+                        </div>
+                    </li>
+                    <li class="task-item complete">
+                        <input type="checkbox" class="task-checkbox" checked disabled>
+                        <div class="task-content">
+                            <div class="task-title">✓ CSS optimization & CDN strategy</div>
+                            <div class="task-detail">Autoprefixer, minification, asset paths</div>
+                        </div>
+                    </li>
+                    <li class="task-item complete">
+                        <input type="checkbox" class="task-checkbox" checked disabled>
+                        <div class="task-content">
+                            <div class="task-title">✓ Firebase Hosting deployment</div>
+                            <div class="task-detail">CI/CD pipeline ready</div>
+                        </div>
+                    </li>
+                    <li class="task-item inprogress">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">→ Polish UI design & reference refinement (Task #5)</div>
+                            <div class="task-detail">Expected: May 26</div>
+                        </div>
+                    </li>
+                    <li class="task-item inprogress">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">→ Build asset pipeline (Task #7)</div>
+                            <div class="task-detail">Expected: May 29</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Setup GitHub Actions CI/CD (Task #9)</div>
+                            <div class="task-detail">Expected: Jun 2</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Build testing framework (Task #11)</div>
+                            <div class="task-detail">15-20 unit tests, Expected: Jun 5</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- COMPLIANCE TRACK -->
+            <div class="track-card">
+                <div class="track-header">
+                    <div class="track-title">🔒 Compliance Track (Codex)</div>
+                    <div class="status-badge status-pending">Queued</div>
+                </div>
+                <ul class="task-list">
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Privacy Policy & ToS (Week 1)</div>
+                            <div class="task-detail">GDPR/CCPA/COPPA compliance</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Loot Box Disclosure (Week 1)</div>
+                            <div class="task-detail">Required for app store submission</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Firebase Auth UI & Migration (Week 2)</div>
+                            <div class="task-detail">Account recovery, GDPR data requests</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Analytics & Crashlytics (Week 3)</div>
+                            <div class="task-detail">15+ events, error tracking</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Data Encryption & Rate Limiting (Week 4)</div>
+                            <div class="task-detail">TweetNaCl.js, 10 pulls/min</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ IARC Rating & App Store (Week 5)</div>
+                            <div class="task-detail">Both stores compliant</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- LAUNCH TRACK -->
+            <div class="track-card">
+                <div class="track-header">
+                    <div class="track-title">📢 Launch Track (Launch Team)</div>
+                    <div class="status-badge status-pending">Queued</div>
+                </div>
+                <ul class="task-list">
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Closed Beta Setup (Week 1-2)</div>
+                            <div class="task-detail">TestFlight/Play Console, 50-100 testers</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Community Infrastructure (Week 2)</div>
+                            <div class="task-detail">Discord/Reddit channels, feedback form</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ App Store Optimization (Week 3-4)</div>
+                            <div class="task-detail">Screenshots, localization, keywords</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Influencer Outreach (Week 3-4)</div>
+                            <div class="task-detail">20-30 creators, preview builds</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Open Beta (Week 5-6)</div>
+                            <div class="task-detail">1K-5K players, media outreach</div>
+                        </div>
+                    </li>
+                    <li class="task-item pending">
+                        <input type="checkbox" class="task-checkbox" disabled>
+                        <div class="task-content">
+                            <div class="task-title">○ Production Launch (Week 8)</div>
+                            <div class="task-detail">10K+ day-1 downloads target</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- WEEK 6 LAUNCH GATE -->
+        <div class="launch-gate">
+            <div class="launch-gate-title">⚠️ WEEK 6 LAUNCH GATE (Jun 14, 2026)</div>
+            <div class="gate-requirement">Build Track complete: bundler, minification, CI/CD, Firebase Hosting, PWA offline</div>
+            <div class="gate-requirement">Compliance Track complete: Privacy/ToS, GDPR/CCPA, loot box disclosure, Auth UI, Analytics, encryption</div>
+            <div class="gate-requirement">IARC rating obtained for both app stores</div>
+            <div class="gate-requirement">RevenueCat sandbox testing passed on iOS and Android</div>
+            <div class="gate-requirement">Security audit completed (CSP headers, input validation, rate limiting)</div>
+            <div class="gate-requirement">15+ analytics events configured and tested</div>
+            <div class="gate-requirement">Crash reporting active in staging environment</div>
+            <p style="margin-top: 16px; font-size: 13px; color: #991b1b;"><strong>❌ NO production launch before all gates are signed off.</strong></p>
+        </div>
+
+        <!-- CROSS-TRACK DEPENDENCIES -->
+        <div class="dependencies">
+            <div class="dependencies-title">🔗 Cross-Track Dependencies</div>
+            <div class="dependency-item">
+                <strong>Build → Launch:</strong> Final bundle size (&lt;500KB) must be confirmed before launch marketing materials created
+            </div>
+            <div class="dependency-item">
+                <strong>Compliance → Launch:</strong> Privacy Policy, ToS, and loot box disclosure must be finalized before community launch communications
+            </div>
+            <div class="dependency-item">
+                <strong>Compliance → Build:</strong> Analytics events list (15+) must be defined before tracking instrumentation in code
+            </div>
+            <div class="dependency-item">
+                <strong>Build → Compliance:</strong> Firebase Hosting config and service worker must be live before Crashlytics integration
+            </div>
+            <div class="dependency-item">
+                <strong>Launch → Build:</strong> App store store screenshots and localization requirements must be known before asset pipeline finalized
+            </div>
+            <div class="dependency-item">
+                <strong>All Tracks → Launch:</strong> No media announcements or influencer previews until Week 6 gate sign-off
+            </div>
+        </div>
+
+        <!-- WEEKLY STANDUP TEMPLATE -->
+        <div class="standup-section">
+            <div class="standup-title">📋 Weekly Standup Template (Every Friday 2pm PT)</div>
+            <div class="standup-grid">
+                <div class="standup-item">
+                    <div class="standup-item-title">Build Track (Claude Code)</div>
+                    <div class="standup-item-content">
+                        <strong>Completed last week:</strong><br>
+                        • [Task #X: Description]<br>
+                        <strong>This week priority:</strong><br>
+                        • [Task #Y: Description]<br>
+                        <strong>Blockers:</strong><br>
+                        • [None / Description]<br>
+                        <strong>On track for Week 6 gate?</strong><br>
+                        • Yes / No / At Risk
+                    </div>
+                </div>
+                <div class="standup-item">
+                    <div class="standup-item-title">Compliance Track (Codex)</div>
+                    <div class="standup-item-content">
+                        <strong>Completed last week:</strong><br>
+                        • [Task #X: Description]<br>
+                        <strong>This week priority:</strong><br>
+                        • [Task #Y: Description]<br>
+                        <strong>Blockers:</strong><br>
+                        • [None / Description]<br>
+                        <strong>On track for Week 6 gate?</strong><br>
+                        • Yes / No / At Risk
+                    </div>
+                </div>
+                <div class="standup-item">
+                    <div class="standup-item-title">Launch Track (Launch Team)</div>
+                    <div class="standup-item-content">
+                        <strong>Completed last week:</strong><br>
+                        • [Task #X: Description]<br>
+                        <strong>This week priority:</strong><br>
+                        • [Task #Y: Description]<br>
+                        <strong>Blockers:</strong><br>
+                        • [None / Description]<br>
+                        <strong>On track for public launch?</strong><br>
+                        • Yes / No / At Risk
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update timestamp
+        document.getElementById('currentTime').textContent = new Date().toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+
+        // Track updates - can be called by MCP tools to refresh status
+        window.updateTrackProgress = function(trackName, completed, total) {
+            const percent = Math.round((completed / total) * 100);
+            // Update logic would go here
+            console.log(`${trackName}: ${completed}/${total} (${percent}%)`);
+        };
+    </script>
+</body>
+</html>

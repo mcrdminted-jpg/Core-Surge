@@ -214,6 +214,57 @@ const CARD_PRICING = {
   // Apex direct unlocks are NOT sold — shard/pity only (v0.8+)
 };
 
+const STORE_PRODUCT_CATALOG = [
+  {
+    id: 'starter_pack',
+    title: 'Starter Pack',
+    priceLabel: '$0.99',
+    badge: 'BEST ENTRY',
+    description: 'One-time launch offer with gems and an early card boost.',
+    rewards: { gems: 250, coins: 2500, unlockCards: ['heavyCaliber'] },
+    revenueCatEntitlement: 'starter_pack',
+    revenueCatPackage: '$rc_lifetime',
+    appleProductId: 'com.coresurge.starterpack',
+    googleProductId: 'com.coresurge.starterpack'
+  },
+  {
+    id: 'gem_pack_small',
+    title: 'Gem Pack Small',
+    priceLabel: '$2.99',
+    badge: 'GEMS',
+    description: 'Quick refill for pulls, skins, and slot unlocks.',
+    rewards: { gems: 750 },
+    revenueCatEntitlement: 'gems_small',
+    revenueCatPackage: 'gems_small',
+    appleProductId: 'com.coresurge.gems.small',
+    googleProductId: 'com.coresurge.gems.small'
+  },
+  {
+    id: 'gem_pack_medium',
+    title: 'Gem Pack Medium',
+    priceLabel: '$9.99',
+    badge: 'POPULAR',
+    description: 'Mainline pack for active players pushing progression.',
+    rewards: { gems: 2800 },
+    revenueCatEntitlement: 'gems_medium',
+    revenueCatPackage: 'gems_medium',
+    appleProductId: 'com.coresurge.gems.medium',
+    googleProductId: 'com.coresurge.gems.medium'
+  },
+  {
+    id: 'monthly_vault',
+    title: 'Monthly Vault',
+    priceLabel: '$9.99/mo',
+    badge: 'SUB',
+    description: 'Monthly pass with bonus gems and premium reward track access.',
+    rewards: { gems: 500, monthlyPass: true },
+    revenueCatEntitlement: 'monthly_vault',
+    revenueCatPackage: '$rc_monthly',
+    appleProductId: 'com.coresurge.monthlyvault',
+    googleProductId: 'com.coresurge.monthlyvault'
+  }
+];
+
 // Pull odds. Apex is rare.
 const PULL_ODDS = {
   standard: 0.78,
@@ -535,37 +586,37 @@ function tourneyExpectedWaveRange(bandId, league) {
 
 const UNLOCK_FAMILIES = {
   critSystems: {
-    id: 'critSystems', name: 'Crit Systems',
+    id: 'critSystems', name: 'Crit Systems', icon: '🎯',
     cost: 2500,
     unlocks: ['critChance', 'critPower'],
     order: 1
   },
   economyExpansion: {
-    id: 'economyExpansion', name: 'Economy Expansion',
+    id: 'economyExpansion', name: 'Economy Expansion', icon: '💰',
     cost: 5000,
     unlocks: ['waveBonus', 'bossBounty'],
     order: 2
   },
   sustainSystems: {
-    id: 'sustainSystems', name: 'Sustain Systems',
+    id: 'sustainSystems', name: 'Sustain Systems', icon: '💚',
     cost: 10000,
     unlocks: ['regen', 'lifesteal'],
     order: 3
   },
   multishotSystems: {
-    id: 'multishotSystems', name: 'Multishot Systems',
+    id: 'multishotSystems', name: 'Multishot Systems', icon: '🔱',
     cost: 25000,
     unlocks: ['multiChance', 'multiPower', 'multiTargets'],
     order: 4
   },
   bounceSystems: {
-    id: 'bounceSystems', name: 'Bounce Systems',
+    id: 'bounceSystems', name: 'Bounce Systems', icon: '⚡',
     cost: 50000,
     unlocks: ['bounceChance', 'bouncePower', 'bounceTargets'],
     order: 5
   },
   comboSystems: {
-    id: 'comboSystems', name: 'Combo Systems',
+    id: 'comboSystems', name: 'Combo Systems', icon: '🔥',
     cost: 100000,
     unlocks: ['comboBonus'],
     order: 6

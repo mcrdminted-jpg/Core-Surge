@@ -776,7 +776,121 @@ function renderMenu() {
   const previewLabel = document.getElementById('menuPreviewLabel');
   if (previewLabel) previewLabel.textContent = `CORE: ${coreNames[previewCore] || 'SENTINEL'}`;
 
+  renderHomePanels();
   renderSubmenu();
+}
+
+function renderHomePanels() {
+  const el = document.getElementById('homePanels');
+  if (!el) return;
+
+  const sel = save.selectedTier;
+  const bestThisTier = save.bestWavePerTier[sel] || 0;
+  const maxTier = highestUnlockedTier();
+  const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
+  const totalSlots = getUnlockedSlots();
+
+  // --- Recent Progress ---
+  const progressPct = Math.min(100, (bestThisTier / 100) * 100);
+  const nextTierReady = bestThisTier >= 100 && sel < MAX_TIER;
+
+  let progressHTML = `
+    <div class="home-panel home-progress">
+      <div class="home-panel-header">
+        <span class="home-panel-icon">📊</span>
+        <span class="home-panel-title">RECENT PROGRESS</span>
+      </div>
+      <div class="home-progress-stats">
+        <div class="home-stat">
+          <div class="home-stat-value">W ${bestThisTier}</div>
+          <div class="home-stat-label">Best T${sel}</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value">${save.totalRuns}</div>
+          <div class="home-stat-label">Total Runs</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value">T${maxTier}</div>
+          <div class="home-stat-label">Max Tier</div>
+        </div>
+      </div>
+      <div class="home-progress-bar-wrap">
+        <div class="home-progress-bar" style="width:${progressPct}%"></div>
+        <div class="home-progress-label">${nextTierReady ? 'T' + (sel + 1) + ' READY' : bestThisTier + ' / 100'}</div>
+      </div>
+    </div>`;
+
+  // --- Tier Milestones Mini ---
+  let claimableCount = 0;
+  let milestonesHTML = '';
+  const showWaves = [25, 50, 100, 200, 500];
+  for (const w of showWaves) {
+    const key = milestoneKey(sel, w);
+    const claimed = save.claimedMilestones[key];
+    const ready = milestoneReady(sel, w) && !claimed;
+    if (ready) claimableCount++;
+    const cls = claimed ? 'claimed' : ready ? 'ready' : 'locked';
+    const icon = claimed ? '✓' : ready ? '!' : w;
+    milestonesHTML += `<div class="home-ms-dot ${cls}">${icon}</div>`;
+  }
+
+  let tiersHTML = `
+    <div class="home-panel home-milestones">
+      <div class="home-panel-header">
+        <span class="home-panel-icon">🎯</span>
+        <span class="home-panel-title">T${sel} MILESTONES</span>
+        ${claimableCount > 0 ? `<span class="home-panel-badge">${claimableCount}</span>` : ''}
+      </div>
+      <div class="home-ms-row">${milestonesHTML}</div>
+      ${claimableCount > 0 ? `<div class="home-ms-hint">Tap Goals to claim rewards</div>` : ''}
+    </div>`;
+
+  // --- Loadout Preview ---
+  let cardsHTML = '';
+  for (let i = 0; i < Math.min(totalSlots, 5); i++) {
+    const cid = save.equippedCards[i];
+    if (cid && CARD_POOL[cid]) {
+      const card = CARD_POOL[cid];
+      const inv = save.cardInventory[cid] || { level: 1 };
+      cardsHTML += `<div class="home-card-slot filled" title="${card.name}">
+        <span class="home-card-icon">${card.icon}</span>
+        <span class="home-card-lvl">${inv.level}</span>
+      </div>`;
+    } else {
+      cardsHTML += `<div class="home-card-slot empty">+</div>`;
+    }
+  }
+
+  let loadoutHTML = `
+    <div class="home-panel home-loadout">
+      <div class="home-panel-header">
+        <span class="home-panel-icon">🃏</span>
+        <span class="home-panel-title">LOADOUT</span>
+        <span class="home-panel-count">${equippedCount}/${totalSlots}</span>
+      </div>
+      <div class="home-card-row">${cardsHTML}</div>
+    </div>`;
+
+  el.innerHTML = progressHTML + tiersHTML + loadoutHTML;
+
+  // Wire milestone panel click to open Goals tab
+  const msPanel = el.querySelector('.home-milestones');
+  if (msPanel) {
+    msPanel.style.cursor = 'pointer';
+    msPanel.addEventListener('click', () => {
+      activeSubmenu = 'milestones';
+      renderSubmenu();
+    });
+  }
+  // Wire loadout panel click to open Cards tab
+  const loPanel = el.querySelector('.home-loadout');
+  if (loPanel) {
+    loPanel.style.cursor = 'pointer';
+    loPanel.addEventListener('click', () => {
+      activeSubmenu = 'cards';
+      renderSubmenu();
+    });
+  }
 }
 
 function renderSubmenu() {
@@ -845,10 +959,10 @@ const FAMILIES_BY_CATEGORY = {
 
 // Subtab metadata — labels that sit under the painted icons
 const RESEARCH_SUBTABS = [
-  { id: 'combat',  label: 'Combat'  },
-  { id: 'defense', label: 'Defense' },
-  { id: 'economy', label: 'Economy' },
-  { id: 'utility', label: 'Utility' }
+  { id: 'combat',  label: 'Combat',  icon: '⚔' },
+  { id: 'defense', label: 'Defense', icon: '🛡' },
+  { id: 'economy', label: 'Economy', icon: '💎' },
+  { id: 'utility', label: 'Utility', icon: '⚙' }
 ];
 
 let activeResearchTab = 'combat';
@@ -870,6 +984,7 @@ function renderLabsTab(c) {
   for (const st of RESEARCH_SUBTABS) {
     const isActive = st.id === activeResearchTab;
     html += `<button class="mor-subtab ${isActive ? 'active' : ''}" data-rtab="${st.id}">
+      <span class="mor-subtab-icon">${st.icon}</span>
       <span class="mor-subtab-label">${st.label}</span>
     </button>`;
   }
@@ -881,8 +996,9 @@ function renderLabsTab(c) {
   for (let i = 0; i < 4; i++) {
     const fid = famIds[i];
     if (!fid || !UNLOCK_FAMILIES[fid]) {
-      html += `<div class="mor-fam mor-fam-empty" aria-hidden="true">
-        <div class="mor-fam-name" style="opacity:0.2">—</div>
+      html += `<div class="mor-fam mor-fam-empty mor-fam-locked">
+        <div class="mor-fam-name">🔒</div>
+        <div class="mor-fam-cost">COMING SOON</div>
       </div>`;
       continue;
     }
@@ -892,6 +1008,7 @@ function renderLabsTab(c) {
     const clsMod = owned ? 'owned' : (can ? '' : 'cant-afford');
     const costText = owned ? '✓ UNLOCKED' : `${formatNum(fam.cost)} ⊙`;
     html += `<button class="mor-fam ${clsMod}" data-mor-fam="${fid}" ${owned || !can ? 'disabled' : ''}>
+      <div class="mor-fam-icon">${fam.icon || '⚙'}</div>
       <div class="mor-fam-name">${fam.name}</div>
       <div class="mor-fam-cost">${costText}</div>
     </button>`;
@@ -1401,6 +1518,35 @@ function renderShopTab(c) {
       </div>
     ` : ''}
 
+    <div class="shop-section-title">Mobile Store</div>
+    <div class="shop-section-sub">${purchasePlatformLabel()} · ${monetizationStatusText()}</div>
+    <div class="mobile-store-controls">
+      <button class="cloud-btn" id="mobileStoreSyncBtn" type="button">${isNativeStoreBuild() ? 'Sync Store Catalog' : 'Prep Native Store'}</button>
+      <button class="cloud-btn cloud-btn-muted" id="mobileStoreRestoreBtn" type="button" ${isNativeStoreBuild() ? '' : 'disabled'}>${isNativeStoreBuild() ? 'Restore Purchases' : 'Native build only'}</button>
+    </div>
+    <div class="mobile-store-grid">
+      ${STORE_PRODUCT_CATALOG.map(product => `
+        <div class="mobile-store-card">
+          <div class="mobile-store-top">
+            <div>
+              <div class="mobile-store-name">${product.title}</div>
+              <div class="mobile-store-rewards">${rewardSummaryForProduct(product)}</div>
+            </div>
+            <div class="mobile-store-badge">${product.badge}</div>
+          </div>
+          <div class="mobile-store-desc">${product.description}</div>
+          <div class="mobile-store-meta">
+            <span>${displayStorePrice(product)}</span>
+            <span>${nativeStoreAvailabilityLabel(product)}</span>
+          </div>
+          ${product.id === 'monthly_vault' && save.monthlyVaultActive ? `<div class="mobile-store-owned">Monthly Vault Active</div>` : ''}
+          <button class="mobile-store-btn" data-store-product="${product.id}" ${canPurchaseStoreProduct(product) ? '' : 'disabled'}>
+            ${storePurchaseButtonLabel(product)}
+          </button>
+        </div>
+      `).join('')}
+    </div>
+
     <div class="shop-section-title">Coming Soon</div>
     <div class="shop-coming">
       <div class="shop-coming-item">
@@ -1478,6 +1624,30 @@ function renderShopTab(c) {
       }
     });
   });
+
+  c.querySelectorAll('.mobile-store-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await beginStorePurchase(btn.dataset.storeProduct);
+    });
+  });
+
+  const mobileStoreSyncBtn = document.getElementById('mobileStoreSyncBtn');
+  if (mobileStoreSyncBtn) {
+    mobileStoreSyncBtn.addEventListener('click', async () => {
+      if (!isNativeStoreBuild()) {
+        showStoreNotice('Use the generated Android or iPhone app shell for real billing. The web preview cannot open App Store or Google Play purchase dialogs.');
+        return;
+      }
+      await refreshStoreCatalog();
+    });
+  }
+
+  const mobileStoreRestoreBtn = document.getElementById('mobileStoreRestoreBtn');
+  if (mobileStoreRestoreBtn) {
+    mobileStoreRestoreBtn.addEventListener('click', async () => {
+      await restoreStorePurchases();
+    });
+  }
 }
 
 // Reveal a pull result as a full-screen overlay
@@ -1666,6 +1836,12 @@ function renderSettingsTab(c) {
     if (typeof renderMenu === 'function') renderMenu();
   });
   profileValidate();
+  if (typeof renderCloudSettingsSection === 'function') {
+    renderCloudSettingsSection(c);
+  }
+  if (typeof renderMonetizationSettingsSection === 'function') {
+    renderMonetizationSettingsSection(c);
+  }
 
   // Theme picker
   const themes = [
@@ -1748,7 +1924,7 @@ function renderSettingsTab(c) {
   // Version text — tap 7 times to unlock dev panel
   const ver = document.createElement('div');
   ver.style.cssText = 'text-align:center;color:var(--muted);font-size:9px;margin-top:12px;line-height:1.5;cursor:pointer;padding:10px;user-select:none';
-  const verDefault = 'Core Surge v0.7.22 · Mockup Overlay · tap 7× for dev tools';
+  const verDefault = 'Core Surge v0.7.23 · Installable App Shell · tap 7x for dev tools';
   ver.textContent = verDefault;
   let tapCount = 0;
   let tapTimer = null;

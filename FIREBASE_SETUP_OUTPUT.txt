@@ -1,0 +1,54 @@
+=== Firebase Setup for Core Surge ===
+
+Project ID: core-surge---tower-defense
+Service Account Email: firebase-adminsdk-fbsvc@core-surge---tower-defense.iam.gserviceaccount.com
+
+✓ Firebase Admin SDK initialized
+
+=== Frontend Configuration ===
+
+Add this to main.js:
+
+const firebaseConfig = {
+  apiKey: "REPLACE_WITH_WEB_API_KEY",
+  projectId: "core-surge---tower-defense",
+  authDomain: "core-surge---tower-defense.firebaseapp.com",
+  databaseURL: "https://core-surge---tower-defense.firebaseio.com",
+  storageBucket: "core-surge---tower-defense.appspot.com",
+  messagingSenderId: "REPLACE_WITH_MESSAGING_SENDER_ID",
+  appId: "REPLACE_WITH_APP_ID"
+};
+
+=== Service Account Credentials ===
+
+For Codex backend deployment:
+- Project ID: core-surge---tower-defense
+- Service Account Email: firebase-adminsdk-fbsvc@core-surge---tower-defense.iam.gserviceaccount.com
+- Private Key ID: e2e9830cd47b728706f41b2dc12527a858b64728
+
+=== Backend Environment Variables ===
+
+FIREBASE_PROJECT_ID=core-surge---tower-defense
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@core-surge---tower-defense.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY_ID=e2e9830cd47b728706f41b2dc12527a858b64728
+
+=== Firestore & Auth Status ===
+
+✓ Service account authenticated
+⏳ Firestore Database: Will be created on first deploy (firebase deploy)
+⏳ Authentication: Will be enabled on first deploy
+⏳ Cloud Functions: Will deploy with firebase CLI
+
+=== Next Steps ===
+
+1. Get Web API Key from Firebase Console:
+   - Go to: https://console.firebase.google.com/project/core-surge---tower-defense/settings/apikeys
+   - Copy the API key value (not the full object)
+   - Replace "REPLACE_WITH_WEB_API_KEY" in the config above
+
+2. Get Messaging Sender ID & App ID from Firebase Console:
+   - Go to: https://console.firebase.google.com/project/core-surge---tower-defense/settings/general
+   - Find "Default GCP resource location" section
+   - Copy messagingSenderId and appId values
+
+3. Then run: cd backend && npm install && firebase deploy

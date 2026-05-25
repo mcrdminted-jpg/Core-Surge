@@ -1,4 +1,4 @@
-# Core Surge — Project Structure (v0.7.14)
+# Core Surge — Project Structure (v0.7.23)
 
 **Core Surge: Endless Tower Defense** — modular file layout so multiple AIs
 can work in parallel without stomping on each other.
@@ -112,3 +112,67 @@ tower-game/
 
 Save key is `tower_save_v7`. All migrations handle missing fields by
 filling defaults. Existing saves load normally through v0.7.x.
+
+## Local verification
+
+This repo now includes lightweight Node scripts with no external packages:
+
+```
+npm run typecheck
+npm run build
+npm start
+```
+
+- `typecheck` parses every game JS file, validates `index.html` asset refs,
+  and verifies the web manifest and icons exist.
+- `build` copies the static app into `dist/` for handoff or deploy packaging.
+- `start` serves the repo locally at `http://127.0.0.1:4173`.
+
+## App shell
+
+- `manifest.webmanifest` enables install prompts and standalone display.
+- `service-worker.js` caches the app shell for repeat-play offline support.
+- `assets/app/` holds install icons for Android and Apple home-screen use.
+
+## Direct Firebase mode
+
+This repo can now connect directly to Firebase Auth + Firestore from the client
+without requiring Cloud Functions first.
+
+- Firebase web SDK scripts load from the CDN in `index.html`
+- `js/cloud.js` handles:
+  - Firebase boot
+  - anonymous guest cloud login
+  - email account creation / sign-in
+  - direct Firestore cloud save sync
+  - local-only fallback when Firebase config is missing
+- The Firebase web config is pasted in-game through Settings and stored locally
+  on the device, so the app can stay deployable even before the final web keys
+  are filled in.
+
+Current blocker for live Firebase sync:
+
+- The project still needs real Firebase web app values for:
+  - `apiKey`
+  - `messagingSenderId`
+  - `appId`
+
+Once those are pasted into the Settings cloud config box, the app can connect
+directly to Firebase on the free Spark path for Auth + Firestore quotas.
+
+## Native mobile lane
+
+The repo is also scaffolded for the App Store and Google Play path:
+
+- `capacitor.config.json` points native builds at `dist/`
+- `package.json` includes Capacitor sync/open scripts
+- `android/` and `ios/` native projects are generated in-repo
+- `js/monetization.js` now calls the RevenueCat Capacitor bridge for native purchase, catalog sync, and restore flows
+- `js/data.js` now carries a starter mobile product catalog
+- `MOBILE_STORE_SETUP.md` documents the Apple + Android + RevenueCat setup
+
+Intended stack:
+
+- iPhone: Apple In-App Purchase through RevenueCat
+- Android: Google Play Billing through RevenueCat
+- Saves/auth: Firebase

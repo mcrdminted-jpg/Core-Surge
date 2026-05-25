@@ -292,13 +292,20 @@
   10. Tournaments fair — bracketed by progression.
   =======================================================================
 -->
-<html lang="en">
+<html lang="en" data-app-shell="v0.7.23">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="Core Surge is a fast mobile-first endless tower defense game built for installable web play on iPhone and Android.">
+<meta name="theme-color" content="#08101c">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Core Surge — v0.7.22</title>
+<meta name="apple-mobile-web-app-title" content="Core Surge">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/cores/core_04_aegis.png">
+<link rel="icon" type="image/svg+xml" href="assets/app/icon.svg">
+<title>Core Surge v0.7.23</title>
 <!-- CSS: modular, split for AI co-work. See /css/*.css.
      theme.css must come first (defines :root vars used by others). -->
 <link rel="stylesheet" href="css/theme.css">
@@ -309,10 +316,20 @@
 <link rel="stylesheet" href="css/profile.css">
 <link rel="stylesheet" href="css/mockup-overlay.css">
 </head>
-</head>
 <body>
 
 <div class="hud" id="hud"></div>
+
+<div class="install-banner hidden" id="installBanner" aria-live="polite">
+  <div class="install-banner-copy">
+    <div class="install-banner-title">Install Core Surge</div>
+    <div class="install-banner-text" id="installBannerText">Add the game to your home screen for full-screen play.</div>
+  </div>
+  <div class="install-banner-actions">
+    <button class="install-banner-btn" id="installBannerBtn" type="button">Install</button>
+    <button class="install-banner-dismiss" id="installDismissBtn" type="button" aria-label="Dismiss install banner">Later</button>
+  </div>
+</div>
 
 <div class="live-stats" id="liveStats"></div>
 
@@ -343,6 +360,9 @@
     </div>
     <button class="start-btn" id="startBtn">Begin Defense</button>
   </div>
+
+  <!-- Home info panels (progress + milestones + loadout preview) -->
+  <div class="home-panels" id="homePanels"></div>
 
   <!-- Home battlefield preview (decorative; shows equipped core + bg) -->
   <div class="menu-preview" id="menuPreview">
@@ -507,6 +527,11 @@
 <script src="js/tournament.js"></script>
 <script src="js/render.js"></script>
 <script src="js/ui.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore-compat.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/monetization.js"></script>
 <script src="js/main.js"></script>
 <script src="js/skins.js"></script>
 <script src="js/profile.js"></script>

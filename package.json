@@ -1,0 +1,26 @@
+{
+  "name": "core-surge",
+  "private": true,
+  "version": "0.7.23",
+  "description": "Core Surge static mobile web game",
+  "scripts": {
+    "typecheck": "node scripts/typecheck.js",
+    "build": "node scripts/build.js",
+    "start": "node scripts/serve.js",
+    "preview": "node scripts/serve.js",
+    "mobile:prep": "node scripts/build.js",
+    "mobile:sync": "npm run mobile:prep && npx cap sync",
+    "mobile:add:ios": "npx cap add ios",
+    "mobile:add:android": "npx cap add android",
+    "mobile:open:ios": "npx cap open ios",
+    "mobile:open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@revenuecat/purchases-capacitor": "^11.2.6",
+    "@revenuecat/purchases-capacitor-ui": "^10.3.1"
+  }
+}

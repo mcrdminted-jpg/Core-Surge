@@ -1,0 +1,48 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "saves",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastSyncAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tournament_brackets",
+      "queryScope": "Collection",
+      "fields": [
+        {
+          "fieldPath": "roundEnds",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "saves",
+      "fieldPath": "lastSyncAt",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "Collection"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "Collection"
+        }
+      ]
+    }
+  ]
+}

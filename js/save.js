@@ -83,6 +83,8 @@ const defaultSave = {
   tournament: null,
   // Stable user-facing name used on leaderboards. Stored separately from save-file.
   playerId: 'You',
+  monthlyVaultActive: false,
+  storeEntitlements: {},
 
   // Skins (v0.7.14+): null = default CSS Core/background, else skin id.
   equippedCoreSkin: null,
@@ -90,6 +92,51 @@ const defaultSave = {
 };
 
 let save;
+
+function cloneDefaultSave() {
+  return JSON.parse(JSON.stringify(defaultSave));
+}
+
+function hydrateSaveState(loaded) {
+  const source = loaded || {};
+  const nextSave = { ...defaultSave, ...source };
+  nextSave.settings = { ...defaultSave.settings, ...(source.settings || {}) };
+  nextSave.devState = { ...defaultSave.devState, ...(source.devState || {}) };
+  nextSave.bestWavePerTier = source.bestWavePerTier || { 1: 0 };
+  nextSave.claimedMilestones = source.claimedMilestones || {};
+  nextSave.unlocks = { ...defaultSave.unlocks, ...(source.unlocks || {}) };
+  nextSave.ranks = { ...defaultSave.ranks };
+  if (source.ranks) {
+    for (const k of Object.keys(defaultSave.ranks)) {
+      if (source.ranks[k]) {
+        nextSave.ranks[k] = { level: source.ranks[k].level || 0 };
+      }
+    }
+  }
+  if (!nextSave.selectedTier || nextSave.selectedTier < 1) nextSave.selectedTier = 1;
+  nextSave.cardInventory = source.cardInventory || {};
+  for (const id of Object.keys(nextSave.cardInventory)) {
+    if (!nextSave.cardInventory[id].copies) nextSave.cardInventory[id].copies = 1;
+  }
+  nextSave.unlockedSlots = Math.max(STARTING_SLOTS, Math.min(MAX_SLOTS, source.unlockedSlots || STARTING_SLOTS));
+  const loadedEquipped = Array.isArray(source.equippedCards) ? source.equippedCards : [];
+  nextSave.equippedCards = [];
+  for (let i = 0; i < nextSave.unlockedSlots; i++) {
+    nextSave.equippedCards.push(loadedEquipped[i] || null);
+  }
+  for (let i = 0; i < nextSave.equippedCards.length; i++) {
+    if (nextSave.equippedCards[i] && !nextSave.cardInventory[nextSave.equippedCards[i]]) {
+      nextSave.equippedCards[i] = null;
+    }
+  }
+  nextSave.tournament = source.tournament || null;
+  nextSave.playerId = source.playerId || source.username || 'You';
+  nextSave.monthlyVaultActive = !!source.monthlyVaultActive;
+  nextSave.storeEntitlements = source.storeEntitlements || {};
+  nextSave.equippedCoreSkin = source.equippedCoreSkin || null;
+  nextSave.equippedBgSkin = source.equippedBgSkin || null;
+  return nextSave;
+}
 
 function loadSave() {
   // v0.7.15 purges all pre-v8 saves. Ranks system replaces labs; the shape
@@ -105,57 +152,31 @@ function loadSave() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const loaded = JSON.parse(raw);
-      save = { ...defaultSave, ...loaded };
-      save.settings = { ...defaultSave.settings, ...(loaded.settings || {}) };
-      save.devState = { ...defaultSave.devState, ...(loaded.devState || {}) };
-      save.bestWavePerTier = loaded.bestWavePerTier || { 1: 0 };
-      save.claimedMilestones = loaded.claimedMilestones || {};
-      // Unlocks + ranks: merge defaults (so new families/stats added later
-      // don't break existing v8 saves)
-      save.unlocks = { ...defaultSave.unlocks, ...(loaded.unlocks || {}) };
-      save.ranks = { ...defaultSave.ranks };
-      if (loaded.ranks) {
-        for (const k of Object.keys(defaultSave.ranks)) {
-          if (loaded.ranks[k]) {
-            save.ranks[k] = { level: loaded.ranks[k].level || 0 };
-          }
-        }
-      }
-      if (!save.selectedTier || save.selectedTier < 1) save.selectedTier = 1;
-      // Cards
-      save.cardInventory = loaded.cardInventory || {};
-      for (const id of Object.keys(save.cardInventory)) {
-        if (!save.cardInventory[id].copies) save.cardInventory[id].copies = 1;
-      }
-      save.unlockedSlots = Math.max(STARTING_SLOTS, Math.min(MAX_SLOTS, loaded.unlockedSlots || STARTING_SLOTS));
-      const loadedEquipped = Array.isArray(loaded.equippedCards) ? loaded.equippedCards : [];
-      save.equippedCards = [];
-      for (let i = 0; i < save.unlockedSlots; i++) {
-        save.equippedCards.push(loadedEquipped[i] || null);
-      }
-      for (let i = 0; i < save.equippedCards.length; i++) {
-        if (save.equippedCards[i] && !save.cardInventory[save.equippedCards[i]]) {
-          save.equippedCards[i] = null;
-        }
-      }
-      // Tournament, playerId, skins
-      save.tournament = loaded.tournament || null;
-      save.playerId = loaded.playerId || 'You';
-      save.equippedCoreSkin = loaded.equippedCoreSkin || null;
-      save.equippedBgSkin = loaded.equippedBgSkin || null;
+      save = hydrateSaveState(loaded);
     } else {
-      save = JSON.parse(JSON.stringify(defaultSave));
+      save = cloneDefaultSave();
     }
   } catch (e) {
     console.error('Save load failed', e);
-    save = JSON.parse(JSON.stringify(defaultSave));
+    save = cloneDefaultSave();
   }
 }
 
 function persistSave() {
   save.lastSaveTime = Date.now();
-  save.version = 6;
+  save.version = 8;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+  if (typeof queueCloudSave === 'function') queueCloudSave('persist');
+}
+
+function replaceSaveState(nextSave, opts) {
+  const options = opts || {};
+  save = hydrateSaveState(nextSave);
+  if (options.persist !== false) persistSave();
+}
+
+function exportSaveData() {
+  return JSON.parse(JSON.stringify(save));
 }
 
 function resetSave() {
@@ -165,11 +186,10 @@ function resetSave() {
   if (game.tickHandle) cancelAnimationFrame(game.tickHandle);
   if (window._autoSaveInterval) clearInterval(window._autoSaveInterval);
   // Blank the save object so any in-flight persistSave writes defaults
-  save = JSON.parse(JSON.stringify(defaultSave));
+  save = cloneDefaultSave();
   // Now remove from storage
   localStorage.removeItem(SAVE_KEY);
   for (const k of DEAD_SAVE_KEYS) localStorage.removeItem(k);
   // Reload after a tick so no racing writes
   setTimeout(() => location.reload(), 50);
 }
-

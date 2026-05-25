@@ -31,6 +31,86 @@
     min-height: 56px;
     position: relative;
   }
+  .install-banner {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    background:
+      radial-gradient(circle at top left, rgba(0, 240, 255, 0.16), transparent 46%),
+      linear-gradient(180deg, rgba(10, 18, 30, 0.96), rgba(7, 11, 19, 0.98));
+    box-shadow: 0 0 calc(var(--glow-on) * 12px) rgba(0, 240, 255, 0.18);
+    backdrop-filter: blur(10px);
+  }
+  .install-banner.hidden { display: none; }
+  .install-banner-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .install-banner-title {
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .install-banner-text {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.4;
+    margin-top: 3px;
+  }
+  .install-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .install-banner-btn,
+  .install-banner-dismiss {
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .install-banner-btn {
+    padding: 10px 14px;
+    border: 1px solid var(--accent);
+    background: linear-gradient(180deg, rgba(0, 240, 255, 0.2), rgba(0, 148, 184, 0.12));
+    color: var(--accent);
+    box-shadow: 0 0 calc(var(--glow-on) * 8px) rgba(0, 240, 255, 0.2);
+  }
+  .install-banner-dismiss {
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+  }
+  .install-banner-btn:active,
+  .install-banner-dismiss:active {
+    transform: scale(0.97);
+  }
+  @media (max-width: 520px) {
+    .install-banner {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .install-banner-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
   /* Legacy classes (still referenced in a few places, kept tiny) */
   .hud-cell { display: flex; flex-direction: column; align-items: center; gap: 0; flex: 1; min-width: 0; }
   .hud-label { color: var(--muted); font-size: 7px; text-transform: uppercase; letter-spacing: 1px; }

@@ -120,3 +120,138 @@
   margin-bottom: 6px;
   opacity: 0.8;
 }
+
+.cloud-status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.cloud-status-label {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cloud-status-text,
+.cloud-status-meta,
+.cloud-config-hint,
+.cloud-auth-copy,
+.cloud-auth-error {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cloud-status-meta {
+  margin-top: 4px;
+}
+
+.cloud-status-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.cloud-status-badge.online {
+  color: #031015;
+  background: var(--accent);
+}
+
+.cloud-status-badge.offline {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cloud-config-input {
+  width: 100%;
+  min-height: 180px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  resize: vertical;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.cloud-btn-row,
+.cloud-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cloud-btn {
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: rgba(0, 240, 255, 0.12);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cloud-btn-muted {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.cloud-btn-danger {
+  border-color: var(--danger);
+  background: rgba(255, 67, 108, 0.12);
+  color: #ff8ca8;
+}
+
+.cloud-auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.cloud-auth-card {
+  width: min(360px, 100%);
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(16, 24, 38, 0.96), rgba(8, 12, 20, 0.98));
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.cloud-auth-title {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.cloud-auth-copy {
+  margin: 8px 0 12px;
+}
+
+.cloud-auth-input {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.cloud-auth-error {
+  min-height: 16px;
+  color: #ff8ca8;
+}

@@ -210,6 +210,12 @@
     transform: translate(-50%, -50%);
     z-index: 5;
     pointer-events: none;
+    overflow: visible;
+  }
+  /* When a skin is active, expand the tower to accommodate 120px skin */
+  .tower[data-core-skin] {
+    width: 120px;
+    height: 120px;
   }
   .tower-base {
     position: absolute; inset: 0;
@@ -351,19 +357,24 @@
     100% { width: 600px; height: 600px; opacity: 0; }
   }
 
-  /* In-run upgrades — tabbed fixed-height panel */
+  /* In-run upgrades — compact tabbed panel */
   .upgrades-wrap {
     background: var(--bg-2);
     border-top: 1px solid var(--accent-dim);
     flex-shrink: 0;
     display: flex; flex-direction: column;
+    max-height: min(140px, 25vh);
+    transition: max-height 0.3s ease;
+  }
+  .upgrades-wrap.expanded {
     max-height: min(320px, 50vh);
   }
   .upgrade-heal-slot {
-    padding: 6px 6px 0 6px;
+    padding: 5px 6px;
     display: flex;
     gap: 6px;
-    align-items: stretch;
+    align-items: center;
+    flex-shrink: 0;
   }
   .upgrade-heal-slot > .upgrade-btn.heal {
     flex: 1;
@@ -396,8 +407,8 @@
   /* Tab bar with colored icons — border-top shows active tab color */
   .upgrade-tabs {
     display: flex;
-    gap: 4px;
-    padding: 8px 6px 0;
+    gap: 3px;
+    padding: 3px 6px 0;
     flex-shrink: 0;
   }
   .upgrade-tab {
@@ -406,19 +417,19 @@
     border: 1px solid var(--accent-dim);
     border-top: 2px solid var(--accent-dim);
     color: var(--muted);
-    padding: 7px 4px;
+    padding: 5px 3px;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    border-radius: 6px 6px 0 0;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
+    border-radius: 4px 4px 0 0;
+    display: flex; align-items: center; justify-content: center; gap: 2px;
     transition: all 0.15s;
   }
   .upgrade-tab:active { transform: scale(0.97); }
-  .upgrade-tab-icon { font-size: 12px; color: var(--tab-color, var(--muted)); }
+  .upgrade-tab-icon { font-size: 11px; color: var(--tab-color, var(--muted)); }
   .upgrade-tab.active {
     color: var(--tab-color, var(--accent));
     background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
@@ -430,12 +441,15 @@
 
   .upgrade-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-    padding: 5px 6px 8px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 4px 6px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+  }
+  .upgrades-wrap.expanded .upgrade-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   /* Upgrade tile: icon left, data right, progress bar under, cost pill at bottom */
@@ -443,23 +457,28 @@
     background: linear-gradient(180deg, rgba(30,36,52,0.85), rgba(22,28,44,0.85));
     border: 1px solid var(--accent-dim);
     border-top: 2px solid var(--upg-color, var(--accent-dim));
-    border-radius: 8px;
-    padding: 6px 6px 5px;
+    border-radius: 6px;
+    padding: 5px 5px 4px;
     color: var(--text);
     font-family: inherit;
     cursor: pointer;
     display: flex; flex-direction: column;
-    gap: 4px;
-    transition: transform 0.1s;
-    min-height: 82px;
+    gap: 3px;
+    transition: all 0.15s ease;
+    min-height: 68px;
     position: relative;
     text-align: left;
   }
   .upgrade-btn:active:not(:disabled) {
-    transform: scale(0.96);
+    transform: scale(0.94);
     background: linear-gradient(180deg, rgba(40,48,68,0.9), rgba(30,36,52,0.9));
+    border-top-color: var(--upg-color, var(--accent));
   }
-  .upgrade-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .upgrade-btn:hover:not(:disabled) {
+    border-color: var(--upg-color, var(--accent));
+    background: linear-gradient(180deg, rgba(35,42,60,0.9), rgba(27,34,52,0.9));
+  }
   .upgrade-btn.affordable {
     box-shadow: 0 0 calc(var(--glow-on) * 5px) var(--upg-color, var(--accent));
   }
@@ -471,14 +490,18 @@
     flex: 1;
   }
   .upgrade-icon {
-    width: 26px; height: 26px;
-    border-radius: 6px;
-    border: 1px solid currentColor;
-    background: color-mix(in srgb, currentColor 15%, transparent);
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    border: 2px solid currentColor;
+    background: color-mix(in srgb, currentColor 18%, transparent);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
+    font-size: 14px;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 3px currentColor);
+    filter: drop-shadow(0 0 4px currentColor);
+    transition: transform 0.2s ease;
+  }
+  .upgrade-btn:hover:not(:disabled) .upgrade-icon {
+    transform: scale(1.08);
   }
   /* Fallback for browsers without color-mix — base translucent panel */
   @supports not (background: color-mix(in srgb, red, blue)) {
@@ -491,29 +514,26 @@
     gap: 1px;
   }
   .upgrade-name {
-    font-weight: bold;
-    font-size: 9px;
+    font-weight: 600;
+    font-size: 8px;
     color: var(--text);
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
   }
   .upgrade-delta {
     color: var(--upg-color, var(--accent));
-    font-size: 10px;
-    font-weight: bold;
-    line-height: 1.15;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.1;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .upgrade-level {
     color: var(--muted);
-    font-size: 8px;
-    line-height: 1.1;
-    letter-spacing: 0.3px;
+    font-size: 7px;
+    line-height: 1;
+    letter-spacing: 0.2px;
   }
   .upgrade-prog {
     height: 3px;
@@ -529,18 +549,16 @@
   }
 
   .upgrade-cost {
-    background: linear-gradient(180deg, rgba(255,204,0,0.12), rgba(255,170,68,0.08));
-    border: 1px solid rgba(255,204,0,0.4);
-    border-radius: 999px;
-    color: var(--gold);
-    font-size: 10px;
-    font-weight: bold;
+    background: linear-gradient(180deg, rgba(102,255,102,0.14), rgba(68,170,68,0.09));
+    border: 1px solid rgba(102,255,102,0.5);
+    border-radius: 4px;
+    color: var(--good);
+    font-size: 9px;
+    font-weight: 700;
     text-align: center;
-    padding: 2px 6px;
-    display: flex; align-items: center; justify-content: center; gap: 3px;
+    padding: 2px 5px;
+    display: flex; align-items: center; justify-content: center; gap: 2px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .cost-coin {
     color: var(--gold);

@@ -36,7 +36,11 @@ function ensureUsername() {
   if (typeof save === 'undefined') return;
   if (!save.username || !validateUsername(save.username).ok) {
     save.username = generateRandomUsername();
+    save.playerId = save.username;
     save.usernameLastChanged = Date.now();
+    if (typeof persistSave === 'function') persistSave();
+  } else if (!save.playerId || save.playerId === 'You') {
+    save.playerId = save.username;
     if (typeof persistSave === 'function') persistSave();
   }
 }
@@ -47,6 +51,7 @@ function setUsername(newName) {
   if (!v.ok) return v;
   if (save.username === v.value) return { ok: true, unchanged: true };
   save.username = v.value;
+  save.playerId = v.value;
   save.usernameLastChanged = Date.now();
   if (typeof persistSave === 'function') persistSave();
   return { ok: true };
