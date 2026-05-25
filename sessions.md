@@ -353,6 +353,29 @@ Codex:
 - Because of that stale source link, Pages is still old even after the build configuration fix
 - For phone testing, use the Worker URL until the Pages project is recreated or reconnected to the renamed repo
 
+## 2026-05-25 - Codex - Create Fresh Cloudflare Pages Project For Core-Surge
+
+**Status:** Complete
+
+**Files modified:**
+- sessions.md
+
+**What was done:**
+- Created a fresh Cloudflare Pages project from the canonical GitHub repo `mcrdminted-jpg/Core-Surge`
+- Set the new Pages project name to `core-surge`
+- Configured Pages build settings to use `npm run build` with output directory `dist`
+- Deployed the fresh Pages project and verified the new live hostname
+
+**Verification:**
+- Browser-loaded `https://core-surge.pages.dev/` and confirmed the playable Core Surge UI renders
+- Browser-loaded `https://core-surge.pages.dev/manifest.webmanifest`
+- Browser-loaded `https://core-surge.pages.dev/service-worker.js`
+- Confirmed Cloudflare reported `Success! Your project is deployed` during the new Pages setup flow
+
+**Blockers:**
+- The old Pages project `tower-game-3k2.pages.dev` remains stale and is still wired to the old repo path
+- Future Pages testing should use `https://core-surge.pages.dev/`
+
 ## 2026-05-24 - Codex - Git Account Rule Recorded
 
 **Status:** Complete
