@@ -154,7 +154,7 @@ async function runTests() {
 
   const dmgDef = RANK_DEFS.damage;
   assert(dmgDef.cost0 === 10, `Damage cost0 = 10 (got ${dmgDef.cost0})`);
-  assert(dmgDef.costMul === 1.12, `Damage costMul = 1.12 (got ${dmgDef.costMul})`);
+  assert(dmgDef.costMul === 1.16, `Damage costMul = 1.16 (got ${dmgDef.costMul})`);
 
   const cost0 = rankCost('damage', 0);
   const cost10 = rankCost('damage', 10);
@@ -163,8 +163,8 @@ async function runTests() {
   assert(cost10 > cost0, `Rank 10 costs more than rank 0 (${cost10} > ${cost0})`);
   assert(cost50 > cost10, `Rank 50 costs more than rank 10 (${cost50} > ${cost10})`);
 
-  const expectedCost10 = Math.floor(10 * Math.pow(1.12, 10));
-  assert(cost10 === expectedCost10, `Rank 10 cost matches formula: floor(10 * 1.12^10) = ${expectedCost10} (got ${cost10})`);
+  const expectedCost10 = Math.floor(10 * Math.pow(1.16, 10));
+  assert(cost10 === expectedCost10, `Rank 10 cost matches formula: floor(10 * 1.16^10) = ${expectedCost10} (got ${cost10})`);
 
   assert(rankCost('damage', 400) === Infinity, 'Cost at maxRank = Infinity');
 

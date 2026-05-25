@@ -481,22 +481,42 @@ function enemyHpForWave(wave) {
 }
 function enemySpeedForWave(wave) { return 35 + Math.min(50, wave * 0.25); }
 function cashRewardForWave(wave) {
-  // Base cash 5 so first kill buys the first Damage upgrade (cost0 = 5).
-  return Math.floor(5 * cashWaveMul(wave) * cashTierMul(game.tier));
+  const baseCash = (game.tier === 1 && wave <= 10) ? 4 : 5;
+  return Math.floor(baseCash * cashWaveMul(wave) * cashTierMul(game.tier));
 }
 function damageToTowerForWave(wave) {
   return Math.floor(3 * dmgWaveMul(wave) * dmgTierMul(game.tier));
 }
+function hasSpreadUnlocks() {
+  return !!(save && save.unlocks && (save.unlocks.multishotSystems || save.unlocks.bounceSystems));
+}
+function enemiesPerWaveForWave(wave) {
+  if (wave % 25 === 0 && wave > 0) return 1;
+  if (game.tier === 1) {
+    if (wave <= 5) return 7;
+    if (wave <= 10) return 8;
+    if (wave <= 20) return 9;
+  }
+  if (game.tier === 2 && wave <= 10) return 9;
+  return 10;
+}
 function spawnIntervalForWave(wave) {
-  if (wave <= 30) return Math.max(500, 1000 - wave * 12);
-  if (wave <= 120) return Math.max(320, 700 - (wave - 30) * 4);
+  if (game.tier === 1) {
+    if (wave <= 10) return Math.max(980, 1500 - wave * 45);
+    if (wave <= 25) return Math.max(760, 1120 - (wave - 10) * 18);
+  }
+  if (!hasSpreadUnlocks() && game.tier <= 2 && wave <= 12) {
+    return Math.max(840, 1260 - wave * 28);
+  }
+  if (wave <= 30) return Math.max(520, 1020 - wave * 10);
+  if (wave <= 120) return Math.max(320, 710 - (wave - 30) * 4);
   return 280;
 }
 // End-run coin reward: sublinear in wave, linear in tier, so deep runs have diminishing returns.
 function coinRewardForRun(maxWave, totalCash) {
-  const wavePart = Math.pow(maxWave, 1.35) * Math.pow(1.20, game.tier - 1);
-  const cashPart = Math.pow(Math.max(1, totalCash), 0.60) / 40;
-  const bossPart = game.bossesDefeated * 8 * Math.pow(1.10, game.tier - 1);
+  const wavePart = Math.pow(maxWave, 1.24) * Math.pow(1.16, game.tier - 1);
+  const cashPart = Math.pow(Math.max(1, totalCash), 0.58) / 55;
+  const bossPart = game.bossesDefeated * 6 * Math.pow(1.08, game.tier - 1);
   const coinBonus = (game.upgrades && game.upgrades.coinBonus) ? getCoinBonusMul() : 1;
   const cardCoinGain = 1 + getCardBucket('coinGain');
   const permCoinMul = 1 + getCoinMultiplierBonus();
@@ -516,7 +536,7 @@ const ENEMY_TYPES = {
   shooter:   { name: 'Shooter',   color: 'var(--cyan2)',  hpMul: 1.0, speedMul: 0.8,  dmgMul: 0.5, meleeIntervalMul: 1.0,  unlockTier: 4,  desc: 'Stops & shoots' },
   elite:     { name: 'Elite',     color: 'var(--text)',   hpMul: 5.0, speedMul: 0.7,  dmgMul: 2.0, meleeIntervalMul: 1.1,  unlockTier: 5,  desc: 'Rare, dangerous' },
   augmenter: { name: 'Augmenter', color: 'var(--good)',   hpMul: 2.0, speedMul: 0.6,  dmgMul: 0.5, meleeIntervalMul: 1.2,  unlockTier: 10, desc: 'Buffs nearby +30%' },
-  boss:      { name: 'Boss',      color: 'var(--gold)',   hpMul: 50,  speedMul: 0.3,  dmgMul: 3.0, meleeIntervalMul: 1.8,  unlockTier: 1,  desc: 'Every 25 waves' }
+  boss:      { name: 'Boss',      color: 'var(--gold)',   hpMul: 50,  speedMul: 0.55, dmgMul: 3.0, meleeIntervalMul: 1.8,  unlockTier: 1,  desc: 'Every 25 waves' }
 };
 
 // ============================================================
@@ -527,7 +547,7 @@ function startBattle(startingWave) {
   game.wave = startingWave || 1;
   game.enemiesKilledInWave = 0;
   game.bossWave = (game.wave % 25 === 0) && game.wave > 0;
-  game.enemiesPerWave = game.bossWave ? 1 : 10;
+  game.enemiesPerWave = enemiesPerWaveForWave(game.wave);
   game.cash = 0;
   game.enemies = [];
   game.projectiles = [];
@@ -1188,9 +1208,10 @@ function advanceWave() {
   game.wave++;
   game.enemiesKilledInWave = 0;
   game.bossWave = game.wave % 25 === 0;
-  game.enemiesPerWave = game.bossWave ? 1 : 10;
+  game.enemiesPerWave = enemiesPerWaveForWave(game.wave);
   game.bossSpawned = false;
-  const bonus = Math.floor(cashRewardForWave(game.wave) * 5 * getCashMul() * getWaveBonusMul());
+  const bonusMul = (game.tier === 1 && game.wave <= 10) ? 4 : 5;
+  const bonus = Math.floor(cashRewardForWave(game.wave) * bonusMul * getCashMul() * getWaveBonusMul());
   game.cash += bonus;
   game.cashEarnedThisRun += bonus;
   if (game.bossWave) showWaveBanner('BOSS ' + game.wave, true);
@@ -1229,7 +1250,7 @@ function spawnBoss() {
   const w = game.bfRect.width;
   const t = ENEMY_TYPES.boss;
   game.enemies.push({
-    x: w / 2, y: -30,
+    x: w / 2, y: -10,
     type: 'boss',
     hp: enemyHpForWave(game.wave) * t.hpMul,
     hpMax: enemyHpForWave(game.wave) * t.hpMul,
@@ -1247,4 +1268,3 @@ function bossClearEffect(x, y) {
   game.bf.appendChild(el);
   setTimeout(() => el.remove(), 600);
 }
-

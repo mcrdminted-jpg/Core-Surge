@@ -94,9 +94,9 @@ const orbState = {
 };
 
 function resetOrbStateForRun() {
-  // When a run starts, schedule first orb at 2 min real-time from now
+  // Show the first orb early enough that short tester runs still see it.
   orbState.lastSpawnTime = performance.now();
-  orbState.nextSpawnDelay = 2 * 60 * 1000; // 2 minutes
+  orbState.nextSpawnDelay = 35 * 1000; // 35 seconds
   if (orbState.currentOrb) {
     orbState.currentOrb.remove();
     orbState.currentOrb = null;
@@ -138,7 +138,7 @@ function updateOrbSystem() {
           orbState.currentOrb = null;
           // Schedule next
           orbState.lastSpawnTime = performance.now();
-          orbState.nextSpawnDelay = (6 + Math.random() * 2) * 60 * 1000; // 6-8 min
+          orbState.nextSpawnDelay = (3.5 + Math.random() * 1.5) * 60 * 1000; // 3.5-5 min
         }
       }, 400);
     }
@@ -180,7 +180,7 @@ function onOrbTapped(ev) {
   orbState.currentOrb = null;
   // Schedule next orb
   orbState.lastSpawnTime = performance.now();
-  orbState.nextSpawnDelay = (6 + Math.random() * 2) * 60 * 1000;
+  orbState.nextSpawnDelay = (3.5 + Math.random() * 1.5) * 60 * 1000;
   // Spawn ad-bonus pill near orb location
   spawnAdPill(relTop);
 }

@@ -634,37 +634,37 @@ const RANK_DEFS = {
   damage: {
     id: 'damage', name: 'Damage', family: null, startsUnlocked: true,
     base: 5, flatPerRank: 1, maxRank: 400,
-    cost0: 10, costMul: 1.12,
+    cost0: 10, costMul: 1.16,
     desc: '+1 damage per rank'
   },
   fireRate: {
     id: 'fireRate', name: 'Fire Rate', family: null, startsUnlocked: true,
     base: 1.0, flatPerRank: 0.02, maxRank: 250,
-    cost0: 20, costMul: 1.13,
+    cost0: 22, costMul: 1.16,
     desc: '+0.02 shots/sec per rank'
   },
   coreHealth: {
     id: 'coreHealth', name: 'Core Integrity', family: null, startsUnlocked: true,
     base: 100, flatPerRank: 10, maxRank: 400,
-    cost0: 12, costMul: 1.11,
+    cost0: 14, costMul: 1.15,
     desc: '+10 max HP per rank'
   },
   armor: {
     id: 'armor', name: 'Armor', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 0.005, maxRank: 150,
-    cost0: 40, costMul: 1.14,
+    cost0: 48, costMul: 1.17,
     desc: '+0.5% damage reduction per rank (cap 75%)'
   },
   range: {
     id: 'range', name: 'Range', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 1, maxRank: 100,
-    cost0: 25, costMul: 1.14,
+    cost0: 28, costMul: 1.17,
     desc: '+1 range level per rank'
   },
   cashBonus: {
     id: 'cashBonus', name: 'Cash Bonus', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 0.02, maxRank: 150,
-    cost0: 18, costMul: 1.12,
+    cost0: 36, costMul: 1.20,
     desc: '+2% cash per kill per rank'
   },
 

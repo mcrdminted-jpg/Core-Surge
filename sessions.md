@@ -454,6 +454,37 @@ Codex:
 - True cloud save is still blocked until the real Firebase web app values are filled into `js/firebase-public-config.js`
 - Old stale host `tower-game-3k2.pages.dev` should still be ignored in favor of `https://core-surge.pages.dev/`
 
+## 2026-05-25 - Codex - v0.7.26 Early Game Balance And Pacing Pass
+
+**Status:** Complete
+
+**Files modified:**
+- js/data.js
+- js/game.js
+- js/main.js
+- package.json
+- scripts/test.js
+- sessions.md
+
+**What was done:**
+- Re-tuned starter rank progression so permanent upgrades do not snowball as quickly in Tier 1 and Tier 2
+- Raised the cost growth on early always-unlocked ranks, with the strongest clamp on `cashBonus`
+- Slowed early Tier 1 and Tier 2 spawn pacing while the player still has no spread unlocks
+- Reduced early wave counts slightly so the first runs are less of a spawn wall
+- Reduced end-run coin reward scaling so rank progression stretches further across the tier ladder
+- Reduced early wave cash slightly and trimmed wave-start cash bursts in early Tier 1
+- Increased boss move speed and spawned bosses slightly closer so they enter tower range faster
+- Moved the gem orb schedule earlier in a run and shortened follow-up orb delays so testers see gem feedback sooner
+- Bumped the game version to `0.7.26`
+
+**Verification:**
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+- `npm.cmd run test` passed with `237 passed, 0 failed`
+
+**Blockers:**
+- This is a first balance pass, not a final economy solve. Tester feedback should drive the next tuning round on Tier 1-3 progression and coin flow.
+
 ## 2026-05-24 - Codex - Git Account Rule Recorded
 
 **Status:** Complete
