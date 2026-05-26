@@ -423,11 +423,7 @@
     border-top: 1px solid var(--accent-dim);
     flex-shrink: 0;
     display: flex; flex-direction: column;
-    max-height: min(260px, 38vh);
     transition: max-height 0.3s ease;
-  }
-  .upgrades-wrap.expanded {
-    max-height: min(320px, 50vh);
   }
   .upgrade-heal-slot {
     padding: 3px 6px;
@@ -467,8 +463,8 @@
   /* Tab bar with colored icons — border-top shows active tab color */
   .upgrade-tabs {
     display: flex;
-    gap: 3px;
-    padding: 3px 6px 0;
+    gap: 4px;
+    padding: 4px 6px 0;
     flex-shrink: 0;
   }
   .upgrade-tab {
@@ -504,7 +500,8 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
     padding: 4px 6px;
-    flex: 1;
+    /* No flex:1 — only as tall as content needs, max 3 rows then scroll */
+    max-height: calc(3 * 72px + 2 * 4px + 8px); /* 3 rows + 2 gaps + padding */
     min-height: 0;
     overflow-y: auto;
   }
