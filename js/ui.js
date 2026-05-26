@@ -631,20 +631,6 @@ function renderHud() {
         <span class="hud-end-icon">✕</span>
         <span class="hud-end-label">END</span>
       </button>
-      <div class="hud-resource-card hud-coins-card" id="hudCoinsCard">
-        <div class="hud-resource-icon">⊙</div>
-        <div class="hud-resource-stack">
-          <div class="hud-resource-label">SCRAP</div>
-          <div class="hud-resource-value" id="hudCoinsValue">${formatNum(save.coins)}</div>
-        </div>
-      </div>
-      <div class="hud-resource-card hud-cash-card" id="hudCashCard">
-        <div class="hud-resource-icon">$</div>
-        <div class="hud-resource-stack">
-          <div class="hud-resource-label">CASH</div>
-          <div class="hud-resource-value" id="hudCashValue">${formatNum(game.cash)}</div>
-        </div>
-      </div>
       <div class="hud-battle-info" id="hudBattleInfo">
         <span class="hud-bi-item">T${game.tier}</span>
         <span class="hud-bi-sep">·</span>
