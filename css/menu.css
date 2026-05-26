@@ -2893,3 +2893,249 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   right: 4px;
   font-size: 10px;
 }
+ackgrounds/bg_03_organic.png"); }
+body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../assets/backgrounds/bg_04_steel.png"); }
+
+/* ==================== LOADOUT SUB-TABS (v0.8) ==================== */
+.loadout-subtab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+.loadout-subtab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 10px 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+.loadout-subtab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ==================== HERO SYSTEM UI (v0.8) ==================== */
+.hero-core-section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.hero-core-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hero-core-icon { font-size: 24px; }
+.hero-core-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.hero-core-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.hero-core-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+}
+.hero-core-stat span:last-child { color: #fff; font-weight: 600; }
+.hero-core-upgrade {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.hero-core-upgrade.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.hero-core-maxed {
+  text-align: center;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 13px;
+}
+
+/* Garrison section */
+.hero-garrison-section { margin-bottom: 16px; }
+.hero-garrison-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 8px;
+}
+.hero-garrison-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hero-garrison-slot {
+  width: 80px;
+  min-height: 90px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  position: relative;
+}
+.hero-garrison-slot.empty {
+  border: 2px dashed rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.02);
+}
+.hero-garrison-slot.filled {
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+}
+.hero-garrison-slot.ability-active {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(255,200,50,0.3);
+}
+.hgs-icon { font-size: 22px; margin-bottom: 2px; }
+.hgs-name { font-size: 9px; font-weight: 600; color: #fff; text-align: center; }
+.hgs-level { font-size: 8px; color: rgba(255,255,255,0.5); }
+.hgs-cooldown { font-size: 9px; color: var(--danger); font-weight: 600; margin-top: 2px; }
+.hgs-activate {
+  font-size: 8px;
+  padding: 2px 6px;
+  margin-top: 3px;
+  background: var(--gold);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hgs-remove {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+.hgs-empty-plus {
+  font-size: 22px;
+  color: rgba(255,255,255,0.15);
+}
+
+/* Hero roster */
+.hero-roster-section { margin-bottom: 16px; }
+.hero-roster-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 8px;
+}
+.hero-roster { display: flex; flex-direction: column; gap: 6px; }
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+.hero-card.locked { opacity: 0.4; }
+.hero-card.garrisoned {
+  border-color: var(--accent);
+  background: rgba(100,140,255,0.06);
+}
+.hc-icon { font-size: 28px; flex-shrink: 0; width: 36px; text-align: center; }
+.hc-info { flex: 1; min-width: 0; }
+.hc-name { font-size: 13px; font-weight: 700; color: #fff; }
+.hc-cat { font-size: 10px; font-weight: 600; margin-left: 6px; }
+.hc-stat { font-size: 10px; color: rgba(255,255,255,0.5); }
+.hc-passive { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+.hc-level { font-size: 10px; color: var(--cyan2); margin-top: 2px; }
+.hc-lock-reason { font-size: 10px; color: rgba(255,255,255,0.4); }
+.hc-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.hc-btn-level, .hc-btn-garrison {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.hc-btn-level {
+  background: var(--cyan2);
+  color: #000;
+}
+.hc-btn-garrison {
+  background: var(--accent);
+  color: #fff;
+}
+.hc-btn-level.disabled, .hc-btn-garrison.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.hc-equipped-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  padding: 4px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Manual store */
+.hero-store-section { margin-bottom: 20px; }
+.hero-store-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 8px;
+}
+.hero-store-packs { display: flex; gap: 8px; }
+.hero-store-pack {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.hero-store-pack.disabled { opacity: 0.3; pointer-events: none; }
+.hsp-name { font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+.hsp-cost { font-size: 10px; color: var(--gold); }

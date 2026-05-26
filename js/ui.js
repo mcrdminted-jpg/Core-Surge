@@ -1621,7 +1621,7 @@ function renderSubmenu() {
   const titles = {
     labs:       { t: 'RESEARCH',   s: 'SPEND SCRAP · UPGRADE YOUR CORE · GET FURTHER' },
     milestones: { t: 'GOALS',      s: 'EARN REWARDS · GET STRONGER' },
-    cards:      { t: 'LOADOUT',    s: 'CARDS' },
+    cards:      { t: 'LOADOUT',    s: '' },
     shop:       { t: 'STORE',      s: 'GEMS · SCRAP · BOOSTERS' },
     skins:      { t: 'SKINS',      s: 'CUSTOMIZE YOUR EXPERIENCE' },
     tournament: { t: 'TOURNAMENT', s: 'COMPETE · RANK UP · EARN REWARDS' },
@@ -1638,7 +1638,7 @@ function renderSubmenu() {
 
   if (activeSubmenu === 'labs')            renderLabsTab(inner);
   else if (activeSubmenu === 'milestones') renderMilestonesTab(inner);
-  else if (activeSubmenu === 'cards')      renderCardsTab(inner);
+  else if (activeSubmenu === 'cards')      renderLoadoutTab(inner);
   else if (activeSubmenu === 'shop')       renderShopTab(inner);
   else if (activeSubmenu === 'skins')      renderSkinsTab(inner);
   else if (activeSubmenu === 'tournament') renderTournamentTab(inner);
@@ -2068,6 +2068,9 @@ function renderMilestonesTab(c) {
   });
 }
 
+// Loadout sub-tab state: 'cards' or 'heroes'
+let loadoutSubTab = 'cards';
+
 // State for the cards tab selection flow.
 // When user taps an empty slot, we store the slot index here and let
 // them tap an inventory card to fill it.
@@ -2369,6 +2372,197 @@ function showCardDetail(cardId) {
     if (e.target === overlay || e.target.classList.contains('cd-close')) {
       overlay.remove();
     }
+  });
+}
+
+// ============================================================
+// LOADOUT TAB — wraps Cards and Heroes with sub-tab switcher
+// ============================================================
+function renderLoadoutTab(c) {
+  // Sub-tab bar
+  const tabBar = document.createElement('div');
+  tabBar.className = 'loadout-subtab-bar';
+  tabBar.innerHTML = `
+    <button class="loadout-subtab ${loadoutSubTab === 'cards' ? 'active' : ''}" data-ltab="cards">CARDS</button>
+    <button class="loadout-subtab ${loadoutSubTab === 'heroes' ? 'active' : ''}" data-ltab="heroes">HEROES</button>
+  `;
+  c.appendChild(tabBar);
+  tabBar.querySelectorAll('.loadout-subtab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      loadoutSubTab = this.getAttribute('data-ltab');
+      renderSubmenu();
+    });
+  });
+
+  const content = document.createElement('div');
+  c.appendChild(content);
+  if (loadoutSubTab === 'cards') {
+    renderCardsTab(content);
+  } else {
+    renderHeroesTab(content);
+  }
+}
+
+// ============================================================
+// HEROES TAB — hero roster, garrison, core upgrade, leveling
+// ============================================================
+function renderHeroesTab(c) {
+  const coreLevel = save.coreLevel || 1;
+  const maxSlots = coreLevel;
+  const garrison = save.garrisonSlots || [];
+  const unlocked = save.heroesUnlocked || [];
+  const manuals = save.trainingManuals || 0;
+  const coreMul = coreMultiplier(coreLevel);
+  const nextCoreCost = coreUpgradeCost(coreLevel);
+  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
+
+  // --- Core Upgrade Section ---
+  let html = `
+    <div class="hero-core-section">
+      <div class="hero-core-header">
+        <span class="hero-core-icon">&#9883;</span>
+        <span class="hero-core-title">CORE LEVEL ${coreLevel}</span>
+      </div>
+      <div class="hero-core-stats">
+        <div class="hero-core-stat"><span>Garrison Slots</span><span>${garrison.length} / ${maxSlots}</span></div>
+        <div class="hero-core-stat"><span>Global Multiplier</span><span>${coreMul.toFixed(2)}x</span></div>
+        <div class="hero-core-stat"><span>Training Manuals</span><span style="color:var(--cyan2)">${manuals}</span></div>
+      </div>
+      ${coreLevel < CORE_UPGRADE.maxLevel ? `
+        <button class="hero-core-upgrade ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">
+          UPGRADE CORE &rarr; Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} scrap
+        </button>
+      ` : '<div class="hero-core-maxed">CORE MAXED</div>'}
+    </div>
+  `;
+
+  // --- Garrison Slots Visual ---
+  html += '<div class="hero-garrison-section"><div class="hero-garrison-title">GARRISON</div><div class="hero-garrison-slots">';
+  for (let i = 0; i < maxSlots; i++) {
+    const hid = garrison[i] || null;
+    if (hid && HERO_DEFS[hid]) {
+      const def = HERO_DEFS[hid];
+      const heroData = save.heroes[hid] || { level: 1 };
+      const passiveMul = heroPassiveMultiplier(heroData.level);
+      const isActive = isHeroAbilityActive(hid);
+      const cdRemain = getHeroAbilityCooldownRemaining(hid);
+      const cat = HERO_CATEGORIES[def.category];
+      html += `
+        <div class="hero-garrison-slot filled ${isActive ? 'ability-active' : ''}" data-hero="${hid}">
+          <div class="hgs-icon">${def.icon}</div>
+          <div class="hgs-name">${def.name}</div>
+          <div class="hgs-level">Lv${heroData.level} &middot; ${passiveMul.toFixed(1)}x</div>
+          ${cdRemain > 0
+            ? `<div class="hgs-cooldown">${Math.ceil(cdRemain / 1000)}s</div>`
+            : `<button class="hgs-activate" data-activate="${hid}">&#9889; ACTIVATE</button>`}
+          <button class="hgs-remove" data-ungarrison="${hid}">&times;</button>
+        </div>`;
+    } else {
+      html += `<div class="hero-garrison-slot empty"><div class="hgs-empty-plus">+</div></div>`;
+    }
+  }
+  html += '</div></div>';
+
+  // --- Hero Roster ---
+  html += '<div class="hero-roster-section"><div class="hero-roster-title">ALL HEROES</div><div class="hero-roster">';
+  const sortedHeroes = Object.values(HERO_DEFS).sort(function(a, b) { return a.order - b.order; });
+  for (let i = 0; i < sortedHeroes.length; i++) {
+    const def = sortedHeroes[i];
+    const isUnlocked = unlocked.indexOf(def.id) !== -1;
+    const isGarr = isHeroGarrisoned(def.id);
+    const heroData = save.heroes[def.id] || { level: 1 };
+    const passiveMul = isUnlocked ? heroPassiveMultiplier(heroData.level) : 0;
+    const cat = HERO_CATEGORIES[def.category];
+    const manualCost = isUnlocked ? heroManualCost(heroData.level) : 0;
+    const canLevel = isUnlocked && manuals >= manualCost;
+    const canGarrison = isUnlocked && !isGarr && garrison.length < maxSlots;
+    const rankDef = typeof RANK_DEFS !== 'undefined' ? RANK_DEFS[def.stat] : null;
+    const statName = rankDef ? rankDef.name : def.stat;
+    const catLabel = def.category.charAt(0).toUpperCase() + def.category.slice(1);
+    const catColor = def.category === 'combat' ? 'var(--danger)' : def.category === 'economy' ? 'var(--gold)' : 'var(--good)';
+
+    if (!isUnlocked) {
+      // Locked hero
+      let lockReason = 'Tier ' + def.unlockTier;
+      if (def.family) lockReason += ' + ' + (UNLOCK_FAMILIES[def.family] ? UNLOCK_FAMILIES[def.family].name : def.family);
+      html += `
+        <div class="hero-card locked">
+          <div class="hc-icon">?</div>
+          <div class="hc-info">
+            <div class="hc-name">${def.name}</div>
+            <div class="hc-lock-reason">${lockReason}</div>
+          </div>
+        </div>`;
+    } else {
+      html += `
+        <div class="hero-card unlocked ${isGarr ? 'garrisoned' : ''}">
+          <div class="hc-icon">${def.icon}</div>
+          <div class="hc-info">
+            <div class="hc-name">${def.name} <span class="hc-cat" style="color:${catColor}">${catLabel}</span></div>
+            <div class="hc-stat">Boosts: ${statName}</div>
+            <div class="hc-passive">Passive: ${passiveMul.toFixed(1)}x &middot; Active: ${(passiveMul * cat.activeMul).toFixed(1)}x for ${cat.activeDuration / 1000}s</div>
+            <div class="hc-level">Lv${heroData.level} &middot; Next: ${manualCost} manuals</div>
+          </div>
+          <div class="hc-actions">
+            <button class="hc-btn-level ${canLevel ? '' : 'disabled'}" data-levelup="${def.id}">TRAIN</button>
+            ${!isGarr ? `<button class="hc-btn-garrison ${canGarrison ? '' : 'disabled'}" data-garrison="${def.id}">EQUIP</button>` : '<span class="hc-equipped-badge">EQUIPPED</span>'}
+          </div>
+        </div>`;
+    }
+  }
+  html += '</div></div>';
+
+  // --- Manual Store ---
+  html += '<div class="hero-store-section"><div class="hero-store-title">MANUAL STORE</div><div class="hero-store-packs">';
+  for (let i = 0; i < MANUAL_STORE.length; i++) {
+    const pack = MANUAL_STORE[i];
+    const canBuy = save.gems >= pack.gemCost;
+    html += `
+      <button class="hero-store-pack ${canBuy ? '' : 'disabled'}" data-buypack="${pack.id}">
+        <div class="hsp-name">${pack.name}</div>
+        <div class="hsp-cost">${pack.gemCost} gems</div>
+      </button>`;
+  }
+  html += '</div></div>';
+
+  c.innerHTML = html;
+
+  // --- Wire Events ---
+  const btnCore = c.querySelector('#btnCoreUpgrade');
+  if (btnCore) btnCore.addEventListener('click', function() {
+    if (purchaseCoreUpgrade()) renderSubmenu();
+  });
+  c.querySelectorAll('[data-activate]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      activateHeroAbility(this.getAttribute('data-activate'));
+      renderSubmenu();
+    });
+  });
+  c.querySelectorAll('[data-ungarrison]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      ungarrisonHero(this.getAttribute('data-ungarrison'));
+      renderSubmenu();
+    });
+  });
+  c.querySelectorAll('[data-levelup]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (levelUpHero(this.getAttribute('data-levelup'))) renderSubmenu();
+    });
+  });
+  c.querySelectorAll('[data-garrison]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (garrisonHero(this.getAttribute('data-garrison'))) renderSubmenu();
+    });
+  });
+  c.querySelectorAll('[data-buypack]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (buyManualPack(this.getAttribute('data-buypack'))) renderSubmenu();
+    });
   });
 }
 

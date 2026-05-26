@@ -220,6 +220,7 @@
     overflow: hidden;
     touch-action: none;
     min-height: 0;
+    z-index: 1;
   }
   .tower {
     position: absolute;
@@ -257,7 +258,7 @@
     opacity: 0.15;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    z-index: 2;
+    z-index: 0;
     transition: width 0.3s, height 0.3s;
   }
 

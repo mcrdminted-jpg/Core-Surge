@@ -13,7 +13,7 @@ const SAVE_KEY = 'tower_save_v8';
 // v7 added to the graveyard on v0.7.15 — labs replaced by ranks system,
 // fresh start is intentional.
 const DEAD_SAVE_KEYS = ['tower_save_v7', 'tower_save_v6', 'tower_save_v5', 'tower_save_v4', 'tower_save_v3', 'tower_save_v2'];
-const MAX_TIER = 100;
+const MAX_TIER = 99999; // Tiers are now unlimited (was 100)
 const MILESTONE_WAVES = [25, 50, 100, 200, 500, 1000, 2500, 5000, 10000];
 
 // ============================================================
@@ -968,6 +968,273 @@ function purchaseRank(rankId) {
   if (save.coins < cost) return false;
   save.coins -= cost;
   entry.level += 1;
+  persistSave();
+  return true;
+}
+
+// ============================================================
+// HERO SYSTEM (v0.8)
+// ============================================================
+// Each hero boosts one stat with a passive multiplier and has an active burst.
+// Categories: 'combat' | 'economy' | 'defense'
+// Active profiles by category:
+//   combat:  2.0x passive for 10s, 120s cooldown
+//   economy: 3.0x passive for 5s, 150s cooldown
+//   defense: 2.5x passive for 8s, 90s cooldown
+
+const HERO_CATEGORIES = {
+  combat:  { activeMul: 2.0, activeDuration: 10000, activeCooldown: 120000 },
+  economy: { activeMul: 3.0, activeDuration: 5000,  activeCooldown: 150000 },
+  defense: { activeMul: 2.5, activeDuration: 8000,  activeCooldown: 90000 }
+};
+
+const HERO_DEFS = {
+  // === STARTER (6) — always available to unlock ===
+  ironclad:    { id: 'ironclad',    name: 'Ironclad',    icon: '⚔',  stat: 'damage',       category: 'combat',  family: null, unlockTier: 1,   order: 1 },
+  quickfire:   { id: 'quickfire',   name: 'Quickfire',   icon: '⚡',  stat: 'fireRate',     category: 'combat',  family: null, unlockTier: 5,   order: 2 },
+  bastion:     { id: 'bastion',     name: 'Bastion',     icon: '🏰',  stat: 'coreHealth',   category: 'defense', family: null, unlockTier: 10,  order: 3 },
+  profiteer:   { id: 'profiteer',   name: 'Profiteer',   icon: '💰',  stat: 'cashBonus',    category: 'economy', family: null, unlockTier: 15,  order: 4 },
+  sentinel:    { id: 'sentinel',    name: 'Sentinel',    icon: '🛡',  stat: 'armor',        category: 'defense', family: null, unlockTier: 25,  order: 5 },
+  hawkeye:     { id: 'hawkeye',     name: 'Hawkeye',     icon: '🦅',  stat: 'range',        category: 'combat',  family: null, unlockTier: 40,  order: 6 },
+
+  // === CRIT SYSTEMS (2) ===
+  deadeye:     { id: 'deadeye',     name: 'Deadeye',     icon: '🎯',  stat: 'critChance',   category: 'combat',  family: 'critSystems',      unlockTier: 50,  order: 7 },
+  executioner: { id: 'executioner', name: 'Executioner', icon: '⚰',  stat: 'critPower',    category: 'combat',  family: 'critSystems',      unlockTier: 60,  order: 8 },
+
+  // === ECONOMY EXPANSION (2) ===
+  surplus:     { id: 'surplus',     name: 'Surplus',     icon: '📦',  stat: 'waveBonus',    category: 'economy', family: 'economyExpansion',  unlockTier: 70,  order: 9 },
+  headhunter:  { id: 'headhunter',  name: 'Headhunter',  icon: '💀',  stat: 'bossBounty',   category: 'economy', family: 'economyExpansion',  unlockTier: 80,  order: 10 },
+
+  // === SUSTAIN SYSTEMS (2) ===
+  mender:      { id: 'mender',      name: 'Mender',      icon: '💚',  stat: 'regen',        category: 'defense', family: 'sustainSystems',    unlockTier: 90,  order: 11 },
+  leech:       { id: 'leech',       name: 'Leech',       icon: '🩸',  stat: 'lifesteal',    category: 'defense', family: 'sustainSystems',    unlockTier: 100, order: 12 },
+
+  // === FORTIFICATION (2) ===
+  thornguard:  { id: 'thornguard',  name: 'Thornguard',  icon: '🌵',  stat: 'thorns',       category: 'defense', family: 'fortification',     unlockTier: 120, order: 13 },
+  shockwave:   { id: 'shockwave',   name: 'Shockwave',   icon: '💫',  stat: 'knockback',    category: 'defense', family: 'fortification',     unlockTier: 150, order: 14 },
+
+  // === SCRAP MASTERY (2) ===
+  smelter:     { id: 'smelter',     name: 'Smelter',     icon: '🔥',  stat: 'coinMultiplier', category: 'economy', family: 'coinMastery',     unlockTier: 180, order: 15 },
+  prospector:  { id: 'prospector',  name: 'Prospector',  icon: '⛏',  stat: 'gemFind',       category: 'economy', family: 'coinMastery',     unlockTier: 200, order: 16 },
+
+  // === MULTISHOT SYSTEMS (3) ===
+  scattergun:  { id: 'scattergun',  name: 'Scattergun',  icon: '🔱',  stat: 'multiChance',  category: 'combat',  family: 'multishotSystems',  unlockTier: 250, order: 17 },
+  payload:     { id: 'payload',     name: 'Payload',     icon: '💣',  stat: 'multiPower',   category: 'combat',  family: 'multishotSystems',  unlockTier: 300, order: 18 },
+  hydra:       { id: 'hydra',       name: 'Hydra',       icon: '🐉',  stat: 'multiTargets', category: 'combat',  family: 'multishotSystems',  unlockTier: 400, order: 19 },
+
+  // === BARRIER SYSTEMS (2) ===
+  aegis:       { id: 'aegis',       name: 'Aegis',       icon: '🔮',  stat: 'shieldHP',     category: 'defense', family: 'barrierSystems',    unlockTier: 450, order: 20 },
+  dynamo:      { id: 'dynamo',      name: 'Dynamo',      icon: '⚙',  stat: 'shieldRegen',  category: 'defense', family: 'barrierSystems',    unlockTier: 500, order: 21 },
+
+  // === TACTICAL SYSTEMS (2) ===
+  railgun:     { id: 'railgun',     name: 'Railgun',     icon: '🚀',  stat: 'projSpeed',    category: 'combat',  family: 'tacticalSystems',   unlockTier: 600, order: 22 },
+  piercer:     { id: 'piercer',     name: 'Piercer',     icon: '📌',  stat: 'pierce',       category: 'combat',  family: 'tacticalSystems',   unlockTier: 700, order: 23 },
+
+  // === BOUNCE SYSTEMS (3) ===
+  ricochet:    { id: 'ricochet',    name: 'Ricochet',    icon: '🎱',  stat: 'bounceChance', category: 'combat',  family: 'bounceSystems',     unlockTier: 800, order: 24 },
+  shrapnel:    { id: 'shrapnel',    name: 'Shrapnel',    icon: '💥',  stat: 'bouncePower',  category: 'combat',  family: 'bounceSystems',     unlockTier: 900, order: 25 },
+  cascade:     { id: 'cascade',     name: 'Cascade',     icon: '🌊',  stat: 'bounceTargets', category: 'combat', family: 'bounceSystems',     unlockTier: 1200, order: 26 },
+
+  // === OVERCHARGE (2) ===
+  voltaic:     { id: 'voltaic',     name: 'Voltaic',     icon: '⚡',  stat: 'overchargeChance', category: 'combat', family: 'overcharge',     unlockTier: 1500, order: 27 },
+  tesla:       { id: 'tesla',       name: 'Tesla',       icon: '🔋',  stat: 'overchargePower',  category: 'combat', family: 'overcharge',     unlockTier: 1800, order: 28 },
+
+  // === COMBO SYSTEMS (2) ===
+  chainlink:   { id: 'chainlink',   name: 'Chainlink',   icon: '🔗',  stat: 'comboBonus',    category: 'combat', family: 'comboSystems',     unlockTier: 2000, order: 29 },
+  tempo:       { id: 'tempo',       name: 'Tempo',       icon: '🥁',  stat: 'comboDuration', category: 'combat', family: 'comboSystems',     unlockTier: 2500, order: 30 }
+};
+
+const HERO_COUNT = Object.keys(HERO_DEFS).length; // 30
+
+// Core upgrade: each level gives +1 garrison slot and 1.1x global multiplier
+// Cost formula: 500000 * 2.2^(level-2) for level >= 2
+const CORE_UPGRADE = {
+  maxLevel: HERO_COUNT, // 30 = all heroes garrisoned
+  baseCost: 500000,
+  costGrowth: 2.2,
+  multiplierPerLevel: 1.1 // compounding: level N = 1.1^(N-1)
+};
+
+function coreUpgradeCost(currentLevel) {
+  if (currentLevel >= CORE_UPGRADE.maxLevel) return Infinity;
+  if (currentLevel <= 0) return 0; // level 1 is free (default)
+  return Math.floor(CORE_UPGRADE.baseCost * Math.pow(CORE_UPGRADE.costGrowth, currentLevel - 1));
+}
+
+function coreMultiplier(coreLevel) {
+  return Math.pow(CORE_UPGRADE.multiplierPerLevel, Math.max(0, coreLevel - 1));
+}
+
+// Hero passive multiplier at a given level: 1 + 0.1 * level
+function heroPassiveMultiplier(heroLevel) {
+  return 1 + 0.1 * Math.max(1, heroLevel);
+}
+
+// Training manuals needed to go from current level to next level
+function heroManualCost(currentLevel) {
+  return currentLevel + 1; // Level 1->2 costs 2, 2->3 costs 3, etc.
+}
+
+// Check if a hero is garrisoned (active in a slot)
+function isHeroGarrisoned(heroId) {
+  return save.garrisonSlots && save.garrisonSlots.indexOf(heroId) !== -1;
+}
+
+// Get the passive multiplier a garrisoned hero provides for its stat
+function getHeroStatMultiplier(statId) {
+  if (!save.garrisonSlots) return 1;
+  for (let i = 0; i < save.garrisonSlots.length; i++) {
+    const hid = save.garrisonSlots[i];
+    if (!hid) continue;
+    const def = HERO_DEFS[hid];
+    if (def && def.stat === statId) {
+      const heroData = save.heroes[hid];
+      const level = heroData ? heroData.level : 1;
+      let mul = heroPassiveMultiplier(level);
+      // Check if active ability is currently firing
+      if (heroActiveState[hid] && heroActiveState[hid].activeUntil > Date.now()) {
+        const cat = HERO_CATEGORIES[def.category];
+        mul *= cat.activeMul;
+      }
+      return mul;
+    }
+  }
+  return 1;
+}
+
+// Get the Core global multiplier (applies to all stats)
+function getCoreGlobalMultiplier() {
+  return coreMultiplier(save.coreLevel || 1);
+}
+
+// Combined hero + core multiplier for a stat
+function getHeroCoreMultiplier(statId) {
+  return getHeroStatMultiplier(statId) * getCoreGlobalMultiplier();
+}
+
+// Hero active ability state (runtime, not saved)
+const heroActiveState = {};
+// Shape: { [heroId]: { activeUntil: timestamp, cooldownUntil: timestamp } }
+
+function activateHeroAbility(heroId) {
+  const def = HERO_DEFS[heroId];
+  if (!def) return false;
+  if (!isHeroGarrisoned(heroId)) return false;
+  const cat = HERO_CATEGORIES[def.category];
+  const state = heroActiveState[heroId] || (heroActiveState[heroId] = { activeUntil: 0, cooldownUntil: 0 });
+  const now = Date.now();
+  if (now < state.cooldownUntil) return false; // still on cooldown
+  state.activeUntil = now + cat.activeDuration;
+  state.cooldownUntil = now + cat.activeDuration + cat.activeCooldown;
+  return true;
+}
+
+function getHeroAbilityCooldownRemaining(heroId) {
+  const state = heroActiveState[heroId];
+  if (!state) return 0;
+  const now = Date.now();
+  if (now >= state.cooldownUntil) return 0;
+  return state.cooldownUntil - now;
+}
+
+function isHeroAbilityActive(heroId) {
+  const state = heroActiveState[heroId];
+  if (!state) return false;
+  return Date.now() < state.activeUntil;
+}
+
+// Purchase core upgrade
+function purchaseCoreUpgrade() {
+  const current = save.coreLevel || 1;
+  if (current >= CORE_UPGRADE.maxLevel) return false;
+  const cost = coreUpgradeCost(current);
+  if (save.coins < cost) return false;
+  save.coins -= cost;
+  save.coreLevel = current + 1;
+  persistSave();
+  return true;
+}
+
+// Garrison a hero into the next available slot
+function garrisonHero(heroId) {
+  if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
+  if (isHeroGarrisoned(heroId)) return false;
+  const maxSlots = save.coreLevel || 1;
+  if (!save.garrisonSlots) save.garrisonSlots = [];
+  // Remove nulls and compact
+  const active = save.garrisonSlots.filter(function(h) { return h !== null; });
+  if (active.length >= maxSlots) return false;
+  save.garrisonSlots = active;
+  save.garrisonSlots.push(heroId);
+  persistSave();
+  return true;
+}
+
+// Remove a hero from garrison
+function ungarrisonHero(heroId) {
+  if (!save.garrisonSlots) return false;
+  const idx = save.garrisonSlots.indexOf(heroId);
+  if (idx === -1) return false;
+  save.garrisonSlots.splice(idx, 1);
+  // Clear active state
+  delete heroActiveState[heroId];
+  persistSave();
+  return true;
+}
+
+// Level up a hero using training manuals
+function levelUpHero(heroId) {
+  if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
+  if (!save.heroes[heroId]) save.heroes[heroId] = { level: 1 };
+  const current = save.heroes[heroId].level;
+  const cost = heroManualCost(current);
+  if ((save.trainingManuals || 0) < cost) return false;
+  save.trainingManuals -= cost;
+  save.heroes[heroId].level = current + 1;
+  persistSave();
+  return true;
+}
+
+// Unlock a hero (called by milestone system)
+function unlockHero(heroId) {
+  if (!HERO_DEFS[heroId]) return false;
+  if (!save.heroesUnlocked) save.heroesUnlocked = [];
+  if (save.heroesUnlocked.indexOf(heroId) !== -1) return false;
+  save.heroesUnlocked.push(heroId);
+  if (!save.heroes[heroId]) save.heroes[heroId] = { level: 1 };
+  persistSave();
+  return true;
+}
+
+// Check and grant hero unlocks based on current bestTier
+function checkHeroUnlocks() {
+  const tier = save.bestTier || 1;
+  for (const hid of Object.keys(HERO_DEFS)) {
+    const def = HERO_DEFS[hid];
+    // Must meet tier requirement
+    if (tier < def.unlockTier) continue;
+    // Must own the family if one is required
+    if (def.family && !familyIsOwned(def.family)) continue;
+    // Unlock if not already
+    if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(hid) === -1) {
+      unlockHero(hid);
+    }
+  }
+}
+
+// Training manual store packs (gem cost)
+const MANUAL_STORE = [
+  { id: 'manualPack5',  name: '5 Manuals',  manuals: 5,  gemCost: 50 },
+  { id: 'manualPack20', name: '20 Manuals', manuals: 20, gemCost: 180 },
+  { id: 'manualPack50', name: '50 Manuals', manuals: 50, gemCost: 400 }
+];
+
+function buyManualPack(packId) {
+  const pack = MANUAL_STORE.find(function(p) { return p.id === packId; });
+  if (!pack) return false;
+  if (save.gems < pack.gemCost) return false;
+  save.gems -= pack.gemCost;
+  save.trainingManuals = (save.trainingManuals || 0) + pack.manuals;
   persistSave();
   return true;
 }

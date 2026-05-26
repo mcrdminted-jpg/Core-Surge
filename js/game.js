@@ -23,8 +23,9 @@ function maxUnlockedSpeed() { return 3; }       // all 3 speeds unlocked at laun
 // TIER + MILESTONE
 // ============================================================
 function highestUnlockedTier() {
+  // Tiers are unlimited. You unlock tier N+1 by reaching wave 50 on tier N.
   let unlocked = 1;
-  for (let t = 1; t < MAX_TIER; t++) {
+  for (let t = 1; t <= (save.bestTier || 1) + 1; t++) {
     const reached = save.bestWavePerTier[t] || 0;
     if (reached >= 50) unlocked = t + 1;
     else break;
@@ -155,7 +156,7 @@ function getDamage() {
   const cardBucket = getCardBucket('damage');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.dmg * (game.bossesDefeated || 0) : 0;
-  return permBase * run * (1 + cardBucket) * (1 + predBonus);
+  return permBase * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
 }
 function getDamageNext() {
   const u = game.upgrades.damage;
@@ -174,7 +175,7 @@ function getAttackSpeed() {
   const cardBucket = getCardBucket('attackSpeed');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.aps * (game.bossesDefeated || 0) : 0;
-  return permBase * (1 + longStatBonus(u.level) * 0.65) * (1 + cardBucket) * (1 + predBonus);
+  return permBase * (1 + longStatBonus(u.level) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
 }
 function getAttackSpeedNext() {
   const u = game.upgrades.attackSpeed;
@@ -192,7 +193,7 @@ function getMaxHp() {
   const permBase = rankPermanentValue('coreHealth'); // 100 + rank * 10
   const run = 1 + longStatBonus(u.level);
   const cardBucket = getCardBucket('health');
-  return Math.floor(permBase * run * (1 + cardBucket));
+  return Math.floor(permBase * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 function getMaxHpNext() {
   const u = game.upgrades.health;
@@ -206,7 +207,7 @@ function getMaxHpNext() {
 function getDefenseFraction() {
   const u = game.upgrades.defense;
   const rankFlat = rankFlatBonus('armor'); // rank * 0.005
-  return Math.min(0.75, u.level * 0.005 + rankFlat + getCardBucket('defense'));
+  return Math.min(0.75, (u.level * 0.005 + rankFlat + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
 }
 function getDefenseFractionNext() {
   const u = game.upgrades.defense;
@@ -223,7 +224,7 @@ function getRange() {
   const inRunLevel = game.upgrades.range.level;
   const permBonus = rankFlatBonus('range'); // 500 * 1.2 = 600px at max
   const base = 120 + inRunLevel * 3 + permBonus;
-  return base * (1 + getCardBucket('range'));
+  return base * (1 + getCardBucket('range')) * getHeroCoreMultiplier('range');
 }
 function getRangeNext() {
   const inRunLevel = game.upgrades.range.level + 1;
@@ -242,7 +243,7 @@ function rangeLabel(rangeVal) {
 // === Crit Chance === (1% per in-run level, rank adds flat)
 function getCritChance() {
   const base = game.upgrades.critChance.level * 0.01;
-  return Math.min(1.00, base + rankFlatBonus('critChance') + getCardBucket('crit'));
+  return Math.min(1.00, (base + rankFlatBonus('critChance') + getCardBucket('crit')) * getHeroCoreMultiplier('critChance'));
 }
 function getCritChanceNext() {
   const base = (game.upgrades.critChance.level + 1) * 0.01;
@@ -253,7 +254,7 @@ function getCritChanceNext() {
 function getCritPower() {
   const permBase = rankPermanentValue('critPower'); // 2.0 + rank*0.02
   const lvl = game.upgrades.critPower.level * 0.01;
-  return permBase + Math.min(1.00, lvl) + getCardBucket('critPower');
+  return (permBase + Math.min(1.00, lvl) + getCardBucket('critPower')) * getHeroCoreMultiplier('critPower');
 }
 function getCritPowerNext() {
   const permBase = rankPermanentValue('critPower');
@@ -266,21 +267,21 @@ function getCritPowerNext() {
 // Power: damage multiplier on extra shots (1.0 = full damage, lower = weaker)
 // Targets: max simultaneous targets hit per volley (1 = single, up to 6)
 function getMultishotChance() {
-  return Math.min(1.00, game.upgrades.multishotChance.level * 0.01 + rankFlatBonus('multiChance') + getCardBucket('multiChance'));
+  return Math.min(1.00, (game.upgrades.multishotChance.level * 0.01 + rankFlatBonus('multiChance') + getCardBucket('multiChance')) * getHeroCoreMultiplier('multiChance'));
 }
 function getMultishotChanceNext() {
   return Math.min(1.00, (game.upgrades.multishotChance.level + 1) * 0.01 + rankFlatBonus('multiChance') + getCardBucket('multiChance'));
 }
 function getMultishotPower() {
   // Starts at 50%, +0.5% per in-run level, caps at 100% at level 100; rank adds flat
-  return 0.50 + Math.min(0.50, game.upgrades.multishotPower.level * 0.005) + rankFlatBonus('multiPower') + getCardBucket('multiPower');
+  return (0.50 + Math.min(0.50, game.upgrades.multishotPower.level * 0.005) + rankFlatBonus('multiPower') + getCardBucket('multiPower')) * getHeroCoreMultiplier('multiPower');
 }
 function getMultishotPowerNext() {
   return 0.50 + Math.min(0.50, (game.upgrades.multishotPower.level + 1) * 0.005) + rankFlatBonus('multiPower') + getCardBucket('multiPower');
 }
 function getMultishotTargets() {
   // Base 1 + in-run level + rank level + card
-  return 1 + game.upgrades.multishotTargets.level + rankFlatBonus('multiTargets') + Math.round(getCardBucket('multiTargetsAdd'));
+  return Math.floor((1 + game.upgrades.multishotTargets.level + rankFlatBonus('multiTargets') + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
 }
 function getMultishotTargetsNext() {
   return 1 + (game.upgrades.multishotTargets.level + 1) + rankFlatBonus('multiTargets') + Math.round(getCardBucket('multiTargetsAdd'));
@@ -295,19 +296,19 @@ function rollMultishotCount() {
 
 // === Bounce === (same structure as multishot)
 function getBounceChance() {
-  return Math.min(1.00, game.upgrades.bounceChance.level * 0.01 + rankFlatBonus('bounceChance') + getCardBucket('bounceChance'));
+  return Math.min(1.00, (game.upgrades.bounceChance.level * 0.01 + rankFlatBonus('bounceChance') + getCardBucket('bounceChance')) * getHeroCoreMultiplier('bounceChance'));
 }
 function getBounceChanceNext() {
   return Math.min(1.00, (game.upgrades.bounceChance.level + 1) * 0.01 + rankFlatBonus('bounceChance') + getCardBucket('bounceChance'));
 }
 function getBouncePower() {
-  return 0.50 + Math.min(0.50, game.upgrades.bouncePower.level * 0.005) + rankFlatBonus('bouncePower') + getCardBucket('bouncePower');
+  return (0.50 + Math.min(0.50, game.upgrades.bouncePower.level * 0.005) + rankFlatBonus('bouncePower') + getCardBucket('bouncePower')) * getHeroCoreMultiplier('bouncePower');
 }
 function getBouncePowerNext() {
   return 0.50 + Math.min(0.50, (game.upgrades.bouncePower.level + 1) * 0.005) + rankFlatBonus('bouncePower') + getCardBucket('bouncePower');
 }
 function getBounceTargets() {
-  return game.upgrades.bounceTargets.level + rankFlatBonus('bounceTargets') + Math.round(getCardBucket('bounceTargetsAdd'));
+  return Math.floor((game.upgrades.bounceTargets.level + rankFlatBonus('bounceTargets') + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
 }
 function getBounceTargetsNext() {
   return game.upgrades.bounceTargets.level + 1 + rankFlatBonus('bounceTargets') + Math.round(getCardBucket('bounceTargetsAdd'));
@@ -315,7 +316,7 @@ function getBounceTargetsNext() {
 
 // === Lifesteal === (0.25% per level, max 100% = level 400)
 function getLifestealFraction() {
-  return Math.min(1.00, game.upgrades.lifesteal.level * 0.0025 + rankFlatBonus('lifesteal') + getCardBucket('lifesteal'));
+  return Math.min(1.00, (game.upgrades.lifesteal.level * 0.0025 + rankFlatBonus('lifesteal') + getCardBucket('lifesteal')) * getHeroCoreMultiplier('lifesteal'));
 }
 function getLifestealFractionNext() {
   return Math.min(1.00, (game.upgrades.lifesteal.level + 1) * 0.0025 + rankFlatBonus('lifesteal') + getCardBucket('lifesteal'));
@@ -323,7 +324,7 @@ function getLifestealFractionNext() {
 
 // === Regen === (0.05% max HP/sec per in-run level, cap 10%, rank adds flat)
 function getRegenPctPerSec() {
-  return Math.min(0.10, game.upgrades.regen.level * 0.0005 + rankFlatBonus('regen') + getCardBucket('regen'));
+  return Math.min(0.10, (game.upgrades.regen.level * 0.0005 + rankFlatBonus('regen') + getCardBucket('regen')) * getHeroCoreMultiplier('regen'));
 }
 function getRegenPctPerSecNext() {
   return Math.min(0.10, (game.upgrades.regen.level + 1) * 0.0005 + rankFlatBonus('regen') + getCardBucket('regen'));
@@ -337,7 +338,7 @@ function getRegenPerSec() {
 function getCashMul() {
   const u = game.upgrades.cashBonus;
   const cardBucket = getCardBucket('cash');
-  return (1 + u.level * 0.05 + rankFlatBonus('cashBonus')) * (1 + cardBucket);
+  return (1 + u.level * 0.05 + rankFlatBonus('cashBonus')) * (1 + cardBucket) * getHeroCoreMultiplier('cashBonus');
 }
 function getCashMulNext() {
   const u = game.upgrades.cashBonus;
@@ -345,13 +346,13 @@ function getCashMulNext() {
   return (1 + (u.level + 1) * 0.05 + rankFlatBonus('cashBonus')) * (1 + cardBucket);
 }
 function getWaveBonusMul() {
-  return (1 + game.upgrades.waveBonus.level * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus'));
+  return (1 + game.upgrades.waveBonus.level * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus')) * getHeroCoreMultiplier('waveBonus');
 }
 function getWaveBonusMulNext() {
   return (1 + (game.upgrades.waveBonus.level + 1) * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus'));
 }
 function getComboMaxMul() {
-  return (1 + game.upgrades.combo.level * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax'));
+  return (1 + game.upgrades.combo.level * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax')) * getHeroCoreMultiplier('comboBonus');
 }
 function getComboMaxMulNext() {
   return (1 + (game.upgrades.combo.level + 1) * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax'));
@@ -364,10 +365,10 @@ function getCurrentComboMul() {
 }
 // Combo decay: base 5000ms, rank adds flat ms, card adds ms of decay window
 function getComboDecayMs() {
-  return 5000 + rankFlatBonus('comboDuration') + getCardBucket('comboDecay');
+  return (5000 + rankFlatBonus('comboDuration') + getCardBucket('comboDecay')) * getHeroCoreMultiplier('comboDuration');
 }
 function getBossBountyMul() {
-  return (1 + game.upgrades.bossBounty.level * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty'));
+  return (1 + game.upgrades.bossBounty.level * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty')) * getHeroCoreMultiplier('bossBounty');
 }
 function getBossBountyMulNext() {
   return (1 + (game.upgrades.bossBounty.level + 1) * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty'));
@@ -387,40 +388,40 @@ function getCoinBonusMulNext() {
 }
 
 // === Thorns === (reflect % of melee damage back to attacker)
-function getThornsFraction() { return rankFlatBonus('thorns'); }
+function getThornsFraction() { return rankFlatBonus('thorns') * getHeroCoreMultiplier('thorns'); }
 
 // === Knockback === (chance to push melee attacker back)
-function getKnockbackChance() { return rankFlatBonus('knockback'); }
+function getKnockbackChance() { return rankFlatBonus('knockback') * getHeroCoreMultiplier('knockback'); }
 
 // === Barrier / Permanent Shield ===
 // Shield max = permanent rank bonus + in-run shield upgrade (8 HP per level)
 function getBarrierShieldMax() {
   const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
   const inRunBonus = game.upgrades.shield ? game.upgrades.shield.level * 8 : 0;
-  return rankBonus + inRunBonus;
+  return Math.floor((rankBonus + inRunBonus) * getHeroCoreMultiplier('shieldHP'));
 }
 function getBarrierShieldMaxNext() {
   const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
   const inRunBonus = game.upgrades.shield ? (game.upgrades.shield.level + 1) * 8 : 0;
-  return rankBonus + inRunBonus;
+  return Math.floor((rankBonus + inRunBonus) * getHeroCoreMultiplier('shieldHP'));
 }
-function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen'); }
+function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen') * getHeroCoreMultiplier('shieldRegen'); }
 
 // === Coin Multiplier === (permanent end-run multiplier from ranks)
-function getCoinMultiplierBonus() { return rankFlatBonus('coinMultiplier'); }
+function getCoinMultiplierBonus() { return rankFlatBonus('coinMultiplier') * getHeroCoreMultiplier('coinMultiplier'); }
 
 // === Gem Find === (chance for non-boss kills to drop a gem)
-function getGemFindChance() { return rankFlatBonus('gemFind'); }
+function getGemFindChance() { return rankFlatBonus('gemFind') * getHeroCoreMultiplier('gemFind'); }
 
 // === Projectile Speed === (multiplier on base 900 speed)
-function getProjSpeedMul() { return 1 + rankFlatBonus('projSpeed'); }
+function getProjSpeedMul() { return (1 + rankFlatBonus('projSpeed')) * getHeroCoreMultiplier('projSpeed'); }
 
 // === Pierce === (chance for projectile to pass through and hit another enemy)
-function getPierceChance() { return rankFlatBonus('pierce'); }
+function getPierceChance() { return rankFlatBonus('pierce') * getHeroCoreMultiplier('pierce'); }
 
 // === Overcharge === (chance for a shot to deal bonus damage)
-function getOverchargeChance() { return rankFlatBonus('overchargeChance'); }
-function getOverchargePower() { return 1 + rankFlatBonus('overchargePower'); }
+function getOverchargeChance() { return rankFlatBonus('overchargeChance') * getHeroCoreMultiplier('overchargeChance'); }
+function getOverchargePower() { return (1 + rankFlatBonus('overchargePower')) * getHeroCoreMultiplier('overchargePower'); }
 
 // === Heal ===
 function getHealAmount() { return Math.floor(game.hpMax * 0.25); }
@@ -687,10 +688,21 @@ function endRun() {
     save.bestTier = game.tier;
     save.bestWave = maxWave;
   }
+  // === HERO SYSTEM: Training manual drops ===
+  let manualsEarned = 0;
+  // Wave milestones: 1 manual per 25 waves reached
+  if (maxWave >= 25) manualsEarned += Math.floor(maxWave / 25);
+  // Boss kills: 1 manual per boss
+  manualsEarned += game.bossesDefeated;
+  // Tier milestone: bonus manuals every 10 tiers
+  if (game.tier % 10 === 0) manualsEarned += Math.max(1, Math.floor(game.tier / 50));
+  save.trainingManuals = (save.trainingManuals || 0) + manualsEarned;
+  // Check hero unlocks based on new bestTier
+  if (typeof checkHeroUnlocks === 'function') checkHeroUnlocks();
   persistSave();
   const stats = document.getElementById('endStats');
   const isNewBest = maxWave > prevBest;
-  const tierJustUnlocked = (game.tier < MAX_TIER && prevBest < 50 && maxWave >= 50);
+  const tierJustUnlocked = (prevBest < 50 && maxWave >= 50);
   const runDurationMs = Date.now() - game.startTime;
   const runSec = Math.floor(runDurationMs / 1000);
   const runMin = Math.floor(runSec / 60);
@@ -712,6 +724,7 @@ function endRun() {
     <div class="end-section-label">Rewards</div>
     <div class="end-stat-row"><span class="end-stat-label">Cash earned</span><span class="end-stat-value">${formatNum(totalCash)}</span></div>
     <div class="end-stat-row"><span class="end-stat-label">Scrap earned</span><span class="end-stat-value gold">+${formatNum(coinsEarned)}</span></div>
+    ${manualsEarned > 0 ? `<div class="end-stat-row"><span class="end-stat-label">Training Manuals</span><span class="end-stat-value" style="color:var(--cyan2)">+${manualsEarned}</span></div>` : ''}
     <div class="end-stat-row end-total"><span class="end-stat-label">Total scrap</span><span class="end-stat-value gold">${formatNum(save.coins)}</span></div>
   `;
   document.getElementById('endOverlay').classList.add('active');

@@ -73,7 +73,7 @@ async function runTests() {
   const indexHtml = await fs.readFile(path.join(root, 'index.html'), 'utf8');
   assert(indexHtml.includes('<!DOCTYPE html>'), 'index.html has DOCTYPE');
   assert(indexHtml.includes('manifest.webmanifest'), 'index.html references manifest');
-  assert(indexHtml.includes('Core Surge v0.7.29'), 'index.html title version is current');
+  assert(indexHtml.includes('Core Surge v0.7.30'), 'index.html title version is current');
   assert(indexHtml.includes('assets/app/icon-180.png'), 'index.html references Apple touch icon');
   assert(indexHtml.includes('assets/app/icon-192.png'), 'index.html references PNG favicon');
 
@@ -215,7 +215,7 @@ async function runTests() {
   // â”€â”€ 10. Game constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Game Constants â”€â”€');
 
-  assert(ctx.MAX_TIER === 100, `MAX_TIER = 100 (got ${ctx.MAX_TIER})`);
+  assert(ctx.MAX_TIER === 99999, `MAX_TIER = 99999 (got ${ctx.MAX_TIER})`);
   assert(ctx.MILESTONE_WAVES.length === 9, `9 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
   assert(ctx.MILESTONE_WAVES[0] === 25, `First milestone = wave 25`);
   assert(ctx.MILESTONE_WAVES[8] === 10000, `Last milestone = wave 10000`);

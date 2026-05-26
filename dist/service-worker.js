@@ -1,4 +1,4 @@
-const CORE_SURGE_CACHE='core-surge-shell-v0-7-29';
+const CORE_SURGE_CACHE='core-surge-shell-v0-7-30';
 const CORE_SURGE_ASSETS=[
   './',
   './index.html',

@@ -103,8 +103,15 @@ const defaultSave = {
     totalClaims: 0     // lifetime claims for stats
   },
 
+  // Hero system (v0.8)
+  heroes: {},              // { heroId: { level: 1 } }
+  garrisonSlots: [],       // array of heroId strings currently garrisoned
+  coreLevel: 1,            // Core upgrade level (1 = default, max 30)
+  trainingManuals: 0,      // currency for hero leveling
+  heroesUnlocked: [],      // array of heroId strings the player has unlocked
+
   lastSaveTime: Date.now(),
-  version: 9,
+  version: 11,
 
   // Tournament (v0.7.13+): persistent bracket state, league, cycle info.
   // See js/tournament.js for the full shape and helpers.
@@ -160,7 +167,7 @@ function hydrateSaveState(loaded) {
   nextSave.coins = Math.max(0, parseFloat(nextSave.coins) || 0);
   nextSave.gems = Math.max(0, parseInt(nextSave.gems, 10) || 0);
   nextSave.totalRuns = Math.max(0, parseInt(nextSave.totalRuns, 10) || 0);
-  nextSave.bestTier = Math.max(1, Math.min(MAX_TIER, parseInt(nextSave.bestTier, 10) || 1));
+  nextSave.bestTier = Math.max(1, parseInt(nextSave.bestTier, 10) || 1); // unlimited tiers
   nextSave.bestWave = Math.max(0, parseInt(nextSave.bestWave, 10) || 0);
   nextSave.totalCashEarned = Math.max(0, parseFloat(nextSave.totalCashEarned) || 0);
   nextSave.totalEnemiesKilled = Math.max(0, parseInt(nextSave.totalEnemiesKilled, 10) || 0);
@@ -187,6 +194,12 @@ function hydrateSaveState(loaded) {
   nextSave.playerId = source.playerId || source.username || 'You';
   nextSave.monthlyVaultActive = !!source.monthlyVaultActive;
   nextSave.storeEntitlements = source.storeEntitlements || {};
+  // Hero system hydration
+  nextSave.heroes = source.heroes || {};
+  nextSave.garrisonSlots = Array.isArray(source.garrisonSlots) ? source.garrisonSlots : [];
+  nextSave.coreLevel = Math.max(1, parseInt(source.coreLevel, 10) || 1);
+  nextSave.trainingManuals = Math.max(0, parseInt(source.trainingManuals, 10) || 0);
+  nextSave.heroesUnlocked = Array.isArray(source.heroesUnlocked) ? source.heroesUnlocked : [];
   nextSave.equippedCoreSkin = source.equippedCoreSkin || 'sentinel';
   nextSave.equippedBgSkin = source.equippedBgSkin || 'cyber_grid';
   // v0.7.25: auto-complete tutorial for existing players who already have runs
@@ -225,9 +238,19 @@ const SAVE_MIGRATIONS = {
         }
       }
     }
+  },
+  // v10 → v11: Hero system added. Initialize hero fields.
+  10: function(s) {
+    if (!s.heroes) s.heroes = {};
+    if (!s.garrisonSlots) s.garrisonSlots = [];
+    if (!s.coreLevel) s.coreLevel = 1;
+    if (!s.trainingManuals) s.trainingManuals = 0;
+    if (!s.heroesUnlocked) s.heroesUnlocked = [];
+    // Remove MAX_TIER cap on bestTier (was capped at 100)
+    // No longer clamped — tiers are unlimited now.
   }
 };
-const CURRENT_SAVE_VERSION = 10;
+const CURRENT_SAVE_VERSION = 11;
 
 function migrateSave(loaded) {
   let v = parseInt(loaded.version, 10) || 0;
@@ -267,7 +290,7 @@ function loadSave() {
 
 function persistSave() {
   save.lastSaveTime = Date.now();
-  save.version = 8;
+  save.version = CURRENT_SAVE_VERSION;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save));
   } catch (e) {
