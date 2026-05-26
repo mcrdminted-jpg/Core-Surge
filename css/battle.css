@@ -149,7 +149,6 @@
     flex: 1 1 0;
     display: flex;
     min-height: 0;
-    max-height: 50vh;
     z-index: 1;
   }
   .bf-side {
