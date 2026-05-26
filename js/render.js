@@ -153,6 +153,13 @@ function render() {
   if (binfoKills) binfoKills.textContent = `${game.enemiesKilledInWave} / ${game.enemiesPerWave}`;
   const binfoScrap = document.getElementById('binfoScrap');
   if (binfoScrap) binfoScrap.textContent = formatNum(coinRewardForRun(game.wave, game.cashEarnedThisRun));
+  // Enemy base HP & Damage for current wave (non-boss)
+  const binfoEHp = document.getElementById('binfoEnemyHp');
+  if (binfoEHp) binfoEHp.textContent = formatNum(enemyHpForWave(game.wave));
+  const binfoEDmg = document.getElementById('binfoEnemyDmg');
+  if (binfoEDmg) binfoEDmg.textContent = formatNum(damageToTowerForWave(game.wave));
+  // Boss frame
+  renderBossFrame();
 
   // HUD resource cards (new for v0.7.7)
   const hudCoinsEl = document.getElementById('hudCoinsValue');
@@ -446,9 +453,105 @@ function renderHeroActivesHud() {
 }
 
 // ============================================================
+// BOSS FRAME — WoW-style health bar at top during boss waves
+// ============================================================
+function renderBossFrame() {
+  const frame = document.getElementById('bossFrame');
+  if (!frame) return;
+  // Find active boss enemy
+  var boss = null;
+  for (var i = 0; i < game.enemies.length; i++) {
+    if (!game.enemies[i].dead && game.enemies[i].type === 'boss') { boss = game.enemies[i]; break; }
+  }
+  if (!boss) {
+    frame.style.display = 'none';
+    return;
+  }
+  frame.style.display = '';
+  const pct = Math.max(0, boss.hp / boss.hpMax * 100);
+  var fill = document.getElementById('bossFrameFill');
+  if (fill) fill.style.width = pct + '%';
+  var txt = document.getElementById('bossFrameText');
+  if (txt) txt.textContent = formatNum(Math.ceil(boss.hp)) + ' / ' + formatNum(Math.ceil(boss.hpMax));
+  var nm = document.getElementById('bossFrameName');
+  if (nm) nm.textContent = '☠ BOSS — WAVE ' + game.wave;
+}
+
+// ============================================================
 // AD SPEED BOOST INDICATOR — shows 2x time remaining during battle
+// Draggable: player can reposition it anywhere on the battlefield
 // ============================================================
 let _adBoostIndicatorInitialized = false;
+let _adBoostDragState = null;
+
+function _initAdBoostDrag(el) {
+  // Restore saved position
+  try {
+    var pos = JSON.parse(localStorage.getItem('adBoostPos'));
+    if (pos) {
+      el.style.left = pos.left;
+      el.style.top = pos.top;
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    }
+  } catch(e) {}
+
+  el.addEventListener('pointerdown', function(ev) {
+    if (ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    el.setPointerCapture(ev.pointerId);
+    var rect = el.getBoundingClientRect();
+    _adBoostDragState = {
+      pid: ev.pointerId,
+      offsetX: ev.clientX - rect.left,
+      offsetY: ev.clientY - rect.top,
+      moved: false
+    };
+    el.classList.add('dragging');
+  });
+  el.addEventListener('pointermove', function(ev) {
+    if (!_adBoostDragState || _adBoostDragState.pid !== ev.pointerId) return;
+    ev.preventDefault();
+    _adBoostDragState.moved = true;
+    var parent = el.parentElement;
+    if (!parent) return;
+    var pr = parent.getBoundingClientRect();
+    var x = ev.clientX - pr.left - _adBoostDragState.offsetX;
+    var y = ev.clientY - pr.top - _adBoostDragState.offsetY;
+    // Clamp within parent bounds
+    var elW = el.offsetWidth, elH = el.offsetHeight;
+    x = Math.max(0, Math.min(pr.width - elW, x));
+    y = Math.max(0, Math.min(pr.height - elH, y));
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  });
+  function endDrag(ev) {
+    if (!_adBoostDragState || _adBoostDragState.pid !== ev.pointerId) return;
+    el.classList.remove('dragging');
+    // Save position
+    try {
+      localStorage.setItem('adBoostPos', JSON.stringify({ left: el.style.left, top: el.style.top }));
+    } catch(e) {}
+    // If didn't move, treat as click — show toast
+    if (!_adBoostDragState.moved) {
+      var rem = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
+      if (rem > 0) {
+        var m = Math.ceil(rem / 60000);
+        var toast = document.createElement('div');
+        toast.className = 'skin-toast';
+        toast.textContent = '2× Speed Boost: ' + m + ' min remaining';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 2000);
+      }
+    }
+    _adBoostDragState = null;
+  }
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+}
 
 function renderAdBoostIndicator() {
   const el = document.getElementById('adBoostIndicator');
@@ -474,7 +577,6 @@ function renderAdBoostIndicator() {
   if (adBtn && adLabel) {
     if (remaining > 0) {
       adBtn.classList.add('boosted');
-      const m = Math.ceil(remaining / 60000);
       adLabel.textContent = '2× ON';
     } else {
       adBtn.classList.remove('boosted');
@@ -500,18 +602,9 @@ function renderAdBoostIndicator() {
   const textEl = document.getElementById('adBoostText');
   if (textEl) textEl.textContent = '2× ' + timeStr;
 
-  // Wire click handler once — show a toast with info
+  // Wire drag handler once
   if (!_adBoostIndicatorInitialized) {
-    el.addEventListener('click', function() {
-      const rem = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
-      if (rem <= 0) return;
-      const m = Math.ceil(rem / 60000);
-      var toast = document.createElement('div');
-      toast.className = 'skin-toast';
-      toast.textContent = '2× Speed Boost: ' + m + ' min remaining';
-      document.body.appendChild(toast);
-      setTimeout(function() { toast.remove(); }, 2000);
-    });
+    _initAdBoostDrag(el);
     _adBoostIndicatorInitialized = true;
   }
 }

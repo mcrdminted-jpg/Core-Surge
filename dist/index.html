@@ -440,12 +440,23 @@
     </div>
   </div>
 
-  <!-- Battle info bar: TIER · WAVE · CASH · KILLS -->
+  <!-- Boss health bar — WoW-style prominent frame at top of battlefield -->
+  <div class="boss-frame" id="bossFrame" style="display:none">
+    <div class="boss-frame-name" id="bossFrameName">BOSS</div>
+    <div class="boss-frame-bar">
+      <div class="boss-frame-fill" id="bossFrameFill"></div>
+      <div class="boss-frame-text" id="bossFrameText">100%</div>
+    </div>
+  </div>
+
+  <!-- Battle info bar: TIER · WAVE · CASH · KILLS · ENEMY HP · ENEMY DMG · SCRAP -->
   <div class="battle-info-bar" id="battleInfoBar">
     <span class="binfo-pill binfo-tier"><span class="binfo-icon">⊕</span> TIER <b id="binfoTier">1</b></span>
     <span class="binfo-pill binfo-wave"><span class="binfo-icon">⊕</span> WAVE <b id="binfoWave">1</b></span>
     <span class="binfo-pill binfo-cash"><span class="binfo-icon">$</span> CASH <b id="binfoCash">0</b></span>
     <span class="binfo-pill binfo-kills"><span class="binfo-icon">☠</span> KILLS <b id="binfoKills">0/10</b></span>
+    <span class="binfo-pill binfo-ehp"><span class="binfo-icon">♥</span> HP <b id="binfoEnemyHp">0</b></span>
+    <span class="binfo-pill binfo-edmg"><span class="binfo-icon">⚔</span> DMG <b id="binfoEnemyDmg">0</b></span>
     <span class="binfo-pill binfo-scrap"><span class="binfo-icon">⊙</span> SCRAP <b id="binfoScrap">0</b></span>
   </div>
 
