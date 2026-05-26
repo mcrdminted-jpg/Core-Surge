@@ -3,7 +3,7 @@
 ## Project identity
 
 - Project: Core Surge / Tower Game
-- GitHub repo: `mcrdminted-jpg/tower-game`
+- GitHub repo: `mcrdminted-jpg/Core-Surge`
 
 ## Git account rule
 
@@ -14,4 +14,6 @@
 ## Deployment intent
 
 - Web testing path: push repo updates so the connected web host can deploy for browser testing
+- Current live tester host: `https://core-surge.pages.dev/`
+- Old host `tower-game-3k2.pages.dev` is stale and should not be treated as production or tester truth
 - Native billing tests still require Android and iPhone app builds

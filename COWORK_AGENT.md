@@ -38,6 +38,16 @@ Andy will say: "Read your agents.md and run next 5 tasks"
 
 ---
 
+## VERIFIED CURRENT STATE
+
+- This repo does not use a `/docs` folder. Core documents live at repo root unless a file path says otherwise.
+- `LAUNCH_TRACKER.html` already exists.
+- The old audit findings for service worker, manifest, and save hydration were partially resolved in live code on 2026-05-25.
+- Before re-logging Tasks 68-70 style findings, re-check the current repo state rather than copying the original audit forward unchanged.
+- Current live tester URL is `https://core-surge.pages.dev/`
+
+---
+
 ## TASK LIST
 
 ### Phase 1: Project Foundation & Documentation (Tasks 1-20)

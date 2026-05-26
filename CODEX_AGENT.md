@@ -60,14 +60,30 @@ Andy will say: "Read your agents.md and run next 5 tasks"
 
 - Firebase project created: `core-surge---tower-defense`
 - Service account key exists: `core-surge---tower-defense-firebase-adminsdk-fbsvc-e2e9830cd4.json`
-- Backend Cloud Functions written in `backend/firebase-config.js` (6 functions: syncSave, refreshSave, submitTournament, getLeaderboard, processIAP, processTournamentRound)
+- Direct Firebase client path is active in `js/cloud.js` and `js/firebase-public-config.js`
+- Shared Firebase tester config file exists, but `apiKey`, `messagingSenderId`, and `appId` are still placeholders
+- Email/password sign-in, sign-out, anonymous guest boot, and guest-to-account upgrade already exist in `js/cloud.js`
+- Cloud save status UI already exists and local save sync queues are wired
+- Backend Cloud Functions exist in `backend/firebase-config.js`, but they are not the active tester path and should not be treated as deploy-ready without re-audit
 - Firestore rules written in `backend/firestore.rules`
 - Capacitor scaffolding generated (`android/` and `ios/` folders exist)
-- RevenueCat packages installed but SDK keys are placeholders
-- Firebase web app NOT yet created (missing apiKey, messagingSenderId, appId)
+- RevenueCat packages are installed, native purchase/catalog/restore flows are wired, but SDK keys and store products are still placeholders
+- `npm run mobile:sync` exists and has already been used successfully
 - No ads integrated yet
 - No analytics integrated yet
-- No compliance code implemented yet
+- Compliance documents exist at repo root, not in `/docs`
+
+---
+
+## VERIFIED PRIORITY
+
+- Do not start with Cloud Functions just because they exist. For tester builds, the active path is direct Firebase client auth + Firestore.
+- Highest-value Codex lane right now:
+  - real Firebase web app values
+  - RevenueCat/App Store/Google Play product setup
+  - native Android/iPhone packaging assets
+  - analytics/security hardening after tester save/billing are real
+- If you touch backend Cloud Functions, first document why the direct Firebase tester lane is insufficient for the task.
 
 ---
 
@@ -98,18 +114,18 @@ Andy will say: "Read your agents.md and run next 5 tasks"
 
 ### Phase 2: Authentication & Cloud Save (Tasks 21-40)
 
-- [ ] **Task 21:** Implement Firebase Auth sign-up flow in js/cloud.js (email + password)
-- [ ] **Task 22:** Implement Firebase Auth login flow in js/cloud.js
-- [ ] **Task 23:** Implement Firebase Auth logout in js/cloud.js
+- [x] **Task 21:** Implement Firebase Auth sign-up flow in js/cloud.js (email + password) (verified complete in repo 2026-05-25)
+- [x] **Task 22:** Implement Firebase Auth login flow in js/cloud.js (verified complete in repo 2026-05-25)
+- [x] **Task 23:** Implement Firebase Auth logout in js/cloud.js (verified complete in repo 2026-05-25)
 - [ ] **Task 24:** Implement Firebase Auth password reset flow
 - [ ] **Task 25:** Add auth state listener - auto-login on app restart if session exists
 - [ ] **Task 26:** Create login/signup modal UI elements in index.html (basic structure, Claude Code styles it)
-- [ ] **Task 27:** Implement guest-to-account upgrade flow (anonymous auth -> email auth)
+- [x] **Task 27:** Implement guest-to-account upgrade flow (anonymous auth -> email auth) (verified complete in repo 2026-05-25)
 - [ ] **Task 28:** Wire cloud save: on significant game events (wave complete, purchase, card pull), auto-sync to Firestore
 - [ ] **Task 29:** Wire cloud load: on login, fetch cloud save and merge with local save (newer wins)
 - [ ] **Task 30:** Handle save conflicts: if cloud save and local save diverge, prompt user to choose
 - [ ] **Task 31:** Implement save versioning for cloud saves (same v8 format as local)
-- [ ] **Task 32:** Add cloud save indicator in UI (show sync status: synced, syncing, error)
+- [x] **Task 32:** Add cloud save indicator in UI (show sync status: synced, syncing, error) (verified complete in repo 2026-05-25)
 - [ ] **Task 33:** Implement account deletion flow (delete Firebase Auth account + purge Firestore data)
 - [ ] **Task 34:** Implement data export flow (download all user data as JSON - GDPR requirement)
 - [ ] **Task 35:** Add rate limiting to save sync (max 1 save per 30 seconds to avoid Firestore costs)
@@ -126,13 +142,13 @@ Andy will say: "Read your agents.md and run next 5 tasks"
 - [ ] **Task 43:** Create matching products in Apple App Store Connect (with same product IDs)
 - [ ] **Task 44:** Create matching products in Google Play Console (with same product IDs)
 - [ ] **Task 45:** Enter real RevenueCat public SDK keys in js/monetization.js (replace placeholders)
-- [ ] **Task 46:** Test RevenueCat initialization on web (should gracefully fall back to "store not available")
+- [x] **Task 46:** Test RevenueCat initialization on web (should gracefully fall back to "store not available") (verified complete in repo 2026-05-25)
 - [ ] **Task 47:** Test RevenueCat initialization on Android emulator - verify product catalog loads
 - [ ] **Task 48:** Test sandbox purchase flow on Android - complete a test purchase, verify receipt
 - [ ] **Task 49:** Test sandbox purchase flow on iOS (requires Mac with Xcode) - complete test purchase
 - [ ] **Task 50:** Implement purchase receipt validation in processIAP Cloud Function
 - [ ] **Task 51:** Wire gem delivery: after successful purchase, add gems to save and sync to cloud
-- [ ] **Task 52:** Implement restore purchases flow - verify previously purchased items are restored on new device
+- [x] **Task 52:** Implement restore purchases flow - verify previously purchased items are restored on new device (verified flow exists in repo 2026-05-25)
 - [ ] **Task 53:** Implement monthly vault subscription check - verify entitlement status on app launch
 - [ ] **Task 54:** Handle purchase failures gracefully (cancelled, network error, already owned)
 - [ ] **Task 55:** Add purchase history logging to Firestore (iap_transactions collection)
@@ -180,7 +196,7 @@ Andy will say: "Read your agents.md and run next 5 tasks"
 
 ### Phase 6: Native App Builds & Store Submission (Tasks 91-100)
 
-- [ ] **Task 91:** Verify `npx cap sync` successfully copies dist/ into both android/ and ios/ projects
+- [x] **Task 91:** Verify `npx cap sync` successfully copies dist/ into both android/ and ios/ projects (verified complete in repo 2026-05-25)
 - [ ] **Task 92:** Open android/ in Android Studio - verify it builds and runs on emulator
 - [ ] **Task 93:** Open ios/ in Xcode (requires Mac) - verify it builds and runs on simulator
 - [ ] **Task 94:** Add proper app icon assets for both platforms (1024x1024 Apple, 512x512 Google, adaptive icon Android)

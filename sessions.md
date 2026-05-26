@@ -328,6 +328,41 @@ Codex:
 
 ---
 
+## 2026-05-25 - Codex - Audit Claude And Cowork Task Drift
+
+**Status:** Complete
+
+**Files modified:**
+- AGENTS.md
+- CLAUDE_CODE_AGENT.md
+- COWORK_AGENT.md
+- CODEX_AGENT.md
+- sessions.md
+
+**What was done:**
+- Audited the repo against the Claude Code, Cowork, and Codex task trackers
+- Confirmed there were no unpublished Claude code batches waiting in git
+- Fixed the root project note to use the canonical GitHub repo path `mcrdminted-jpg/Core-Surge`
+- Added verified-current-state guidance so future agents stop working from stale assumptions
+- Marked clearly completed tracker items that are already real in the repo, including build pipeline tasks, npm test, Firebase auth basics, cloud save status UI, RevenueCat web fallback, restore flow, and mobile sync
+- Added coordination notes that the active tester path is direct Firebase client auth + Firestore, not backend Cloud Functions first
+
+**Verification:**
+- Repo audit against actual tracked files and current git status
+- Confirmed no unpublished production-safe code changes were pending
+
+**What other agents need to know:**
+- `https://core-surge.pages.dev/` is the current tester host
+- `tower-game-3k2.pages.dev` is stale and should not be treated as truth
+- Core documents live at repo root, not `/docs`
+- Agent task lists were partially stale before this audit
+
+**Blockers:**
+- True shared cloud save still needs real Firebase web app values
+- Real mobile billing still needs RevenueCat/store credentials and store-console product setup
+
+---
+
 ## 2026-05-25 - Codex - Save Hardening And Live Shell Cleanup
 
 **Status:** Complete
