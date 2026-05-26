@@ -337,6 +337,90 @@ let _heroHudToggle = null;
 let _heroHudOpen = false;
 let _heroHudInitialized = false;
 let _heroHudLastUpdate = 0;
+let _heroHudDragState = null;
+
+function _initHeroHudDrag(el, toggle) {
+  // Restore saved position
+  try {
+    var pos = JSON.parse(localStorage.getItem('heroHudPos'));
+    if (pos) {
+      el.style.left = pos.left;
+      el.style.top = pos.top;
+      el.style.transform = 'none';
+      _updateHeroHudPanelSide(el);
+    }
+  } catch(e) {}
+
+  toggle.addEventListener('pointerdown', function(ev) {
+    if (ev.button !== 0) return;
+    ev.stopPropagation();
+    toggle.setPointerCapture(ev.pointerId);
+    var rect = el.getBoundingClientRect();
+    _heroHudDragState = {
+      pid: ev.pointerId,
+      offsetX: ev.clientX - rect.left,
+      offsetY: ev.clientY - rect.top,
+      startX: ev.clientX,
+      startY: ev.clientY,
+      moved: false
+    };
+  });
+  toggle.addEventListener('pointermove', function(ev) {
+    if (!_heroHudDragState || _heroHudDragState.pid !== ev.pointerId) return;
+    ev.preventDefault();
+    // Only start drag if moved > 6px (avoids drag on simple taps)
+    var dx = ev.clientX - _heroHudDragState.startX;
+    var dy = ev.clientY - _heroHudDragState.startY;
+    if (!_heroHudDragState.moved && (dx*dx + dy*dy) < 36) return;
+    _heroHudDragState.moved = true;
+    el.classList.add('dragging');
+    var parent = el.offsetParent || el.parentElement;
+    if (!parent) return;
+    var pr = parent.getBoundingClientRect();
+    var x = ev.clientX - pr.left - _heroHudDragState.offsetX;
+    var y = ev.clientY - pr.top - _heroHudDragState.offsetY;
+    var elW = el.offsetWidth, elH = el.offsetHeight;
+    x = Math.max(0, Math.min(pr.width - elW, x));
+    y = Math.max(0, Math.min(pr.height - elH, y));
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.transform = 'none';
+    _updateHeroHudPanelSide(el);
+  });
+  function endDrag(ev) {
+    if (!_heroHudDragState || _heroHudDragState.pid !== ev.pointerId) return;
+    el.classList.remove('dragging');
+    if (_heroHudDragState.moved) {
+      // Save position
+      try {
+        localStorage.setItem('heroHudPos', JSON.stringify({ left: el.style.left, top: el.style.top }));
+      } catch(e) {}
+    } else {
+      // Tap — toggle the panel open/closed
+      _heroHudOpen = !_heroHudOpen;
+      el.classList.toggle('open', _heroHudOpen);
+      _heroHudLastUpdate = 0;
+    }
+    _heroHudDragState = null;
+  }
+  toggle.addEventListener('pointerup', endDrag);
+  toggle.addEventListener('pointercancel', endDrag);
+}
+
+function _updateHeroHudPanelSide(el) {
+  // If the HUD is on the right half of screen, panel opens left; else right
+  var parent = el.offsetParent || el.parentElement;
+  if (!parent) return;
+  var pw = parent.getBoundingClientRect().width;
+  var elLeft = el.offsetLeft;
+  if (elLeft > pw / 2) {
+    el.classList.remove('panel-right');
+    el.classList.add('panel-left');
+  } else {
+    el.classList.remove('panel-left');
+    el.classList.add('panel-right');
+  }
+}
 
 function renderHeroActivesHud() {
   if (!_heroHudEl) _heroHudEl = document.getElementById('heroActivesHud');
@@ -354,14 +438,9 @@ function renderHeroActivesHud() {
   }
   _heroHudEl.style.display = 'flex';
 
-  // Wire toggle once
+  // Wire drag + toggle once
   if (!_heroHudInitialized && _heroHudToggle) {
-    _heroHudToggle.addEventListener('pointerdown', function(e) {
-      e.stopPropagation();
-      _heroHudOpen = !_heroHudOpen;
-      _heroHudEl.classList.toggle('open', _heroHudOpen);
-      _heroHudLastUpdate = 0; // force refresh on open
-    });
+    _initHeroHudDrag(_heroHudEl, _heroHudToggle);
     _heroHudInitialized = true;
   }
 
