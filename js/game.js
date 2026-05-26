@@ -1218,12 +1218,13 @@ function advanceWave() {
 
 function spawnEnemy() {
   const w = game.bfRect.width;
-  const angle = (Math.random() * 1.7 - 0.85) * (Math.PI / 2);
-  const spawnDist = Math.max(w, game.bfRect.height) * 0.7;
+  // Full 180° arc from top-left through top to top-right (enemies come from above & sides)
+  const angle = (Math.random() * 2.0 - 1.0) * (Math.PI / 2);
+  const spawnDist = Math.max(w, game.bfRect.height) * 0.65;
   const sx = game.towerX + Math.sin(angle) * spawnDist;
   const sy = game.towerY - Math.cos(angle) * spawnDist;
   const x = Math.max(10, Math.min(w - 10, sx));
-  const y = Math.max(-20, Math.min(game.towerY - 60, sy));
+  const y = Math.max(-20, Math.min(game.towerY - 80, sy));
   const r = Math.random();
   let type = 'normal';
   // Tier gates enemy variety. Higher tier = more variety available.

@@ -36,7 +36,7 @@ function updateBfRect() {
   if (!game.bf) return;
   game.bfRect = game.bf.getBoundingClientRect();
   game.towerX = game.bfRect.width / 2;
-  game.towerY = game.bfRect.height * 0.50; // truly centered
+  game.towerY = game.bfRect.height * 0.78; // low position — enemies attack from top & sides
   if (game.towerEl) {
     game.towerEl.style.left = game.towerX + 'px';
     game.towerEl.style.top = game.towerY + 'px';
