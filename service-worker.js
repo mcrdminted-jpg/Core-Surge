@@ -1,4 +1,4 @@
-const CORE_SURGE_CACHE = 'core-surge-shell-v0-7-27';
+const CORE_SURGE_CACHE = 'core-surge-shell-v0-7-28';
 const CORE_SURGE_ASSETS = [
   './',
   './index.html',
@@ -23,7 +23,9 @@ const CORE_SURGE_ASSETS = [
   './js/skins.js',
   './js/profile.js',
   './assets/app/icon.svg',
-  './assets/cores/core_04_aegis.png'
+  './assets/app/icon-180.png',
+  './assets/app/icon-192.png',
+  './assets/app/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

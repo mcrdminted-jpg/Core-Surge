@@ -73,7 +73,9 @@ async function runTests() {
   const indexHtml = await fs.readFile(path.join(root, 'index.html'), 'utf8');
   assert(indexHtml.includes('<!DOCTYPE html>'), 'index.html has DOCTYPE');
   assert(indexHtml.includes('manifest.webmanifest'), 'index.html references manifest');
-  assert(indexHtml.includes('Core Surge v0.7.27'), 'index.html title version is current');
+  assert(indexHtml.includes('Core Surge v0.7.28'), 'index.html title version is current');
+  assert(indexHtml.includes('assets/app/icon-180.png'), 'index.html references Apple touch icon');
+  assert(indexHtml.includes('assets/app/icon-192.png'), 'index.html references PNG favicon');
 
   const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.webmanifest'), 'utf8'));
   assert(manifest.id === '/', 'manifest id is stable');
@@ -81,6 +83,10 @@ async function runTests() {
     'manifest has an any-purpose icon');
   assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.purpose === 'maskable'),
     'manifest has a maskable-purpose icon');
+  assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === 'assets/app/icon-192.png'),
+    'manifest has a 192x192 PNG icon');
+  assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === 'assets/app/icon-512.png'),
+    'manifest has a 512x512 PNG icon');
 
   // ── 2. Card pool integrity ───────────────────────────────
   console.log('── Card Pool ──');

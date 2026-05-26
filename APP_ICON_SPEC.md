@@ -75,6 +75,7 @@
 - Photorealistic rendering (stylized/geometric reads better at small sizes)
 
 ## Current State
-- Only `assets/app/icon.svg` exists (simple SVG placeholder)
-- Professional PNG renders needed at all sizes listed above
-- Consider hiring an icon designer or using vector-to-PNG pipeline from a refined SVG
+- Reproducible icon source now exists at `assets/app/icon-source.png`
+- Generated exports now exist in `assets/app/` including 120, 152, 167, 180, 192, 512, and 1024 PNGs
+- `npm run assets:icons` regenerates the current web and launcher icon set
+- A final native platform audit is still recommended before store submission, but the placeholder-only icon state is resolved

@@ -103,7 +103,9 @@ const CORE_SURGE_ASSETS=[
   './css/core-surge.min.css',
   './js/core-surge.min.js',
   './assets/app/icon.svg',
-  './assets/cores/core_04_aegis.png'
+  './assets/app/icon-180.png',
+  './assets/app/icon-192.png',
+  './assets/app/icon-512.png'
 ];
 
 self.addEventListener('install',(e)=>{

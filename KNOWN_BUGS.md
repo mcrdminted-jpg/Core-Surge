@@ -220,14 +220,14 @@
 - Should have custom error page matching game theme
 - Configure in `firebase.json` rewrites/errorPage
 
-### manifest.webmanifest still needs real PNG app icons
+### Native icon catalogs still need a final store-submission pass
 - **Location**: `manifest.webmanifest`
-- **Issues (Task 69 audit)**:
-  - Stable `id` is now present
-  - Deprecated combined purpose string is now split into `any` and `maskable`
-  - Apple still needs a dedicated 180x180 PNG. Android still wants 192x192 and 512x512 PNGs.
-- **Fix**: Generate dedicated square PNG icons and reference them in manifest + `apple-touch-icon`.
-- **Found**: 2026-05-25 (Task 69 audit, updated 2026-05-25 after manifest cleanup)
+- **Current state**:
+  - Web/PWA icon gap is fixed: dedicated 180, 192, 512, and 1024 PNGs now exist and are wired into the shell
+  - Android launcher exports and the iOS marketing icon were regenerated from the same source art
+  - A later native polish pass should still verify the full adaptive/icon-catalog matrix before store submission
+- **Fix**: Before App Store / Google Play submission, run a platform-specific icon audit in Android Studio and Xcode asset catalogs.
+- **Found**: 2026-05-25 (Task 69 audit, updated 2026-05-25 after PNG icon generation)
 
 ### Missing .firebaserc file
 - **Location**: project root

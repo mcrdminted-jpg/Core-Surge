@@ -119,12 +119,15 @@ This repo now includes lightweight Node scripts with no external packages:
 
 ```
 npm run typecheck
+npm run assets:icons
 npm run build
 npm start
 ```
 
 - `typecheck` parses every game JS file, validates `index.html` asset refs,
   and verifies the web manifest and icons exist.
+- `assets:icons` regenerates the install/store icon pack from
+  `assets/app/icon-source.png`.
 - `build` copies the static app into `dist/` for handoff or deploy packaging.
 - `start` serves the repo locally at `http://127.0.0.1:4173`.
 

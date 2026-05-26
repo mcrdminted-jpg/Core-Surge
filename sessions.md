@@ -328,6 +328,61 @@ Codex:
 
 ---
 
+## 2026-05-25 - Codex - Install Asset Pack Refresh
+
+**Status:** Complete
+
+**Files modified:**
+- assets/app/icon.svg
+- assets/app/icon-source.png
+- assets/app/icon-120.png
+- assets/app/icon-152.png
+- assets/app/icon-167.png
+- assets/app/icon-180.png
+- assets/app/icon-192.png
+- assets/app/icon-512.png
+- assets/app/icon-1024.png
+- scripts/generate-icons.js
+- package.json
+- index.html
+- manifest.webmanifest
+- service-worker.js
+- scripts/build.js
+- scripts/test.js
+- README.md
+- APP_ICON_SPEC.md
+- KNOWN_BUGS.md
+- android/app/src/main/res/values/ic_launcher_background.xml
+- android/app/src/main/res/drawable/ic_launcher_background.xml
+- android/app/src/main/res/mipmap-*/ic_launcher*.png
+- ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+- sessions.md
+
+**What was done:**
+- Generated a new Core Surge master icon concept in the repo-safe neon sci-fi style using the reference direction as art guidance
+- Copied the selected source art into `assets/app/icon-source.png`
+- Built a reproducible icon export pipeline with `npm run assets:icons`
+- Exported a full web/mobile-facing PNG pack for Apple touch icon, PWA manifest, store icon, Android launcher icons, and iOS marketing icon
+- Replaced the old fallback `core_04_aegis.png` apple-touch usage with real dedicated app icons
+- Wired the shell, manifest, service worker, build cache list, and tests to the new icon pack
+- Bumped the shell version to `v0.7.28` so installed PWAs pick up the new cache and icon assets
+
+**Verification:**
+- `npm.cmd run assets:icons` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run build` passed
+- `npm.cmd run test` passed with `246 passed, 0 failed`
+
+**What other agents need to know:**
+- The install/store icon pack is now reproducible from `assets/app/icon-source.png`
+- Use `npm run assets:icons` after any future icon art change
+- The web/PWA icon bug is no longer the blocker; future icon work is native store-polish, not placeholder replacement
+
+**Blockers:**
+- A later native submission pass should still verify the full adaptive/icon-catalog matrix inside Android Studio and Xcode before store release
+
+---
+
 ## 2026-05-25 - Codex - Audit Claude And Cowork Task Drift
 
 **Status:** Complete

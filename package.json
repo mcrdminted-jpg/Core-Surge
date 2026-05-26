@@ -1,9 +1,10 @@
 {
   "name": "core-surge",
   "private": true,
-  "version": "0.7.27",
+  "version": "0.7.28",
   "description": "Core Surge static mobile web game",
   "scripts": {
+    "assets:icons": "node scripts/generate-icons.js",
     "typecheck": "node scripts/typecheck.js",
     "test": "node scripts/test.js",
     "build": "node scripts/build.js",
