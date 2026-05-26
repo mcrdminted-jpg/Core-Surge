@@ -1706,7 +1706,7 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 }
 .daily-login-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
 }
 .daily-login-day {

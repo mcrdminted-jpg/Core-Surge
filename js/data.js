@@ -214,15 +214,13 @@ const CARD_PRICING = {
   // Apex direct unlocks are NOT sold — shard/pity only (v0.8+)
 };
 
-// Daily login reward calendar — 7-day cycle, escalating rewards
+// Daily login reward calendar — 5-day cycle, escalating rewards
 const DAILY_LOGIN_REWARDS = [
   { day: 1, coins: 200,  gems: 0,  label: '200 Scrap' },
   { day: 2, coins: 300,  gems: 2,  label: '300 Scrap + 2💎' },
   { day: 3, coins: 500,  gems: 0,  label: '500 Scrap' },
   { day: 4, coins: 400,  gems: 5,  label: '400 Scrap + 5💎' },
-  { day: 5, coins: 750,  gems: 0,  label: '750 Scrap' },
-  { day: 6, coins: 500,  gems: 8,  label: '500 Scrap + 8💎' },
-  { day: 7, coins: 1000, gems: 15, label: '1K Scrap + 15💎' }
+  { day: 5, coins: 1000, gems: 15, label: '1K Scrap + 15💎' }
 ];
 
 const STORE_PRODUCT_CATALOG = [

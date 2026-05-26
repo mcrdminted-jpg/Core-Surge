@@ -1172,19 +1172,19 @@ function renderDailyLogin() {
   if (dl.lastClaimDay > 0 && today - dl.lastClaimDay > 1) {
     dl.streak = 0; // streak broken
   }
-  const currentDay = canClaim ? (dl.streak % 7) : ((dl.streak - 1 + 7) % 7);
+  const currentDay = canClaim ? (dl.streak % 5) : ((dl.streak - 1 + 5) % 5);
 
   let html = '<div class="daily-login-wrap">';
   html += '<div class="daily-login-header">';
   html += '<span class="daily-login-title">DAILY REWARDS</span>';
-  html += '<span class="daily-login-streak">Streak: ' + Math.min(dl.streak, 7) + '/7</span>';
+  html += '<span class="daily-login-streak">Streak: ' + Math.min(dl.streak, 5) + '/5</span>';
   html += '</div>';
   html += '<div class="daily-login-grid">';
 
   for (let i = 0; i < DAILY_LOGIN_REWARDS.length; i++) {
     const r = DAILY_LOGIN_REWARDS[i];
-    const isCurrent = canClaim && i === (dl.streak % 7);
-    const isPast = !canClaim ? i <= ((dl.streak - 1 + 7) % 7) : i < (dl.streak % 7);
+    const isCurrent = canClaim && i === (dl.streak % 5);
+    const isPast = !canClaim ? i <= ((dl.streak - 1 + 5) % 5) : i < (dl.streak % 5);
     const cls = isCurrent ? 'daily-login-day current' : isPast ? 'daily-login-day claimed' : 'daily-login-day locked';
     const icon = r.gems > 0 ? '💎' : '⊙';
     html += '<div class="' + cls + '" data-login-day="' + i + '">';
@@ -1206,12 +1206,12 @@ function renderDailyLogin() {
     const claimDay = wrap.querySelector('.daily-login-day.current');
     if (claimDay) {
       claimDay.addEventListener('click', function() {
-        const dayIndex = dl.streak % 7;
+        const dayIndex = dl.streak % 5;
         const reward = DAILY_LOGIN_REWARDS[dayIndex];
         save.coins += reward.coins;
         save.gems += (reward.gems || 0);
         dl.lastClaimDay = today;
-        dl.streak = (dl.streak % 7) + 1;
+        dl.streak = (dl.streak % 5) + 1;
         dl.totalClaims++;
         persistSave();
         haptic('success');
