@@ -664,43 +664,13 @@ function renderHud() {
     var bDev = document.getElementById('hudBattleDevBtn');
     if (bDev) bDev.addEventListener('click', openDevPanel);
   } else {
+    // Home screen: no HUD bar — stats live in the mock-hud inside homePanels
     const devBtn = save.settings.devMode ? `<button class="hud-dev-pill" id="hudDevBtn">⚙</button>` : '';
-    hud.innerHTML = `
-      ${devBtn}
-      <div class="hud-stat-card hud-stat-coins">
-        <div class="hud-stat-icon">⊙</div>
-        <div class="hud-stat-body">
-          <div class="hud-stat-value">${formatNum(save.coins)}</div>
-          <div class="hud-stat-label">SCRAP</div>
-        </div>
-      </div>
-      <div class="hud-stat-card hud-stat-gems" id="hudGemsCard">
-        <div class="hud-stat-icon">◆</div>
-        <div class="hud-stat-body">
-          <div class="hud-stat-value">${formatNum(save.gems)}</div>
-          <div class="hud-stat-label">GEMS</div>
-        </div>
-        <div class="hud-stat-plus">+</div>
-      </div>
-      <div class="hud-stat-card hud-stat-best">
-        <div class="hud-stat-icon">🏆</div>
-        <div class="hud-stat-body">
-          <div class="hud-stat-value">W${save.bestWave || 0}</div>
-          <div class="hud-stat-label">BEST</div>
-        </div>
-      </div>
-      <div class="hud-stat-card hud-stat-runs">
-        <div class="hud-stat-icon">⎍</div>
-        <div class="hud-stat-body">
-          <div class="hud-stat-value">${save.totalRuns}</div>
-          <div class="hud-stat-label">RUNS</div>
-        </div>
-      </div>
-    `;
+    hud.innerHTML = devBtn;
+    if (!devBtn) hud.style.display = 'none';
+    else hud.style.display = '';
     const dev = document.getElementById('hudDevBtn');
     if (dev) dev.addEventListener('click', openDevPanel);
-    const gemCard = document.getElementById('hudGemsCard');
-    if (gemCard) gemCard.addEventListener('click', () => { activeSubmenu = 'shop'; renderSubmenu(); });
   }
   // Side buttons (battlefield left/right) are wired independently — they exist outside hud,
   // see wireBattlefieldSideButtons(). Re-wire on every HUD refresh is not needed.
@@ -1240,14 +1210,32 @@ function renderDailyLogin() {
   }
 }
 
-function renderDailyObjective() {
+// Legacy stub — renderDailyObjectiveVisual is the real renderer
+function renderDailyObjective() {}
+
+function getDailyTracker() {
+  var today = Math.floor(Date.now() / 86400000);
+  if (!save._dailyTracker || save._dailyTracker.day !== today) {
+    save._dailyTracker = {
+      day: today,
+      runsAtStart: save.totalRuns,
+      killsAtStart: save.totalEnemiesKilled,
+      bestWaveAtStart: save.bestWave || 0,
+      upgrades: 0
+    };
+  }
+  return save._dailyTracker;
+}
+
+function renderDailyObjectiveVisual() {
   const el = document.getElementById('homeDaily');
   if (!el) return;
 
+  var dt = getDailyTracker();
   const objectives = [
-    { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
-    { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
-    { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
+    { task: 'Complete 2 Runs', check: function() { return save.totalRuns - dt.runsAtStart; }, target: 2, reward: { coins: 500, gems: 5 } },
+    { task: 'Defeat 100 Enemies', check: function() { return save.totalEnemiesKilled - dt.killsAtStart; }, target: 100, reward: { coins: 1000, gems: 10 } },
+    { task: 'Reach Wave 25', check: function() { return save.bestWave || 0; }, target: 25, reward: { coins: 750, gems: 5 } },
     { task: 'Buy 3 Upgrades', check: function() { var today = Math.floor(Date.now() / 86400000); return (save._dailyUpgradeDay === today) ? (save._dailyUpgradeCount || 0) : 0; }, target: 3, reward: { coins: 500, gems: 5 } }
   ];
 
@@ -1256,49 +1244,17 @@ function renderDailyObjective() {
   const current = Math.min(obj.check(), obj.target);
   const pct = Math.min(100, (current / obj.target) * 100);
   const done = current >= obj.target;
-
-  el.innerHTML = `
-    <div class="home-daily-bar">
-      <div class="home-daily-info">
-        <div class="home-daily-label">DAILY OBJECTIVE</div>
-        <div class="home-daily-task">${obj.task}</div>
-        <div class="home-daily-progress">
-          <div class="home-daily-fill" style="width:${pct}%"></div>
-        </div>
-      </div>
-      <div class="home-daily-rewards">
-        <span class="home-daily-reward">+${obj.reward.coins} Scrap &nbsp;+${obj.reward.gems} Gems</span>
-      </div>
-    </div>`;
-}
-
-// Badge counts for submenu tabs — returns object { labs: N, milestones: N, cards: N }
-function renderDailyObjectiveVisual() {
-  const el = document.getElementById('homeDaily');
-  if (!el) return;
-
-  const objectives = [
-    { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
-    { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
-    { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
-    { task: 'Buy 3 Upgrades', check: function() { var today = Math.floor(Date.now() / 86400000); return (save._dailyUpgradeDay === today) ? (save._dailyUpgradeCount || 0) : 0; }, target: 3, reward: { coins: 500, gems: 5 } }
-  ];
-
-  const dayIndex = Math.floor(Date.now() / 86400000) % objectives.length;
-  const obj = objectives[dayIndex];
-  const current = Math.min(obj.check(), obj.target);
-  const pct = Math.min(100, (current / obj.target) * 100);
   const html = `
     <div class="home-daily-bar">
       <div class="home-daily-info">
-        <div class="home-daily-label">Daily Objective</div>
-        <div class="home-daily-task">${obj.task}</div>
+        <div class="home-daily-label">DAILY OBJECTIVE</div>
+        <div class="home-daily-task">${obj.task} <span style="color:var(--muted);font-size:10px;">${current}/${obj.target}</span></div>
         <div class="home-daily-progress">
           <div class="home-daily-fill" style="width:${pct}%"></div>
         </div>
       </div>
       <div class="home-daily-rewards">
-        <span class="home-daily-reward">+${obj.reward.coins} Scrap &nbsp;+${obj.reward.gems} Gems</span>
+        <span class="home-daily-reward">${done ? '✓ DONE' : '+' + obj.reward.coins + ' Scrap  +' + obj.reward.gems + ' Gems'}</span>
       </div>
     </div>`;
 
@@ -1377,8 +1333,8 @@ function renderHomePanelsVisual() {
   el.innerHTML =
     // ─── RESOURCE HUD BAR ───
     '<div class="mock-hud">' +
-      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">COINS</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div></div>' +
-      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div></div>' +
+      '<div class="mock-hud-item" data-home-action="labs"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">SCRAP</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div><span class="mock-hud-plus">+</span></div>' +
+      '<div class="mock-hud-item" data-home-action="shop"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div><span class="mock-hud-plus">+</span></div>' +
       '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
       '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
     '</div>' +

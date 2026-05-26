@@ -2621,6 +2621,15 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 .mock-hud-data { display: flex; flex-direction: column; min-width: 0; }
 .mock-hud-label { font-size: 7px; font-weight: 700; letter-spacing: 1px; color: #7eb8d0; text-transform: uppercase; }
 .mock-hud-val { font-size: 12px; font-weight: 800; color: #e8f4ff; }
+.mock-hud-plus {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--gold);
+  opacity: 0.7;
+  margin-left: auto;
+  cursor: pointer;
+}
+.mock-hud-item[data-home-action] { cursor: pointer; }
 
 /* ─── HERO SECTION ─── */
 .mock-hero {
