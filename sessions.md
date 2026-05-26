@@ -1428,3 +1428,31 @@ pm.cmd run test passed with 261 passed, 0 failed
 
 **Blockers:**
 - None. Ready to push and deploy.
+
+## 2026-05-25 - Codex - v0.7.29 Home Screen Image Redesign
+
+**What I did:**
+- Replaced the old home panel renderer with a new image-led home screen that uses the real in-repo art for cores, backgrounds, enemies, VFX, and research art.
+- Made the new home actions clickable as large visual cards for Ranks, Goals, Loadout, Store, Skins, and Tourney, plus a clickable hero core shortcut into Skins.
+- Added clean override renderers for `renderMenu()`, `renderDailyLogin()`, `renderDailyObjectiveVisual()`, and `renderHomePanelsVisual()` so the live home screen uses plain readable text instead of the mojibake that had crept into the older menu strings.
+- Bumped the shell/app version to `v0.7.29`.
+
+**Files changed:**
+- js/ui.js
+- css/menu.css
+- index.html
+- package.json
+- scripts/test.js
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `261 passed, 0 failed`
+
+**What other agents need to know:**
+- This homepage batch was finished and verified in `tower-game-git`.
+- I attempted to sync the verified files back into `C:\Users\admin\OneDrive - Atlas Home Services\Tower Mobile App Game`, but that write required sandbox escalation and the approval path was blocked by the current usage limit.
+- Do not assume the primary working folder received this batch automatically. If write access is available later, sync these exact files back into the primary folder before the next large Claude/Cowork gameplay batch.
+
+**Blockers:**
+- Primary-folder resync is blocked by the current escalation gate, not by code quality.

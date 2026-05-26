@@ -73,7 +73,7 @@ async function runTests() {
   const indexHtml = await fs.readFile(path.join(root, 'index.html'), 'utf8');
   assert(indexHtml.includes('<!DOCTYPE html>'), 'index.html has DOCTYPE');
   assert(indexHtml.includes('manifest.webmanifest'), 'index.html references manifest');
-  assert(indexHtml.includes('Core Surge v0.7.28'), 'index.html title version is current');
+  assert(indexHtml.includes('Core Surge v0.7.29'), 'index.html title version is current');
   assert(indexHtml.includes('assets/app/icon-180.png'), 'index.html references Apple touch icon');
   assert(indexHtml.includes('assets/app/icon-192.png'), 'index.html references PNG favicon');
 

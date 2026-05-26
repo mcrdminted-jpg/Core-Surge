@@ -2075,6 +2075,7 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   width: 92px;
   height: 92px;
   z-index: 2;
+  cursor: pointer;
   filter: drop-shadow(0 0 22px rgba(0, 229, 255, 0.5));
   animation: preview-float 3.2s ease-in-out infinite;
 }
