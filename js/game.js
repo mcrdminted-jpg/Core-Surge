@@ -96,13 +96,13 @@ function milestoneReward(tier, wave) {
   else                    baseCoins = 181800 + (wave - 1500) * 500; // W2000 = 431,800
   const coins = Math.floor(baseCoins * tierMul);
 
-  // --- GEMS: start at W50, scale meaningfully ---
+  // --- GEMS: start at W50, modest ramp (gems are premium) ---
   let gems = 0;
-  if (wave >= 50 && wave < 200)        gems = Math.floor(3 + (wave / 30));
-  else if (wave >= 200 && wave < 500)  gems = Math.floor(10 + (wave / 20));
-  else if (wave >= 500 && wave < 1000) gems = Math.floor(35 + (wave / 10));
-  else if (wave >= 1000)               gems = Math.floor(135 + (wave / 5));
-  gems = Math.floor(gems * Math.pow(1.5, tier - 1));
+  if (wave >= 50 && wave < 200)        gems = Math.floor(1 + (wave / 100));
+  else if (wave >= 200 && wave < 500)  gems = Math.floor(3 + (wave / 50));
+  else if (wave >= 500 && wave < 1000) gems = Math.floor(15 + (wave / 25));
+  else if (wave >= 1000)               gems = Math.floor(50 + (wave / 10));
+  gems = Math.floor(gems * Math.pow(1.25, tier - 1));
 
   // --- TRAINING MANUALS: start at W75, generous at deep waves ---
   let manuals = 0;
