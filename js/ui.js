@@ -1010,7 +1010,7 @@ function renderHomePanels() {
   const totalSlots = getUnlockedSlots();
 
   // --- Left: Recent Progress ---
-  const progressPct = Math.min(100, (bestThisTier / 100) * 100);
+  const progressPct = Math.min(100, (bestThisTier / 50) * 100);
   const nextTierReady = bestThisTier >= 100 && sel < MAX_TIER;
 
   let progressHTML = `
@@ -1273,7 +1273,7 @@ function renderHomePanelsVisual() {
   const bestOverall = Math.max(...Object.values(save.bestWavePerTier || {1:0}));
   const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
   const totalSlots = getUnlockedSlots();
-  const progressPct = Math.min(100, (bestThisTier / 100) * 100);
+  const progressPct = Math.min(100, (bestThisTier / 50) * 100);
   const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
   const maxTier = highestUnlockedTier();
 
@@ -1294,7 +1294,7 @@ function renderHomePanelsVisual() {
   let tierHint = '';
   if (sel === maxTier && maxTier < MAX_TIER) {
     const need = 100 - bestThisTier;
-    tierHint = need > 0 ? `W100 on T${sel} to unlock T${sel+1}` : `T${sel+1} unlocked!`;
+    tierHint = need > 0 ? `W50 on T${sel} to unlock T${sel+1}` : `T${sel+1} unlocked!`;
   } else if (sel < maxTier) {
     tierHint = `Best on T${sel}: W${bestThisTier}`;
   } else {
@@ -3106,7 +3106,7 @@ function renderSettingsTab(c) {
   // Version text — tap 7 times to unlock dev panel
   const ver = document.createElement('div');
   ver.style.cssText = 'text-align:center;color:var(--muted);font-size:9px;margin-top:12px;line-height:1.5;cursor:pointer;padding:10px;user-select:none';
-  const verDefault = 'Core Surge v0.7.24 · Installable App Shell · tap 7x for dev tools';
+  const verDefault = 'Core Surge v0.7.30 · Installable App Shell · tap 7x for dev tools';
   ver.textContent = verDefault;
   let tapCount = 0;
   let tapTimer = null;

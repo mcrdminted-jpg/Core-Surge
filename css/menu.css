@@ -2902,11 +2902,6 @@ body[data-preview-core="royal"]      #menuPreviewCore { background-image: url(".
   right: 4px;
   font-size: 10px;
 }
-<<<<<<< HEAD
-ackgrounds/bg_03_organic.png"); }
-body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../assets/backgrounds/bg_04_steel.png"); }
-=======
->>>>>>> fbf4612 (Battlefield zoom-out, speed pricing, milestone overhaul, bg skin cleanup (v0.7.30))
 
 /* ==================== LOADOUT SUB-TABS (v0.8) ==================== */
 .loadout-subtab-bar {

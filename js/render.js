@@ -164,12 +164,14 @@ function render() {
   const hudKillCount = document.getElementById('hudKillCount');
   if (hudKillCount) hudKillCount.textContent = game.enemiesKilledThisRun + ' kills';
   const coinPreview = document.getElementById('coinPreview');
-  const newCoins = formatNum(coinRewardForRun(game.wave, game.cashEarnedThisRun));
-  if (coinPreview.textContent !== newCoins) {
-    coinPreview.textContent = newCoins;
-    coinPreview.classList.remove('coin-pulse');
-    void coinPreview.offsetWidth;
-    coinPreview.classList.add('coin-pulse');
+  if (coinPreview) {
+    const newCoins = formatNum(coinRewardForRun(game.wave, game.cashEarnedThisRun));
+    if (coinPreview.textContent !== newCoins) {
+      coinPreview.textContent = newCoins;
+      coinPreview.classList.remove('coin-pulse');
+      void coinPreview.offsetWidth;
+      coinPreview.classList.add('coin-pulse');
+    }
   }
   updateUpgradeAffordability();
   if (document.getElementById('liveStats').classList.contains('open')) renderLiveStats();

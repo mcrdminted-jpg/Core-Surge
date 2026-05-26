@@ -669,6 +669,7 @@ function startBattle(startingWave) {
   game.focusShotsRemaining = 0;
   game.focusTarget = null;
   game.regenAccum = 0;
+  game.shieldRegenAccum = 0;
   game.healsUsed = 0;
   game.bossSpawned = false;
   game.comboCount = 0;
@@ -873,7 +874,7 @@ function update(dt, rawDt) {
   const decayMs = getComboDecayMs();
   if (game.comboCount > 0) {
     const timeSinceKill = now - game.comboLastKillTime;
-    if (timeSinceKill > decayMs) {
+    if (timeSinceKill > decayMs || decayMs <= 500) {
       game.comboCount = 0;
     } else if (timeSinceKill > 500) {
       // Linear decay starting at 0.5s, fully gone at decayMs
