@@ -1241,7 +1241,7 @@ function renderDailyObjective() {
         </div>
       </div>
       <div class="home-daily-rewards">
-        <span class="home-daily-reward">+${obj.reward.coins}⊙ +${obj.reward.gems}💎</span>
+        <span class="home-daily-reward">+${obj.reward.coins} Scrap &nbsp;+${obj.reward.gems} Gems</span>
       </div>
     </div>`;
 }
@@ -1272,7 +1272,7 @@ function renderDailyObjectiveVisual() {
         </div>
       </div>
       <div class="home-daily-rewards">
-        <span class="home-daily-reward">+${obj.reward.coins}âŠ™ +${obj.reward.gems}ðŸ’Ž</span>
+        <span class="home-daily-reward">+${obj.reward.coins} Scrap &nbsp;+${obj.reward.gems} Gems</span>
       </div>
     </div>`;
 
