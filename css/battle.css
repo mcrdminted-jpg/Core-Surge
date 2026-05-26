@@ -115,9 +115,10 @@
   /* Battlefield wrapper with left/right side buttons — fills entire battle screen */
   .battlefield-wrap {
     position: relative;
-    flex: 1;
+    flex: 1 1 0;
     display: flex;
     min-height: 0;
+    max-height: 50vh;
     z-index: 1;
   }
   .bf-side {

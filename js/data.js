@@ -13,7 +13,7 @@ const SAVE_KEY = 'tower_save_v8';
 // v7 added to the graveyard on v0.7.15 — labs replaced by ranks system,
 // fresh start is intentional.
 const DEAD_SAVE_KEYS = ['tower_save_v7', 'tower_save_v6', 'tower_save_v5', 'tower_save_v4', 'tower_save_v3', 'tower_save_v2'];
-const MAX_TIER = 18;
+const MAX_TIER = 100;
 const MILESTONE_WAVES = [25, 50, 100, 200, 500, 1000, 2500, 5000, 10000];
 
 // ============================================================

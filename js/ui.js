@@ -4,6 +4,17 @@
 // ============================================================
 
 // ============================================================
+// TIER LABELS — generates names for tiers 1–100
+// ============================================================
+function getTierLabel(tier) {
+  var labels = ['Normal','Hard','Brutal','Inferno','Mythic','Ascended','Eternal','Omega',
+                'Titan','Apex','Void','Abyssal','Celestial','Primordial','Transcendent',
+                'Quantum','Singularity','Eclipse','Nexus','Infinity'];
+  if (tier <= labels.length) return labels[tier - 1];
+  return 'Tier ' + tier;
+}
+
+// ============================================================
 // HAPTIC FEEDBACK — lightweight wrapper for Capacitor Haptics
 // Falls back to navigator.vibrate on web. No-op on unsupported.
 // ============================================================
@@ -1327,8 +1338,7 @@ function renderHomePanelsVisual() {
   const previewBg = save.equippedBgSkin || 'cyber_grid';
 
   // Tier difficulty label
-  const tierLabels = {1:'Normal',2:'Hard',3:'Brutal',4:'Inferno',5:'Mythic',6:'Ascended',7:'Eternal',8:'Omega'};
-  const tierLabel = tierLabels[sel] || 'Normal';
+  const tierLabel = getTierLabel(sel);
 
   // Tier unlock hint
   let tierHint = '';

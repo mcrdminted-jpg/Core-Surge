@@ -215,7 +215,7 @@ async function runTests() {
   // â”€â”€ 10. Game constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Game Constants â”€â”€');
 
-  assert(ctx.MAX_TIER === 18, `MAX_TIER = 18 (got ${ctx.MAX_TIER})`);
+  assert(ctx.MAX_TIER === 100, `MAX_TIER = 100 (got ${ctx.MAX_TIER})`);
   assert(ctx.MILESTONE_WAVES.length === 9, `9 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
   assert(ctx.MILESTONE_WAVES[0] === 25, `First milestone = wave 25`);
   assert(ctx.MILESTONE_WAVES[8] === 10000, `Last milestone = wave 10000`);
