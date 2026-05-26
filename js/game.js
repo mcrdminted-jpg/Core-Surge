@@ -82,36 +82,38 @@ function highestUnlockedTier() {
 function tierMultiplier_deprecated(tier) { return Math.pow(1.5, tier - 1); }
 
 function milestoneReward(tier, wave) {
-  // Multi-currency rewards that escalate sharply at deep waves.
+  // Multi-currency rewards that escalate HARD at deep waves.
+  // A W2000 marathon should feel massively rewarding.
   // Tier multiplier: each tier roughly doubles rewards.
   const tierMul = Math.pow(2.0, tier - 1);
 
-  // --- SCRAP: base scales with wave, accelerates past W500 ---
+  // --- SCRAP: aggressive curve that really pays off for deep runs ---
   let baseCoins;
-  if (wave <= 100)       baseCoins = wave * 3;
-  else if (wave <= 500)  baseCoins = 300 + (wave - 100) * 8;
-  else if (wave <= 1000) baseCoins = 3500 + (wave - 500) * 25;
-  else                   baseCoins = 16000 + (wave - 1000) * 60;
+  if (wave <= 100)        baseCoins = wave * 8;            // W100 = 800
+  else if (wave <= 300)   baseCoins = 800 + (wave - 100) * 20;    // W300 = 4,800
+  else if (wave <= 750)   baseCoins = 4800 + (wave - 300) * 60;   // W750 = 31,800
+  else if (wave <= 1500)  baseCoins = 31800 + (wave - 750) * 200; // W1500 = 181,800
+  else                    baseCoins = 181800 + (wave - 1500) * 500; // W2000 = 431,800
   const coins = Math.floor(baseCoins * tierMul);
 
-  // --- GEMS: start at W50, ramp up significantly at deep waves ---
+  // --- GEMS: start at W50, scale meaningfully ---
   let gems = 0;
-  if (wave >= 50 && wave < 200)       gems = Math.floor(1 + (wave / 100));
-  else if (wave >= 200 && wave < 500) gems = Math.floor(3 + (wave / 50));
-  else if (wave >= 500 && wave < 1000) gems = Math.floor(15 + (wave / 25));
-  else if (wave >= 1000)              gems = Math.floor(50 + (wave / 10));
-  gems = Math.floor(gems * Math.pow(1.25, tier - 1));
+  if (wave >= 50 && wave < 200)        gems = Math.floor(3 + (wave / 30));
+  else if (wave >= 200 && wave < 500)  gems = Math.floor(10 + (wave / 20));
+  else if (wave >= 500 && wave < 1000) gems = Math.floor(35 + (wave / 10));
+  else if (wave >= 1000)               gems = Math.floor(135 + (wave / 5));
+  gems = Math.floor(gems * Math.pow(1.5, tier - 1));
 
-  // --- TRAINING MANUALS: start at W100, big rewards at deep waves ---
+  // --- TRAINING MANUALS: start at W75, generous at deep waves ---
   let manuals = 0;
-  if (wave >= 100 && wave < 300)       manuals = 1;
-  else if (wave >= 300 && wave < 500)  manuals = 2;
-  else if (wave >= 500 && wave < 750)  manuals = 3;
-  else if (wave >= 750 && wave < 1000) manuals = 5;
-  else if (wave >= 1000 && wave < 1500) manuals = 8;
-  else if (wave >= 1500)               manuals = 12;
-  // Tier bonus: +1 manual per 3 tiers
-  manuals += Math.floor((tier - 1) / 3);
+  if (wave >= 75 && wave < 200)        manuals = 1;
+  else if (wave >= 200 && wave < 400)  manuals = 2;
+  else if (wave >= 400 && wave < 600)  manuals = 3;
+  else if (wave >= 600 && wave < 1000) manuals = 5;
+  else if (wave >= 1000 && wave < 1500) manuals = 10;
+  else if (wave >= 1500)               manuals = 15;
+  // Tier bonus: +1 manual per 2 tiers
+  manuals += Math.floor((tier - 1) / 2);
 
   return { coins, gems, manuals };
 }
