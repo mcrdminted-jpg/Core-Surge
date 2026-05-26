@@ -26,6 +26,8 @@ const SPEED_UNLOCK_COST = {
   10: { coins: 5000000, gems: 1500 }   // endgame unlock
 };
 function maxUnlockedSpeed() {
+  // Dev mode: all speed tiers unlocked
+  if (typeof save !== 'undefined' && save.settings && save.settings.devMode) return 10;
   let max = 1; // only x1 is free
   if (typeof save !== 'undefined' && save.unlockedSpeeds) {
     for (const s of SPEED_TIERS) {
