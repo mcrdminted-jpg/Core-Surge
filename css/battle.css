@@ -414,6 +414,8 @@
   .binfo-cash b { color: var(--good); }
   .binfo-kills { color: var(--danger); }
   .binfo-kills b { color: var(--danger); }
+  .binfo-scrap { color: var(--gold); }
+  .binfo-scrap b { color: var(--gold); }
 
   .upgrades-wrap {
     background: var(--bg-2);

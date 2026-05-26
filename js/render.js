@@ -132,18 +132,14 @@ function render() {
   document.getElementById('cashDisp').textContent = formatNum(game.cash);
   document.getElementById('waveProg').textContent = `${game.enemiesKilledInWave}/${game.enemiesPerWave}`;
 
-  // Shield bar
+  // Shield bar — always visible
   const shieldWrap = document.getElementById('shieldBarWrap');
   if (shieldWrap) {
     const shieldMax = game.shieldMax || 0;
     const shieldCur = Math.max(0, game.shield || 0);
-    if (shieldMax > 0) {
-      shieldWrap.style.display = '';
-      document.getElementById('shieldFill').style.width = (shieldCur / shieldMax * 100) + '%';
-      document.getElementById('shieldText').textContent = `${Math.floor(shieldCur)} / ${Math.floor(shieldMax)}`;
-    } else {
-      shieldWrap.style.display = 'none';
-    }
+    const pct = shieldMax > 0 ? (shieldCur / shieldMax * 100) : 0;
+    document.getElementById('shieldFill').style.width = pct + '%';
+    document.getElementById('shieldText').textContent = `\u{1F6E1} ${Math.floor(shieldCur)} / ${Math.floor(shieldMax)}`;
   }
 
   // Battle info bar (bottom, between battlefield and upgrades)
@@ -155,6 +151,8 @@ function render() {
   if (binfoCash) binfoCash.textContent = formatNum(game.cash);
   const binfoKills = document.getElementById('binfoKills');
   if (binfoKills) binfoKills.textContent = `${game.enemiesKilledInWave} / ${game.enemiesPerWave}`;
+  const binfoScrap = document.getElementById('binfoScrap');
+  if (binfoScrap) binfoScrap.textContent = formatNum(coinRewardForRun(game.wave, game.cashEarnedThisRun));
 
   // HUD resource cards (new for v0.7.7)
   const hudCoinsEl = document.getElementById('hudCoinsValue');
