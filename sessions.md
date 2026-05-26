@@ -1453,3 +1453,51 @@ pm.cmd run test passed with 261 passed, 0 failed
 
 **Blockers:**
 - None. Ready to push and deploy.
+
+## 2026-05-26 - Codex - Dev Menu Hero And Currency Controls
+
+**What I did:**
+- Extended the dev menu so it can grant a chosen amount of scrap, gems, manuals, and in-run cash from one numeric input.
+- Added hero-specific dev controls: unlock all heroes, remove all heroes, fill garrison, clear garrison, set unlocked heroes to level 10 or 50, and max core level.
+- Styled the new dev grant input row in the base CSS so it remains usable on mobile.
+- Used late-file override functions for `renderDevPanel()` and `devAct()` so the new dev controls win cleanly even though the older block in `js/ui.js` has encoding damage.
+
+**Files changed:**
+- js/ui.js
+- css/base.css
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `264 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch is verified in `tower-game-git`.
+- The primary working folder is still ahead overall on broader gameplay/UI work, but this specific dev menu batch is currently only guaranteed here until the next controlled reconcile.
+
+**Blockers:**
+- None for the dev menu itself.
+
+## 2026-05-26 - Codex - Responsive Card Reskin Pass
+
+**What I did:**
+- Reskinned the inventory cards with CSS only in `css/menu.css` so they feel like finished game cards instead of blank stat blocks.
+- Built the reskin as layered gradients, glows, scanlines, glass panels, and per-card palettes keyed off existing `data-card` selectors. No JS or gameplay logic changed.
+- Upgraded the inventory grid to scale better on phones, Samsungs, and tablets with `auto-fit` sizing and larger tile proportions.
+- Improved the filled loadout, home, and mock card slots so the whole card system has more depth even where there is no per-card selector available.
+
+**Files changed:**
+- css/menu.css
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `264 passed, 0 failed`
+
+**What other agents need to know:**
+- This is a CSS-only art/reskin batch. Do not describe it as generated PNG art. It is responsive and scales with screen size.
+- Inventory tiles can be uniquely skinned because the markup already has `data-card`. Filled loadout slots still have generic art treatment only because they do not expose the card id in markup.
+- Local browser preview was blocked by this environment's URL policy for `file://` and localhost-style checks, so the verification here is build/typecheck/test rather than a live visual browser confirmation.
+
+**Blockers:**
+- None in repo verification. Live visual confirmation still needs a deployed or otherwise browser-allowed preview target.
