@@ -21,8 +21,8 @@ function applyEquippedSkins() {
   const bf = document.getElementById('battlefield');
   if (!tower || !bf) return;
 
-  const core = (typeof save !== 'undefined' && save.equippedCoreSkin) || null;
-  const bg   = (typeof save !== 'undefined' && save.equippedBgSkin)   || null;
+  const core = (typeof save !== 'undefined' && save.equippedCoreSkin) || 'sentinel';
+  const bg   = (typeof save !== 'undefined' && save.equippedBgSkin)   || 'cyber_grid';
 
   if (core && CORE_SKIN_IDS.includes(core)) {
     tower.setAttribute('data-core-skin', core);

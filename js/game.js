@@ -603,6 +603,8 @@ function startBattle(startingWave) {
       // Update battlefield rect AFTER upgrade panel renders, so tower position
       // uses the final battlefield height (upgrade panel eats space).
       updateBfRect();
+      // Apply core + background art skins to battlefield elements
+      if (typeof applyEquippedSkins === 'function') applyEquippedSkins();
       // And once more after a frame settles, belt-and-suspenders for iOS layout
       requestAnimationFrame(() => updateBfRect());
       startLoop();

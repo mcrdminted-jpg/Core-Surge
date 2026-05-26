@@ -935,9 +935,12 @@ let homeViewActive = true;
 // When a tab is active: those home sections hide; submenu content shown.
 function setHomeView(show) {
   homeViewActive = show;
+  // Old hero + tier-select are replaced by the showcase in homePanels — hide them always
+  const oldHero = document.querySelector('.menu-hero');
+  const oldTier = document.querySelector('.tier-select');
+  if (oldHero) oldHero.style.display = 'none';
+  if (oldTier) oldTier.style.display = 'none';
   const els = [
-    document.querySelector('.menu-hero'),
-    document.querySelector('.tier-select'),
     document.getElementById('homeDaily'),
     document.getElementById('homePanels')
   ];
@@ -1343,7 +1346,7 @@ function renderHomePanelsVisual() {
       <div class="home-showcase-copy">
         <div class="home-showcase-kicker">${bgNames[previewBg] || 'Cyber Grid'} Arena</div>
         <div class="home-showcase-title">${coreNames[previewCore] || 'Sentinel'} Core</div>
-        <div class="home-showcase-subtitle">Tier T${sel} · ×${tierMultiplier(sel).toFixed(2)} · ${bestThisTier >= 100 && sel < MAX_TIER ? `T${sel + 1} Ready` : `Best W${bestThisTier}`}</div>
+        <div class="home-showcase-subtitle"><button class="home-tier-arrow" data-tier-dir="down" ${sel <= 1 ? 'disabled' : ''}>&#8249;</button> Tier T${sel} · ×${tierMultiplier(sel).toFixed(2)} · Best W${bestThisTier} <button class="home-tier-arrow" data-tier-dir="up" ${sel >= highestUnlockedTier() ? 'disabled' : ''}>&#8250;</button></div>
       </div>
       <div class="home-showcase-stats">
         <div class="home-showcase-stat">
@@ -1398,6 +1401,21 @@ function renderHomePanelsVisual() {
       activeSubmenu = action;
       setHomeView(false);
       renderSubmenu();
+    });
+  });
+
+  // Tier arrows in showcase
+  el.querySelectorAll('[data-tier-dir]').forEach((arrow) => {
+    arrow.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const dir = arrow.dataset.tierDir;
+      if (dir === 'up' && save.selectedTier < highestUnlockedTier()) {
+        save.selectedTier++;
+      } else if (dir === 'down' && save.selectedTier > 1) {
+        save.selectedTier--;
+      }
+      persistSave();
+      renderHomePanelsVisual();
     });
   });
 
