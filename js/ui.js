@@ -553,7 +553,11 @@ function refreshBtn(key) {
 }
 
 function updateUpgradeAffordability() {
-  const btns = document.querySelectorAll('.upgrade-btn');
+  // Scope to battle upgrade panel only — home rank cards also use .upgrade-btn
+  // but have data-rank instead of data-key and must not be touched here.
+  const wrap = document.getElementById('upgradesWrap');
+  if (!wrap) return;
+  const btns = wrap.querySelectorAll('.upgrade-btn');
   for (const btn of btns) {
     const key = btn.dataset.key;
     if (key === 'heal') {
@@ -565,6 +569,7 @@ function updateUpgradeAffordability() {
       continue;
     }
     const u = game.upgrades[key];
+    if (!u) continue; // safety guard for non-battle buttons
     const maxed = u.max && u.level >= u.max;
     if (maxed) {
       btn.disabled = true;
@@ -1804,6 +1809,8 @@ function renderLabsTab(c) {
       const fid = btn.dataset.morFam;
       if (purchaseUnlockFamily(fid)) {
         haptic('success');
+        // Buying a family may unlock gated heroes
+        if (typeof checkHeroUnlocks === 'function') checkHeroUnlocks();
         renderLabsTab(c);
         renderHud();
       }
@@ -2066,6 +2073,18 @@ function renderMilestonesTab(c) {
     if (btn.disabled) return;
     btn.addEventListener('click', () => claimMilestone(parseInt(btn.dataset.tier), parseInt(btn.dataset.wave)));
   });
+}
+
+// ============================================================
+// HERO UNLOCK TOAST
+// ============================================================
+function showHeroUnlockToast(heroDef) {
+  const toast = document.createElement('div');
+  toast.className = 'skin-toast hero-unlock-toast';
+  toast.style.background = 'rgba(20,180,160,0.95)';
+  toast.innerHTML = `<span style="font-size:1.3em">${heroDef.icon}</span> Hero unlocked: <b>${heroDef.name}</b>`;
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.remove(); }, 3500);
 }
 
 // Loadout sub-tab state: 'cards' or 'heroes'
