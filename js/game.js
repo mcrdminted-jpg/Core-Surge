@@ -26,7 +26,7 @@ function highestUnlockedTier() {
   let unlocked = 1;
   for (let t = 1; t < MAX_TIER; t++) {
     const reached = save.bestWavePerTier[t] || 0;
-    if (reached >= 100) unlocked = t + 1;
+    if (reached >= 50) unlocked = t + 1;
     else break;
   }
   return unlocked;
@@ -34,7 +34,9 @@ function highestUnlockedTier() {
 function tierMultiplier_deprecated(tier) { return Math.pow(1.5, tier - 1); }
 
 function milestoneReward(tier, wave) {
-  const baseCoins = Math.floor(wave * 0.8 * Math.pow(1.7, tier - 1));
+  // v0.7.28: scaled up to feel meaningful in a 3.75M-scrap economy.
+  // T1W25=62, T1W100=250, T5W100=4000, T10W100=128K, T18W10000=massive
+  const baseCoins = Math.floor(wave * 2.5 * Math.pow(2.0, tier - 1));
   const gems = wave >= 100 ? Math.max(1, Math.floor((wave / 50) * Math.pow(1.3, tier - 1))) : 0;
   return { coins: baseCoins, gems };
 }
@@ -60,6 +62,7 @@ function claimMilestone(tier, wave) {
 // ============================================================
 const game = {
   running: false,
+  paused: false,
   startTime: 0,
   tier: 1,
   wave: 1,
@@ -100,7 +103,7 @@ const game = {
     waveBonus:        { name: 'Wave Bonus',       group: 'economy', level: 0, cost0: 25,   costMul: 1.13 },
     combo:            { name: 'Combo',            group: 'economy', level: 0, cost0: 40,   costMul: 1.15, max: 20 },
     bossBounty:       { name: 'Boss Bounty',      group: 'economy', level: 0, cost0: 60,   costMul: 1.16 },
-    coinBonus:        { name: 'Coin Bonus',       group: 'economy', level: 0, cost0: 500,  costMul: 1.22, max: 50 },
+    coinBonus:        { name: 'Scrap Bonus',      group: 'economy', level: 0, cost0: 500,  costMul: 1.22, max: 50 },
     // ACTION
     heal:             { name: 'Heal',             group: 'action',  level: 0, cost0: 0,    costMul: 1, isAction: true }
   },
@@ -209,26 +212,29 @@ function getDefenseFractionNext() {
   return Math.min(0.75, (u.level + 1) * 0.005 + rankFlat + getCardBucket('defense'));
 }
 
-// === Range === (words, not pixels)
-// Max 100 levels. Band map:
-//   0-19 = Short, 20-39 = Medium, 40-59 = Long, 60-79 = Very Long, 80+ = Edge
-function getRangeLevel() { return game.upgrades.range.level + rankFlatBonus('range'); }
+// === Range ===
+// In-run upgrades add 3px per level (max 100 levels = 300px).
+// Permanent ranks add flatPerRank (1.2) per rank directly (500 ranks = 600px = full screen).
+// Base range: 120px (small circle around tower).
+function getRangeLevel() { return game.upgrades.range.level + Math.floor(rankFlatBonus('range')); }
 function getRange() {
-  const effectiveLevel = game.upgrades.range.level + rankFlatBonus('range');
-  const base = 120 + effectiveLevel * 6;
+  const inRunLevel = game.upgrades.range.level;
+  const permBonus = rankFlatBonus('range'); // 500 * 1.2 = 600px at max
+  const base = 120 + inRunLevel * 3 + permBonus;
   return base * (1 + getCardBucket('range'));
 }
 function getRangeNext() {
-  const effectiveLevel = game.upgrades.range.level + 1 + rankFlatBonus('range');
-  const base = 120 + effectiveLevel * 6;
+  const inRunLevel = game.upgrades.range.level + 1;
+  const permBonus = rankFlatBonus('range');
+  const base = 120 + inRunLevel * 3 + permBonus;
   return base * (1 + getCardBucket('range'));
 }
-function rangeLabel(lvl) {
-  if (lvl < 20)  return 'Short';
-  if (lvl < 40)  return 'Medium';
-  if (lvl < 60)  return 'Long';
-  if (lvl < 80)  return 'Very Long';
-  return 'Edge of Screen';
+function rangeLabel(rangeVal) {
+  if (rangeVal < 200)  return 'Short';
+  if (rangeVal < 350)  return 'Medium';
+  if (rangeVal < 500)  return 'Long';
+  if (rangeVal < 650)  return 'Very Long';
+  return 'Full Screen';
 }
 
 // === Crit Chance === (1% per in-run level, rank adds flat)
@@ -436,7 +442,7 @@ function upgradeDescriptor(key) {
     case 'waveBonus':        return { cur: '×' + getWaveBonusMul().toFixed(2), next: '×' + getWaveBonusMulNext().toFixed(2), unit: '' };
     case 'combo':            return { cur: '×' + getComboMaxMul().toFixed(2), next: '×' + getComboMaxMulNext().toFixed(2), unit: ' max' };
     case 'bossBounty':       return { cur: '×' + getBossBountyMul().toFixed(2), next: '×' + getBossBountyMulNext().toFixed(2), unit: '' };
-    case 'coinBonus':        return { cur: '×' + getCoinBonusMul().toFixed(2), next: '×' + getCoinBonusMulNext().toFixed(2), unit: ' coins' };
+    case 'coinBonus':        return { cur: '×' + getCoinBonusMul().toFixed(2), next: '×' + getCoinBonusMulNext().toFixed(2), unit: ' scrap' };
   }
   return { cur: '', next: '', unit: '' };
 }
@@ -481,42 +487,30 @@ function enemyHpForWave(wave) {
 }
 function enemySpeedForWave(wave) { return 35 + Math.min(50, wave * 0.25); }
 function cashRewardForWave(wave) {
-  const baseCash = (game.tier === 1 && wave <= 10) ? 4 : 5;
-  return Math.floor(baseCash * cashWaveMul(wave) * cashTierMul(game.tier));
+  // Base cash 5 so first kill buys the first Damage upgrade (cost0 = 5).
+  return Math.floor(5 * cashWaveMul(wave) * cashTierMul(game.tier));
 }
 function damageToTowerForWave(wave) {
   return Math.floor(3 * dmgWaveMul(wave) * dmgTierMul(game.tier));
 }
-function hasSpreadUnlocks() {
-  return !!(save && save.unlocks && (save.unlocks.multishotSystems || save.unlocks.bounceSystems));
-}
-function enemiesPerWaveForWave(wave) {
-  if (wave % 25 === 0 && wave > 0) return 1;
-  if (game.tier === 1) {
-    if (wave <= 5) return 7;
-    if (wave <= 10) return 8;
-    if (wave <= 20) return 9;
-  }
-  if (game.tier === 2 && wave <= 10) return 9;
-  return 10;
-}
 function spawnIntervalForWave(wave) {
-  if (game.tier === 1) {
-    if (wave <= 10) return Math.max(980, 1500 - wave * 45);
-    if (wave <= 25) return Math.max(760, 1120 - (wave - 10) * 18);
-  }
-  if (!hasSpreadUnlocks() && game.tier <= 2 && wave <= 12) {
-    return Math.max(840, 1260 - wave * 28);
-  }
-  if (wave <= 30) return Math.max(520, 1020 - wave * 10);
-  if (wave <= 120) return Math.max(320, 710 - (wave - 30) * 4);
-  return 280;
+  // Base interval decreases as waves progress
+  let base;
+  if (wave <= 30) base = Math.max(500, 1000 - wave * 12);
+  else if (wave <= 120) base = Math.max(320, 700 - (wave - 30) * 4);
+  else base = 280;
+  // Tier scaling: Tier 1 spawns 60% slower, scaling down to 0% bonus by Tier 5+
+  // This gives single-target players time to handle enemies without multishot
+  const tierSlowdown = Math.max(0, 1 - (game.tier - 1) * 0.15); // T1=1.0, T2=0.85, T3=0.7, T4=0.55, T5+=0
+  return Math.floor(base * (1 + tierSlowdown * 0.6));
 }
 // End-run coin reward: sublinear in wave, linear in tier, so deep runs have diminishing returns.
 function coinRewardForRun(maxWave, totalCash) {
-  const wavePart = Math.pow(maxWave, 1.24) * Math.pow(1.16, game.tier - 1);
-  const cashPart = Math.pow(Math.max(1, totalCash), 0.58) / 55;
-  const bossPart = game.bossesDefeated * 6 * Math.pow(1.08, game.tier - 1);
+  // v0.7.25: Reduced wavePart exponent from 1.35 to 1.15 to slow early-tier
+  // coin accumulation. Tier multiplier raised so higher tiers feel more rewarding.
+  const wavePart = Math.pow(maxWave, 1.15) * Math.pow(1.30, game.tier - 1);
+  const cashPart = Math.pow(Math.max(1, totalCash), 0.50) / 50;
+  const bossPart = game.bossesDefeated * 6 * Math.pow(1.15, game.tier - 1);
   const coinBonus = (game.upgrades && game.upgrades.coinBonus) ? getCoinBonusMul() : 1;
   const cardCoinGain = 1 + getCardBucket('coinGain');
   const permCoinMul = 1 + getCoinMultiplierBonus();
@@ -536,22 +530,30 @@ const ENEMY_TYPES = {
   shooter:   { name: 'Shooter',   color: 'var(--cyan2)',  hpMul: 1.0, speedMul: 0.8,  dmgMul: 0.5, meleeIntervalMul: 1.0,  unlockTier: 4,  desc: 'Stops & shoots' },
   elite:     { name: 'Elite',     color: 'var(--text)',   hpMul: 5.0, speedMul: 0.7,  dmgMul: 2.0, meleeIntervalMul: 1.1,  unlockTier: 5,  desc: 'Rare, dangerous' },
   augmenter: { name: 'Augmenter', color: 'var(--good)',   hpMul: 2.0, speedMul: 0.6,  dmgMul: 0.5, meleeIntervalMul: 1.2,  unlockTier: 10, desc: 'Buffs nearby +30%' },
-  boss:      { name: 'Boss',      color: 'var(--gold)',   hpMul: 50,  speedMul: 0.55, dmgMul: 3.0, meleeIntervalMul: 1.8,  unlockTier: 1,  desc: 'Every 25 waves' }
+  boss:      { name: 'Boss',      color: 'var(--gold)',   hpMul: 50,  speedMul: 0.5,  dmgMul: 3.0, meleeIntervalMul: 1.8,  unlockTier: 1,  desc: 'Every 25 waves' }
 };
 
 // ============================================================
 // BATTLE FLOW
 // ============================================================
 function startBattle(startingWave) {
+  game.paused = false;
   game.tier = save.selectedTier;
   game.wave = startingWave || 1;
   game.enemiesKilledInWave = 0;
   game.bossWave = (game.wave % 25 === 0) && game.wave > 0;
-  game.enemiesPerWave = enemiesPerWaveForWave(game.wave);
+  game.enemiesPerWave = game.bossWave ? 1 : 10;
   game.cash = 0;
   game.enemies = [];
   game.projectiles = [];
   game.enemyProjectiles = [];
+  // Flush DOM pools — remove stale pooled elements from prior runs
+  if (typeof _pool !== 'undefined') {
+    for (const type of Object.keys(_pool)) {
+      for (const el of _pool[type]) el.remove();
+      _pool[type].length = 0;
+    }
+  }
   for (const k in game.upgrades) game.upgrades[k].level = 0;
   game.hpMax = getMaxHp();
   game.hp = game.hpMax;
@@ -592,7 +594,8 @@ function startBattle(startingWave) {
   showScreen('battle');
   setTimeout(() => {
     if (game.bf) {
-      game.bf.querySelectorAll('.enemy, .projectile, .float-text, .focus-marker, .wave-banner, .boss-clear-wave, .gem-orb, .ad-pill').forEach(el => el.remove());
+      game.bf.querySelectorAll('.enemy, .projectile, .float-text, .focus-marker, .wave-banner, .boss-clear-wave, .gem-orb, .ad-pill, .enemy-info-popup').forEach(el => el.remove());
+      if (typeof dismissEnemyInfo === 'function') dismissEnemyInfo();
       game.running = true;
       resetOrbStateForRun();
       renderUpgrades();
@@ -610,7 +613,7 @@ function startBattle(startingWave) {
 
 function endRunConfirm() {
   if (!game.running) return;
-  if (!confirm('End run early? You keep coins earned.')) return;
+  if (!confirm('End run early? You keep scrap earned.')) return;
   endRun();
 }
 
@@ -618,11 +621,15 @@ function endRun() {
   if (!game.running) return;
   game.running = false;
   stopLoop();
+  if (typeof dismissEnemyInfo === 'function') dismissEnemyInfo();
   // If the menu overlay was open mid-run, close it so the death screen
   // actually shows on the battlefield underneath.
   if (typeof closeMenuOverlay === 'function' && isOverlayActive()) {
     closeMenuOverlay();
   }
+  // Close live stats panel if open (Bug: was staying stuck on death screen)
+  const liveStatsEl = document.getElementById('liveStats');
+  if (liveStatsEl) liveStatsEl.classList.remove('open');
   // Clean up orb/pill if any
   if (orbState.currentOrb) { orbState.currentOrb.remove(); orbState.currentOrb = null; }
   if (orbState.pillEl) { orbState.pillEl.remove(); orbState.pillEl = null; }
@@ -654,7 +661,7 @@ function endRun() {
   persistSave();
   const stats = document.getElementById('endStats');
   const isNewBest = maxWave > prevBest;
-  const tierJustUnlocked = (game.tier < MAX_TIER && prevBest < 100 && maxWave >= 100);
+  const tierJustUnlocked = (game.tier < MAX_TIER && prevBest < 50 && maxWave >= 50);
   const runDurationMs = Date.now() - game.startTime;
   const runSec = Math.floor(runDurationMs / 1000);
   const runMin = Math.floor(runSec / 60);
@@ -675,9 +682,8 @@ function endRun() {
     <div class="end-stat-row"><span class="end-stat-label">Damage blocked</span><span class="end-stat-value">${formatNum(game.damageBlockedThisRun)}</span></div>
     <div class="end-section-label">Rewards</div>
     <div class="end-stat-row"><span class="end-stat-label">Cash earned</span><span class="end-stat-value">${formatNum(totalCash)}</span></div>
-    <div class="end-stat-row"><span class="end-stat-label">Coins earned</span><span class="end-stat-value gold">+${formatNum(coinsEarned)}</span></div>
-    ${(game.gemsEarnedThisRun || 0) > 0 ? `<div class="end-stat-row"><span class="end-stat-label">Gems earned</span><span class="end-stat-value" style="color:var(--purple)">+${game.gemsEarnedThisRun} 💎</span></div>` : ''}
-    <div class="end-stat-row end-total"><span class="end-stat-label">Total coins</span><span class="end-stat-value gold">${formatNum(save.coins)}</span></div>
+    <div class="end-stat-row"><span class="end-stat-label">Scrap earned</span><span class="end-stat-value gold">+${formatNum(coinsEarned)}</span></div>
+    <div class="end-stat-row end-total"><span class="end-stat-label">Total scrap</span><span class="end-stat-value gold">${formatNum(save.coins)}</span></div>
   `;
   document.getElementById('endOverlay').classList.add('active');
   document.getElementById('endTitle').textContent = game.hp <= 0 ? 'Core Lost' : 'Run Ended';
@@ -721,6 +727,11 @@ function startLoop() {
   game.lastTick = performance.now();
   function tick(now) {
     if (!game.running) return;
+    if (game.paused) {
+      game.lastTick = now; // prevent dt spike on unpause
+      game.tickHandle = requestAnimationFrame(tick);
+      return;
+    }
     const rawDt = Math.min(100, now - game.lastTick) / 1000;
     const dt = rawDt * (save.settings.gameSpeed || 1);
     game.lastTick = now;
@@ -937,7 +948,7 @@ function update(dt, rawDt) {
     }
   }
   game.enemyProjectiles = game.enemyProjectiles.filter(ep => {
-    if (ep.dead && ep.el) ep.el.remove();
+    if (ep.dead && ep.el) { _poolReturn('enemyProj', ep.el); ep.el = null; }
     return !ep.dead;
   });
 
@@ -997,14 +1008,14 @@ function update(dt, rawDt) {
     }
   }
   game.projectiles = game.projectiles.filter(p => {
-    if (p.dead && p.el) p.el.remove();
+    if (p.dead && p.el) { _poolReturn('projectile', p.el); p.el = null; }
     return !p.dead;
   });
 }
 
 function cleanDeadEnemies() {
   game.enemies = game.enemies.filter(e => {
-    if (e.dead && e.el) e.el.remove();
+    if (e.dead && e.el) { _poolReturn('enemy', e.el); e.el = null; }
     return !e.dead;
   });
 }
@@ -1178,19 +1189,7 @@ function hitEnemy(e, dmg, crit) {
       game.bossesDefeated++;
       bossClearEffect(e.x, e.y);
       if (typeof haptic === 'function') haptic('heavy');
-      // Gem drop: 1 gem at T1, scales modestly with tier. Every 5 bosses = bonus gem.
-      const gemReward = Math.max(1, Math.floor(game.tier * 0.5 + (game.bossesDefeated % 5 === 0 ? 2 : 0)));
-      save.gems += gemReward;
-      game.gemsEarnedThisRun = (game.gemsEarnedThisRun || 0) + gemReward;
-      spawnFloat(e.x, e.y - 20, '+' + gemReward + ' 💎', 'lifesteal');
-    } else {
-      // Gem Find: non-boss enemies have a small chance to drop 1 gem
-      const gemChance = getGemFindChance();
-      if (gemChance > 0 && Math.random() < gemChance) {
-        save.gems += 1;
-        game.gemsEarnedThisRun = (game.gemsEarnedThisRun || 0) + 1;
-        spawnFloat(e.x, e.y - 20, '+1 💎', 'lifesteal');
-      }
+      // Gems only from orbs, milestones, challenges, ads, or packs — no combat drops.
     }
     const ls = getLifestealFraction();
     if (ls > 0) {
@@ -1208,10 +1207,9 @@ function advanceWave() {
   game.wave++;
   game.enemiesKilledInWave = 0;
   game.bossWave = game.wave % 25 === 0;
-  game.enemiesPerWave = enemiesPerWaveForWave(game.wave);
+  game.enemiesPerWave = game.bossWave ? 1 : 10;
   game.bossSpawned = false;
-  const bonusMul = (game.tier === 1 && game.wave <= 10) ? 4 : 5;
-  const bonus = Math.floor(cashRewardForWave(game.wave) * bonusMul * getCashMul() * getWaveBonusMul());
+  const bonus = Math.floor(cashRewardForWave(game.wave) * 5 * getCashMul() * getWaveBonusMul());
   game.cash += bonus;
   game.cashEarnedThisRun += bonus;
   if (game.bossWave) showWaveBanner('BOSS ' + game.wave, true);
@@ -1250,7 +1248,7 @@ function spawnBoss() {
   const w = game.bfRect.width;
   const t = ENEMY_TYPES.boss;
   game.enemies.push({
-    x: w / 2, y: -10,
+    x: w / 2, y: -30,
     type: 'boss',
     hp: enemyHpForWave(game.wave) * t.hpMul,
     hpMax: enemyHpForWave(game.wave) * t.hpMul,
@@ -1268,3 +1266,4 @@ function bossClearEffect(x, y) {
   game.bf.appendChild(el);
   setTimeout(() => el.remove(), 600);
 }
+

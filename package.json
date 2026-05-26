@@ -4,7 +4,6 @@
   "version": "0.7.28",
   "description": "Core Surge static mobile web game",
   "scripts": {
-    "assets:icons": "node scripts/generate-icons.js",
     "typecheck": "node scripts/typecheck.js",
     "test": "node scripts/test.js",
     "build": "node scripts/build.js",
@@ -15,7 +14,11 @@
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
     "mobile:open:ios": "npx cap open ios",
-    "mobile:open:android": "npx cap open android"
+    "mobile:open:android": "npx cap open android",
+    "mobile:run:ios": "npm run mobile:sync && npx cap run ios",
+    "mobile:run:android": "npm run mobile:sync && npx cap run android",
+    "deploy": "npm run build && npx firebase deploy --only hosting",
+    "assets:icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",

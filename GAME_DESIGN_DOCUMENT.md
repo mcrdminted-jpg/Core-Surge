@@ -16,7 +16,7 @@
 ## 2. Core Loop
 
 ```
-Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ranks → Start Run Again
+Start Run → Battle Waves → Earn Scrap → Die/Complete → Spend Scrap on Ranks → Start Run Again
                 ↓                                              ↑
          Earn Gems (rare)                              Unlock Families
                 ↓                                              ↑
@@ -29,13 +29,13 @@ Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ra
 3. Player buys in-run upgrades with in-run cash (resets on death)
 4. Player survives as many waves as possible
 5. Run ends when Core HP reaches 0
-6. Coins earned based on waves survived + bonuses
+6. Scrap earned based on waves survived + bonuses
 
 **Meta Loop (between runs):**
-1. Spend coins on permanent Rank upgrades (damage, fire rate, health, etc.)
+1. Spend Scrap on permanent Rank upgrades (damage, fire rate, health, etc.)
 2. Unlock new Families to access advanced stat categories
 3. Equip Cards (pulled with gems) for passive bonuses
-4. Progress through Tiers (reach wave 100 on current tier to unlock next)
+4. Progress through Tiers (reach wave 50 on current tier to unlock next)
 5. Compete in Tournaments for ranking and rewards
 
 ---
@@ -44,26 +44,31 @@ Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ra
 
 ### 3.1 Tiers (T1-T18)
 - 18 difficulty tiers
-- Reach wave 100 on tier T to unlock tier T+1
+- Reach wave 50 on tier T to unlock tier T+1
 - Each tier increases enemy HP/damage/speed
 - Tier progression is the primary long-term goal
 
 ### 3.2 Ranks (Permanent Upgrades)
-- Purchased with coins between runs
+- Purchased with Scrap between runs
 - Geometric cost scaling per rank (cost0 * costMul^level)
 - Two categories:
   - **Starter Stats (always unlocked):** Damage, Fire Rate, Core Health, Armor, Range, Cash Bonus
   - **Family Stats (require family unlock):** Crit Chance, Crit Power, Wave Bonus, Boss Bounty, Regen, Lifesteal, Multi-shot, Bounce, Combo
 
 ### 3.3 Unlock Families
-- One-time coin purchases that reveal groups of rank-able stats
-- 6 families with escalating costs:
-  - Crit Systems (2,500 coins) - unlocks critChance, critPower
-  - Economy Expansion (5,000) - unlocks waveBonus, bossBounty
-  - Sustain Systems (10,000) - unlocks regen, lifesteal
-  - Multishot Systems (25,000) - unlocks multiChance, multiPower, multiTargets
-  - Bounce Systems (50,000) - unlocks bounceChance, bouncePower, bounceTargets
-  - Combo Systems (100,000) - unlocks comboBonus
+- One-time scrap purchases that reveal groups of rank-able stats
+- 11 families with escalating costs (total: 1,775,000 scrap):
+  1. Crit Systems (5,000) - unlocks critChance, critPower
+  2. Economy Expansion (15,000) - unlocks waveBonus, bossBounty
+  3. Sustain Systems (30,000) - unlocks regen, lifesteal
+  4. Fortification (50,000) - unlocks thorns, knockback
+  5. Scrap Mastery (75,000) - unlocks coinMultiplier, gemFind
+  6. Multishot Systems (100,000) - unlocks multiChance, multiPower, multiTargets
+  7. Barrier Systems (150,000) - unlocks shieldHP, shieldRegen
+  8. Tactical Systems (200,000) - unlocks projSpeed, pierce
+  9. Bounce Systems (275,000) - unlocks bounceChance, bouncePower, bounceTargets
+  10. Overcharge (375,000) - unlocks overchargeChance, overchargePower
+  11. Combo Systems (500,000) - unlocks comboBonus, comboDuration
 
 ### 3.4 Cards
 - Collectible passive bonuses equipped in loadout slots
@@ -139,7 +144,7 @@ Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ra
 
 ### 6.1 Premium Currency: Gems
 - Earned in-game via:
-  - Gem orbs (rare spawns during battle, first at 2min then every 6-8min)
+  - Gem orbs (rare spawns during battle, first at 45s then every 3-4min)
   - Milestone rewards
   - Tournament placement rewards
 - Purchased via IAP:
@@ -160,10 +165,11 @@ Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ra
 - Frequency caps enforced in code
 
 ### 6.4 IAP Products (RevenueCat)
-- starter_pack: one-time purchase, premium starter bundle
-- gem_small: small gem currency pack
-- gem_medium: medium gem currency pack
-- monthly_vault: subscription, daily gems delivery
+- starter_pack ($4.99): one-time — 500 gems + 5,000 Scrap + Prime card
+- gem_small ($0.99): 80 gems
+- gem_medium ($4.99): 500 gems
+- gem_large ($9.99): 1,200 gems
+- monthly_vault ($2.99/mo): subscription — 50 gems/day
 
 ### 6.5 Fair Play Policy
 - No pay-to-win: all gameplay stats achievable through play
@@ -176,7 +182,7 @@ Start Run → Battle Waves → Earn Coins → Die/Complete → Spend Coins on Ra
 
 - **Frontend:** Vanilla JavaScript (11 modules), 7 CSS files, HTML5
 - **Rendering:** DOM-based with canvas elements for battle VFX
-- **Save System:** localStorage with versioned migration (currently v8)
+- **Save System:** localStorage with versioned migration (currently v10)
 - **Cloud Save:** Firebase Firestore (direct client, no Cloud Functions required for basic sync)
 - **Authentication:** Firebase Auth (email/password + anonymous guest)
 - **Native Wrapper:** Capacitor (shared web codebase → iOS + Android)

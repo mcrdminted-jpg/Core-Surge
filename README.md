@@ -1,4 +1,4 @@
-# Core Surge — Project Structure (v0.7.23)
+# Core Surge — Project Structure (v0.7.27)
 
 **Core Surge: Endless Tower Defense** — modular file layout so multiple AIs
 can work in parallel without stomping on each other.
@@ -15,45 +15,56 @@ css/
   battle.css      Battle screen, battlefield, Core/Tower, enemies,
                   HP bar, upgrade panel, projectiles.
   menu.css        Main menu, tier picker, submenu bar, global bottom nav,
-                  gem orb, card tiles, shop, skins, tournament tab.
+                  gem orb, card tiles, shop, skins, tournament tab,
+                  daily login calendar, readiness panel.
   skins.css       Core skin + background skin visual rules (additive).
+  profile.css     Profile/account screen styles.
 
 js/
   data.js         Static tables: CARD_POOL, CARD_PRICING, PULL_ODDS,
                   COPIES_TO_LEVEL, SLOT_UNLOCK_COSTS, TAGLINES,
-                  TOURNEY_BANDS, TOURNEY_REWARDS_BASE, defaultSave shape.
-  save.js         loadSave, persistSave, resetSave, migration,
-                  labCost, highestUnlockedTier, milestone helpers.
+                  TOURNEY_BANDS, TOURNEY_REWARDS_BASE, RANK_DEFS,
+                  UNLOCK_FAMILIES, STORE_PRODUCT_CATALOG,
+                  DAILY_LOGIN_REWARDS, defaultSave shape.
+  save.js         loadSave, persistSave, resetSave, migration (v9),
+                  rankCost, highestUnlockedTier, milestone helpers.
   game.js         Game state, stat getters (damage/HP/crit/etc),
                   wave scaling, enemy types, battle start/end,
                   combat loop, damage/heal pipelines, apex specials.
   tournament.js   Bracket generation, synthetic competitors, score
                   submission, cycle end processing, reward payout.
   render.js       DOM rendering for battlefield, enemies, projectiles,
-                  gem orbs, floating text.
+                  gem orbs, floating text, enemy info popups.
   ui.js           Upgrades panel, live stats, HUD, screen routing,
                   main menu, all tab renderers (Research, Goals,
-                  Loadout, Tournament, Store, Skins, Settings), dev panel.
+                  Loadout, Tournament, Store, Skins, Settings),
+                  daily login, battle readiness, dev panel.
+  cloud.js        Firebase boot, auth (guest + email), Firestore
+                  cloud save sync, local-only fallback.
+  monetization.js RevenueCat Capacitor bridge for native IAP,
+                  catalog sync, restore flows.
   main.js         Passive accrual, offline catchup, gem orb spawner,
-                  ad simulation, boot sequence.
+                  ad simulation, keyboard shortcuts, boot sequence.
   skins.js        Skin equip/apply/persist. DOM glue only, no combat math.
+  profile.js      Username validation, profile screen rendering.
 
 assets/
   cores/          6 Core sprite PNGs — wired to Skins tab.
   backgrounds/    4 background PNGs — wired to Skins tab.
-  enemies/        12 enemy sprite PNGs — unwired, for future render.js work.
+  enemies/        12 enemy sprite PNGs — wired to render.js.
   vfx/            30 projectile/muzzle/impact/burst PNGs — unwired.
 ```
 
 ## Script load order (in index.html)
 
 ```
-data -> save -> game -> tournament -> render -> ui -> main -> skins
+data -> save -> game -> tournament -> render -> ui -> [Firebase CDN] -> cloud -> monetization -> main -> skins -> profile
 ```
 
 Order matters. `data.js` defines constants that `game.js` reads. `game.js`
-defines functions that `ui.js` calls. `skins.js` runs last so it can
-apply equipped skins once everything else is loaded.
+defines functions that `ui.js` calls. `cloud.js` loads after the Firebase
+CDN scripts. `skins.js` and `profile.js` run last so they can apply
+equipped skins and render the profile once everything else is loaded.
 
 ## Rules for AI co-work
 
@@ -96,7 +107,12 @@ apply equipped skins once everything else is loaded.
 
 ## Deploy
 
-Cloudflare Pages serves this repo directly. No build step.
+Firebase Hosting serves the built output. Build step required:
+
+```
+npm run build      # produces dist/
+npm run deploy     # builds + deploys to Firebase Hosting
+```
 
 Repo root must look like this:
 ```
@@ -106,12 +122,17 @@ tower-game/
   css/...
   js/...
   assets/...
+  dist/             # built output (gitignored)
+  backend/          # firebase.json, firestore.rules, .firebaserc
+  scripts/          # build.js, serve.js, typecheck.js, test.js
 ```
 
 ## Save compatibility
 
-Save key is `tower_save_v7`. All migrations handle missing fields by
-filling defaults. Existing saves load normally through v0.7.x.
+Save key is `tower_save_v8` (version 9 internally). Versioned migrations
+in `save.js` handle schema changes automatically. The `SAVE_MIGRATIONS`
+object runs each step sequentially on load. Existing saves load normally
+through v0.7.x.
 
 ## Local verification
 
@@ -119,17 +140,15 @@ This repo now includes lightweight Node scripts with no external packages:
 
 ```
 npm run typecheck
-npm run assets:icons
 npm run build
 npm start
 ```
 
 - `typecheck` parses every game JS file, validates `index.html` asset refs,
   and verifies the web manifest and icons exist.
-- `assets:icons` regenerates the install/store icon pack from
-  `assets/app/icon-source.png`.
-- `build` copies the static app into `dist/` for handoff or deploy packaging.
+- `build` concatenates and minifies JS/CSS into `dist/` via esbuild.
 - `start` serves the repo locally at `http://127.0.0.1:4173`.
+- `test` runs the balance/data integrity test suite.
 
 ## App shell
 
@@ -143,38 +162,25 @@ This repo can now connect directly to Firebase Auth + Firestore from the client
 without requiring Cloud Functions first.
 
 - Firebase web SDK scripts load from the CDN in `index.html`
-- `js/firebase-public-config.js` is the shared deploy config for web, PWA, and Capacitor builds
 - `js/cloud.js` handles:
   - Firebase boot
   - anonymous guest cloud login
   - email account creation / sign-in
   - direct Firestore cloud save sync
   - local-only fallback when Firebase config is missing
-- The in-game Settings cloud box is now only a per-device override for debugging
-  or emergency testing
+- The Firebase web config is pasted in-game through Settings and stored locally
+  on the device, so the app can stay deployable even before the final web keys
+  are filled in.
 
-Best tester path:
+Current blocker for live Firebase sync:
 
-- Put the real Firebase web app values in `js/firebase-public-config.js`
-- Push the repo
-- Every tester device gets the same Firebase config automatically
-- Keep Firestore/Auth rules enabled so the public client config stays safe
-
-Shared config still needs the real Firebase web app values for:
+- The project still needs real Firebase web app values for:
   - `apiKey`
   - `messagingSenderId`
   - `appId`
 
-Once those are filled in, the app can connect directly to Firebase on the free
-Spark path for Auth + Firestore quotas.
-
-Minimum Firebase console setup:
-
-- Enable Authentication:
-  - Anonymous
-  - Email/Password
-- Enable Firestore
-- Publish the Firestore rules in `backend/firestore.rules`
+Once those are pasted into the Settings cloud config box, the app can connect
+directly to Firebase on the free Spark path for Auth + Firestore quotas.
 
 ## Native mobile lane
 

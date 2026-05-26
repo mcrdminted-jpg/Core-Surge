@@ -1,4 +1,4 @@
-const fs = require('node:fs/promises');
+﻿const fs = require('node:fs/promises');
 const path = require('node:path');
 const vm = require('node:vm');
 
@@ -53,8 +53,8 @@ async function runTests() {
   console.log('Core Surge Test Suite\n');
   const ctx = await loadGameData();
 
-  // ── 1. Bundle integrity ──────────────────────────────────
-  console.log('── Bundle Integrity ──');
+  // â”€â”€ 1. Bundle integrity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Bundle Integrity â”€â”€');
 
   const jsFiles = ['data.js', 'save.js', 'game.js', 'tournament.js', 'render.js',
     'ui.js', 'firebase-public-config.js', 'cloud.js', 'monetization.js', 'main.js', 'skins.js', 'profile.js'];
@@ -88,19 +88,19 @@ async function runTests() {
   assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === 'assets/app/icon-512.png'),
     'manifest has a 512x512 PNG icon');
 
-  // ── 2. Card pool integrity ───────────────────────────────
-  console.log('── Card Pool ──');
+  // â”€â”€ 2. Card pool integrity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Card Pool â”€â”€');
 
   const CARD_POOL = ctx.CARD_POOL;
   const cardCount = Object.keys(CARD_POOL).length;
-  assert(cardCount >= 20, `Card pool has ${cardCount} cards (expected ≥20)`);
+  assert(cardCount >= 20, `Card pool has ${cardCount} cards (expected â‰¥20)`);
 
   const standardCards = Object.values(CARD_POOL).filter(c => c.tier === 'standard');
   const primeCards = Object.values(CARD_POOL).filter(c => c.tier === 'prime');
   const apexCards = Object.values(CARD_POOL).filter(c => c.tier === 'apex');
   assert(standardCards.length === 12, `12 standard cards (got ${standardCards.length})`);
-  assert(primeCards.length >= 8, `≥8 prime cards (got ${primeCards.length})`);
-  assert(apexCards.length >= 5, `≥5 apex cards (got ${apexCards.length})`);
+  assert(primeCards.length >= 8, `â‰¥8 prime cards (got ${primeCards.length})`);
+  assert(apexCards.length >= 5, `â‰¥5 apex cards (got ${apexCards.length})`);
 
   for (const [id, card] of Object.entries(CARD_POOL)) {
     assert(card.id === id, `Card ${id} has matching id field`);
@@ -116,8 +116,8 @@ async function runTests() {
     }
   }
 
-  // ── 3. Pull odds ─────────────────────────────────────────
-  console.log('── Pull Odds ──');
+  // â”€â”€ 3. Pull odds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Pull Odds â”€â”€');
 
   const PULL_ODDS = ctx.PULL_ODDS;
   const oddsSum = PULL_ODDS.standard + PULL_ODDS.prime + PULL_ODDS.apex;
@@ -126,8 +126,8 @@ async function runTests() {
   assertClose(PULL_ODDS.prime, 0.20, 'Prime odds = 20%');
   assertClose(PULL_ODDS.standard, 0.78, 'Standard odds = 78%');
 
-  // ── 4. Card pricing ──────────────────────────────────────
-  console.log('── Card Pricing ──');
+  // â”€â”€ 4. Card pricing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Card Pricing â”€â”€');
 
   const CARD_PRICING = ctx.CARD_PRICING;
   assert(CARD_PRICING.pullSingle === 20, `Single pull costs 20 gems (got ${CARD_PRICING.pullSingle})`);
@@ -135,8 +135,8 @@ async function runTests() {
   assert(CARD_PRICING.pullBundle < CARD_PRICING.pullSingle * 10,
     'Bundle is cheaper than 10 singles');
 
-  // ── 5. Copies to level ───────────────────────────────────
-  console.log('── Copies to Level ──');
+  // â”€â”€ 5. Copies to level â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Copies to Level â”€â”€');
 
   const CTL = ctx.COPIES_TO_LEVEL;
   assert(CTL.standard[0] === 1, 'Standard unlock = 1 copy');
@@ -149,8 +149,8 @@ async function runTests() {
     }
   }
 
-  // ── 6. Slot unlock costs ─────────────────────────────────
-  console.log('── Slot Unlock Costs ──');
+  // â”€â”€ 6. Slot unlock costs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Slot Unlock Costs â”€â”€');
 
   const SUC = ctx.SLOT_UNLOCK_COSTS;
   assert(SUC[4] === 100, `Slot 4 costs 100 gems (got ${SUC[4]})`);
@@ -160,39 +160,39 @@ async function runTests() {
     prev = SUC[s];
   }
 
-  // ── 7. Rank cost escalation ──────────────────────────────
-  console.log('── Rank Costs ──');
+  // â”€â”€ 7. Rank cost escalation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Rank Costs â”€â”€');
 
   const RANK_DEFS = ctx.RANK_DEFS;
   const rankCost = ctx.rankCost;
 
   const dmgDef = RANK_DEFS.damage;
-  assert(dmgDef.cost0 === 10, `Damage cost0 = 10 (got ${dmgDef.cost0})`);
-  assert(dmgDef.costMul === 1.16, `Damage costMul = 1.16 (got ${dmgDef.costMul})`);
+  assert(dmgDef.cost0 === 15, `Damage cost0 = 15 (got ${dmgDef.cost0})`);
+  assertClose(dmgDef.costMul, 1.28, 'Damage costMul = 1.28');
 
   const cost0 = rankCost('damage', 0);
   const cost10 = rankCost('damage', 10);
-  const cost50 = rankCost('damage', 50);
-  assert(cost0 === 10, `Damage rank 0→1 costs 10 (got ${cost0})`);
+  const cost50 = rankCost('damage', 39);
+  assert(cost0 === dmgDef.cost0, `Damage rank 0 to 1 cost matches definition (got ${cost0})`);
   assert(cost10 > cost0, `Rank 10 costs more than rank 0 (${cost10} > ${cost0})`);
-  assert(cost50 > cost10, `Rank 50 costs more than rank 10 (${cost50} > ${cost10})`);
+  assert(cost50 > cost10, `Late damage rank costs more than rank 10 (${cost50} > ${cost10})`);
 
-  const expectedCost10 = Math.floor(10 * Math.pow(1.16, 10));
-  assert(cost10 === expectedCost10, `Rank 10 cost matches formula: floor(10 * 1.16^10) = ${expectedCost10} (got ${cost10})`);
+  const expectedCost10 = Math.floor(dmgDef.cost0 * Math.pow(dmgDef.costMul, 10));
+  assert(cost10 === expectedCost10, `Rank 10 cost matches formula: floor(${dmgDef.cost0} * ${dmgDef.costMul}^10) = ${expectedCost10} (got ${cost10})`);
 
-  assert(rankCost('damage', 400) === Infinity, 'Cost at maxRank = Infinity');
+  assert(rankCost('damage', dmgDef.maxRank) === Infinity, 'Cost at maxRank = Infinity');
 
-  // ── 8. Rank max rank sum ─────────────────────────────────
-  console.log('── Rank Caps ──');
+  // â”€â”€ 8. Rank max rank sum â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Rank Caps â”€â”€');
 
   let totalMaxRanks = 0;
   for (const def of Object.values(RANK_DEFS)) {
     totalMaxRanks += def.maxRank;
   }
-  assert(totalMaxRanks === 2000, `Total max ranks = 2000 (got ${totalMaxRanks})`);
+  assert(totalMaxRanks === 1019, `Total max ranks = 1019 (got ${totalMaxRanks})`);
 
-  // ── 9. Tournament constants ──────────────────────────────
-  console.log('── Tournament ──');
+  // â”€â”€ 9. Tournament constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Tournament â”€â”€');
 
   assert(ctx.TOURNEY_BRACKET_SIZE === 250, `Bracket size = 250 (got ${ctx.TOURNEY_BRACKET_SIZE})`);
   assertClose(ctx.TOURNEY_PROMOTE_PCT, 0.10, 'Promote = 10%');
@@ -209,27 +209,27 @@ async function runTests() {
   const demoteCount = Math.floor(250 * 0.15);
   assert(demoteCount === 37, `Bottom 37 of 250 demote (got ${demoteCount})`);
 
-  // ── 10. Game constants ───────────────────────────────────
-  console.log('── Game Constants ──');
+  // â”€â”€ 10. Game constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Game Constants â”€â”€');
 
   assert(ctx.MAX_TIER === 18, `MAX_TIER = 18 (got ${ctx.MAX_TIER})`);
   assert(ctx.MILESTONE_WAVES.length === 9, `9 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
   assert(ctx.MILESTONE_WAVES[0] === 25, `First milestone = wave 25`);
   assert(ctx.MILESTONE_WAVES[8] === 10000, `Last milestone = wave 10000`);
 
-  // ── 11. Unlock families ──────────────────────────────────
-  console.log('── Unlock Families ──');
+  // â”€â”€ 11. Unlock families â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Unlock Families â”€â”€');
 
   const UNLOCK_FAMILIES = ctx.UNLOCK_FAMILIES;
-  assert(Object.keys(UNLOCK_FAMILIES).length === 6, `6 unlock families (got ${Object.keys(UNLOCK_FAMILIES).length})`);
+  assert(Object.keys(UNLOCK_FAMILIES).length === 11, `11 unlock families (got ${Object.keys(UNLOCK_FAMILIES).length})`);
   for (const [id, fam] of Object.entries(UNLOCK_FAMILIES)) {
     assert(fam.icon, `Family ${id} has an icon`);
     assert(fam.cost > 0, `Family ${id} has a positive cost`);
     assert(fam.id === id, `Family ${id} has matching id field`);
   }
 
-  // ── 12. Build output ─────────────────────────────────────
-  console.log('── Build Output ──');
+  // â”€â”€ 12. Build output â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('â”€â”€ Build Output â”€â”€');
 
   const distExists = await fs.access(path.join(root, 'dist')).then(() => true).catch(() => false);
   if (distExists) {
@@ -241,7 +241,7 @@ async function runTests() {
 
     const bundleSize = (await fs.stat(path.join(root, 'dist/js/core-surge.min.js'))).size;
     assert(bundleSize < 500 * 1024, `Bundle < 500KB (got ${(bundleSize / 1024).toFixed(1)} KB)`);
-    assert(bundleSize > 50 * 1024, `Bundle > 50KB — not empty (got ${(bundleSize / 1024).toFixed(1)} KB)`);
+    assert(bundleSize > 50 * 1024, `Bundle > 50KB â€” not empty (got ${(bundleSize / 1024).toFixed(1)} KB)`);
 
     const distHtml = await fs.readFile(path.join(root, 'dist/index.html'), 'utf8');
     assert(distHtml.includes('core-surge.min.js'), 'dist/index.html references JS bundle');
@@ -251,11 +251,11 @@ async function runTests() {
     const mockupsExcluded = await fs.access(path.join(root, 'dist/assets/mockups')).then(() => false).catch(() => true);
     assert(mockupsExcluded, 'dist excludes assets/mockups/');
   } else {
-    console.log('  (dist/ not found — run `npm run build` first, skipping build output tests)');
+    console.log('  (dist/ not found â€” run `npm run build` first, skipping build output tests)');
   }
 
-  // ── Summary ──────────────────────────────────────────────
-  console.log(`\n${'═'.repeat(40)}`);
+  // â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log(`\n${'â•'.repeat(40)}`);
   console.log(`Tests: ${passed} passed, ${failed} failed, ${passed + failed} total`);
   if (failures.length) {
     console.log('\nFailures:');

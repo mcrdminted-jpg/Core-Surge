@@ -138,8 +138,7 @@ function checkTutorial() {
       showTutorial(btn, 'Welcome, Commander! Tap here to begin your first defense. Enemies will attack your Core — hold them off as long as you can!');
     }
   } else if (step === 2) {
-    // After first death — point at damage rank in Research
-    // Make sure we're on the labs tab
+    // After first death — jump to damage rank in Research
     if (activeSubmenu !== 'labs') {
       activeSubmenu = 'labs';
       activeResearchTab = 'combat';
@@ -148,10 +147,14 @@ function checkTutorial() {
     setTimeout(() => {
       const dmgBtn = document.querySelector('.lab-buy[data-rank="damage"]');
       if (dmgBtn) {
-        showTutorial(dmgBtn,
-          'Great first run! Now spend your coins on permanent upgrades. Buy Damage to hit harder next time!',
-          { allowClick: true }
-        );
+        // Scroll the damage rank into view so the player can see it
+        dmgBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          showTutorial(dmgBtn,
+            'Great first run! Now spend your scrap on permanent upgrades. Buy Damage to hit harder next time!',
+            { allowClick: true }
+          );
+        }, 350);
       }
     }, 300);
   } else if (step === 3) {
@@ -187,7 +190,7 @@ const UPGRADE_TABS = {
   economy: { title: 'Economy', icon: '💰', color: 'var(--gold)', keys: ['cashBonus','waveBonus','combo','bossBounty','coinBonus'] }
 };
 
-// v0.7.15: each in-run upgrade maps to an unlock family. If the family isn't
+// Each in-run upgrade maps to an unlock family. If the family isn't
 // owned, the upgrade is hidden from the battle panel.
 // null = always visible (starter set).
 const UPGRADE_UNLOCK_FAMILY = {
@@ -244,7 +247,7 @@ const UPGRADE_ICONS = {
   range:            { icon: '◎',  color: 'var(--accent)' },
   lifesteal:        { icon: '☖',  color: 'var(--good)' },
   regen:            { icon: '✚',  color: 'var(--good)' },
-  cashBonus:        { icon: '$',  color: 'var(--gold)' },
+  cashBonus:        { icon: '$',  color: 'var(--good)' },
   waveBonus:        { icon: '≋',  color: 'var(--gold)' },
   combo:            { icon: '⚡', color: 'var(--gold)' },
   bossBounty:       { icon: '♛',  color: 'var(--gold)' },
@@ -453,6 +456,18 @@ function buyInRun(key) {
   } else {
     maxToBuy = mulSetting;
   }
+
+  // For numeric multiplier (x10 etc), pre-validate total cost of all N levels
+  if (typeof mulSetting === 'number' && mulSetting > 1) {
+    const remaining = (u.max !== undefined) ? (u.max - u.level) : maxToBuy;
+    const want = Math.min(mulSetting, remaining);
+    let totalCost = 0;
+    for (let i = 0; i < want; i++) {
+      totalCost += Math.floor(u.cost0 * Math.pow(u.costMul, u.level + i));
+    }
+    if (game.cash < totalCost) return false; // Can't afford full batch
+  }
+
   let bought = 0;
   while (bought < maxToBuy) {
     if (u.max !== undefined && u.level >= u.max) break;
@@ -617,7 +632,7 @@ function renderHud() {
       <div class="hud-resource-card hud-coins-card" id="hudCoinsCard">
         <div class="hud-resource-icon">⊙</div>
         <div class="hud-resource-stack">
-          <div class="hud-resource-label">COINS</div>
+          <div class="hud-resource-label">SCRAP</div>
           <div class="hud-resource-value" id="hudCoinsValue">${formatNum(save.coins)}</div>
         </div>
       </div>
@@ -649,7 +664,7 @@ function renderHud() {
         <div class="hud-stat-icon">⊙</div>
         <div class="hud-stat-body">
           <div class="hud-stat-value">${formatNum(save.coins)}</div>
-          <div class="hud-stat-label">COINS</div>
+          <div class="hud-stat-label">SCRAP</div>
         </div>
       </div>
       <div class="hud-stat-card hud-stat-gems" id="hudGemsCard">
@@ -752,11 +767,16 @@ function wireGlobalNav() {
     btn.addEventListener('click', () => {
       const target = btn.dataset.nav;
 
-      // HOME: return to main menu (tier picker view). If mid-battle, close overlay first.
+      // HOME / BATTLE swap: when not in battle, this button starts a new run
       if (target === 'home') {
+        if (btn.dataset.navMode === 'battle' && !game.running) {
+          startBattle();
+          return;
+        }
+        // Mid-battle: HOME returns to menu
         if (isOverlayActive()) closeMenuOverlay();
         if (!game.running) {
-          activeSubmenu = 'labs';
+          setHomeView(true);
           showScreen('menu');
           renderMenu();
         }
@@ -798,6 +818,7 @@ function wireGlobalNav() {
       if (game.running) {
         openMenuOverlay();
       } else {
+        setHomeView(false);
         renderSubmenu();
         showScreen('menu');
       }
@@ -861,7 +882,7 @@ function openMoreSheet() {
         activeSubmenu = target;
         closeMoreSheet();
         if (game.running) openMenuOverlay();
-        else { renderSubmenu(); showScreen('menu'); }
+        else { setHomeView(false); renderSubmenu(); showScreen('menu'); }
       });
     });
   }
@@ -911,13 +932,35 @@ function isOverlayActive() {
 function updateGlobalNavActive() {
   const onMenu = document.getElementById('screen-menu').classList.contains('active');
   const inBattle = game.running && !isOverlayActive();
+
+  // Swap HOME → BATTLE when not mid-run:
+  // - No active battle → HOME becomes BATTLE (start a new run)
+  // - Active battle → HOME stays HOME (return to menu), BATTLE shows (return to fight)
+  const homeBtn = document.querySelector('.global-nav-btn[data-nav="home"]');
+  const battleBtn = document.querySelector('.global-nav-btn[data-nav="battle"]');
+  if (homeBtn) {
+    if (!game.running) {
+      homeBtn.querySelector('.global-nav-icon').textContent = '⚔';
+      homeBtn.querySelector('.global-nav-label').textContent = 'BATTLE';
+      homeBtn.dataset.navMode = 'battle';
+    } else {
+      homeBtn.querySelector('.global-nav-icon').textContent = '⌂';
+      homeBtn.querySelector('.global-nav-label').textContent = 'HOME';
+      homeBtn.dataset.navMode = 'home';
+    }
+  }
+  // BATTLE button only visible during an active run (return-to-fight)
+  if (battleBtn) {
+    battleBtn.style.display = game.running ? '' : 'none';
+  }
+
   document.querySelectorAll('.global-nav-btn').forEach(btn => {
     const nav = btn.dataset.nav;
     let match = false;
-    if (nav === 'home')    match = onMenu && !isOverlayActive();
+    if (nav === 'home')    match = onMenu && !isOverlayActive() && homeViewActive;
     else if (nav === 'battle')  match = inBattle;
-    else if (nav === 'labs')    match = onMenu && activeSubmenu === 'labs';
-    else if (nav === 'cards')   match = onMenu && activeSubmenu === 'cards';
+    else if (nav === 'labs')    match = onMenu && !homeViewActive && activeSubmenu === 'labs';
+    else if (nav === 'cards')   match = onMenu && !homeViewActive && activeSubmenu === 'cards';
     else if (nav === 'more')    match = false; // more is a sheet trigger, never "active"
     btn.classList.toggle('active', match);
   });
@@ -927,7 +970,26 @@ function updateGlobalNavActive() {
 // MAIN MENU
 // ============================================================
 let activeSubmenu = 'labs';
-// (openLabGroups was the old accordion state; replaced by activeLabTab above)
+// Whether the home view (hero/tier/daily/panels) is showing vs a submenu tab
+let homeViewActive = true;
+
+// Toggle home-specific sections vs submenu content.
+// When home is active: hero, tier select, daily, panels are visible; submenu content hidden.
+// When a tab is active: those home sections hide; submenu content shown.
+function setHomeView(show) {
+  homeViewActive = show;
+  const els = [
+    document.querySelector('.menu-hero'),
+    document.querySelector('.tier-select'),
+    document.getElementById('homeDaily'),
+    document.getElementById('homePanels')
+  ];
+  for (var i = 0; i < els.length; i++) {
+    if (els[i]) els[i].style.display = show ? '' : 'none';
+  }
+  var sc = document.getElementById('submenuContent');
+  if (sc) sc.style.display = show ? 'none' : '';
+}
 
 function renderMenu() {
   const sel = save.selectedTier;
@@ -947,10 +1009,10 @@ function renderMenu() {
   const info = document.getElementById('tierInfo');
   const bestOnSel = save.bestWavePerTier[sel] || 0;
   if (sel === max && max < MAX_TIER) {
-    const wavesNeeded = 100 - bestOnSel;
-    const pct = Math.min(100, (bestOnSel / 100) * 100);
+    const wavesNeeded = 50 - bestOnSel;
+    const pct = Math.min(100, (bestOnSel / 50) * 100);
     info.innerHTML = wavesNeeded > 0
-      ? `<span>W100 on T${sel} to unlock T${sel + 1}</span><div class="tier-unlock-bar"><div class="tier-unlock-fill" style="width:${pct}%"></div></div>`
+      ? `<span>W50 on T${sel} to unlock T${sel + 1}</span><div class="tier-unlock-bar"><div class="tier-unlock-fill" style="width:${pct}%"></div></div>`
       : `<span style="color:var(--good)">T${sel + 1} ready · complete any run</span>`;
   } else if (sel === MAX_TIER) {
     info.textContent = `Max difficulty`;
@@ -973,7 +1035,7 @@ function renderMenu() {
     taglineEl.parentNode.insertBefore(badge, taglineEl.nextSibling);
   }
 
-  // v0.7.17: drive the home battlefield preview from the equipped skin
+  // Drive the home battlefield preview from the equipped skin
   const previewCore = save.equippedCoreSkin || 'sentinel';
   const previewBg = save.equippedBgSkin || 'cyber_grid';
   document.body.setAttribute('data-preview-core', previewCore);
@@ -984,6 +1046,7 @@ function renderMenu() {
   if (previewLabel) previewLabel.textContent = `CORE: ${coreNames[previewCore] || 'SENTINEL'}`;
 
   renderHomePanels();
+  setHomeView(true);
   renderSubmenu();
 }
 
@@ -1070,7 +1133,37 @@ function renderHomePanels() {
       <div class="home-card-row">${cardsHTML}</div>
     </div>`;
 
-  el.innerHTML = progressHTML + tiersHTML + loadoutHTML;
+  // --- Battle Readiness: key stats for the selected tier ---
+  const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
+  const dmgBonus = rankFlatBonus('damage');
+  const hpBonus = rankFlatBonus('coreHealth');
+  const scrapAmt = formatNum(save.coins);
+  let readinessHTML = `
+    <div class="home-panel home-readiness">
+      <div class="home-panel-header">
+        <span class="home-panel-title">BATTLE READY</span>
+      </div>
+      <div class="home-readiness-stats">
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--danger)">+${dmgBonus.toFixed(1)}</div>
+          <div class="home-stat-label">Dmg Bonus</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--good)">+${hpBonus.toFixed(0)}</div>
+          <div class="home-stat-label">HP Bonus</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--gold)">${scrapAmt}</div>
+          <div class="home-stat-label">Scrap</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--accent)">${totalRanks}</div>
+          <div class="home-stat-label">Total Ranks</div>
+        </div>
+      </div>
+    </div>`;
+
+  el.innerHTML = progressHTML + tiersHTML + loadoutHTML + readinessHTML;
 
   // Wire milestone panel click to open Goals tab
   const msPanel = el.querySelector('.home-milestones');
@@ -1078,6 +1171,7 @@ function renderHomePanels() {
     msPanel.style.cursor = 'pointer';
     msPanel.addEventListener('click', () => {
       activeSubmenu = 'milestones';
+      setHomeView(false);
       renderSubmenu();
     });
   }
@@ -1087,12 +1181,84 @@ function renderHomePanels() {
     loPanel.style.cursor = 'pointer';
     loPanel.addEventListener('click', () => {
       activeSubmenu = 'cards';
+      setHomeView(false);
       renderSubmenu();
     });
   }
 
-  // --- Daily Objective ---
+  // --- Daily Login & Daily Objective ---
+  renderDailyLogin();
   renderDailyObjective();
+}
+
+function renderDailyLogin() {
+  const wrap = document.getElementById('homeDaily');
+  if (!wrap) return;
+
+  // Ensure dailyLogin exists on save
+  if (!save.dailyLogin) save.dailyLogin = { lastClaimDay: 0, streak: 0, totalClaims: 0 };
+  const dl = save.dailyLogin;
+  const today = Math.floor(Date.now() / 86400000);
+  const canClaim = dl.lastClaimDay !== today;
+
+  // Calculate streak — if missed yesterday, reset
+  if (dl.lastClaimDay > 0 && today - dl.lastClaimDay > 1) {
+    dl.streak = 0; // streak broken
+  }
+  const currentDay = canClaim ? (dl.streak % 7) : ((dl.streak - 1 + 7) % 7);
+
+  let html = '<div class="daily-login-wrap">';
+  html += '<div class="daily-login-header">';
+  html += '<span class="daily-login-title">DAILY REWARDS</span>';
+  html += '<span class="daily-login-streak">Streak: ' + Math.min(dl.streak, 7) + '/7</span>';
+  html += '</div>';
+  html += '<div class="daily-login-grid">';
+
+  for (let i = 0; i < DAILY_LOGIN_REWARDS.length; i++) {
+    const r = DAILY_LOGIN_REWARDS[i];
+    const isCurrent = canClaim && i === (dl.streak % 7);
+    const isPast = !canClaim ? i <= ((dl.streak - 1 + 7) % 7) : i < (dl.streak % 7);
+    const cls = isCurrent ? 'daily-login-day current' : isPast ? 'daily-login-day claimed' : 'daily-login-day locked';
+    const icon = r.gems > 0 ? '💎' : '⊙';
+    html += '<div class="' + cls + '" data-login-day="' + i + '">';
+    html += '<div class="daily-login-day-num">D' + r.day + '</div>';
+    html += '<div class="daily-login-day-icon">' + icon + '</div>';
+    html += '<div class="daily-login-day-label">' + (isCurrent ? 'CLAIM' : isPast ? '✓' : r.label) + '</div>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+
+  // Insert before daily objective (which is also in homeDaily)
+  const existing = wrap.querySelector('.daily-login-wrap');
+  if (existing) existing.remove();
+  wrap.insertAdjacentHTML('afterbegin', html);
+
+  // Wire claim button
+  if (canClaim) {
+    const claimDay = wrap.querySelector('.daily-login-day.current');
+    if (claimDay) {
+      claimDay.addEventListener('click', function() {
+        const dayIndex = dl.streak % 7;
+        const reward = DAILY_LOGIN_REWARDS[dayIndex];
+        save.coins += reward.coins;
+        save.gems += (reward.gems || 0);
+        dl.lastClaimDay = today;
+        dl.streak = (dl.streak % 7) + 1;
+        dl.totalClaims++;
+        persistSave();
+        haptic('success');
+        // Show toast
+        var toast = document.createElement('div');
+        toast.className = 'skin-toast';
+        toast.textContent = 'Claimed: ' + reward.label + '!';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 2500);
+        // Re-render
+        renderMenu();
+      });
+    }
+  }
 }
 
 function renderDailyObjective() {
@@ -1131,15 +1297,7 @@ function renderDailyObjective() {
 function getSubmenuBadges() {
   const badges = {};
 
-  // Ranks: count affordable rank-ups
-  let rankBuyable = 0;
-  for (const rid of Object.keys(RANK_DEFS)) {
-    if (!rankIsAvailable(rid)) continue;
-    const entry = save.ranks[rid] || { level: 0 };
-    if (entry.level >= RANK_DEFS[rid].maxRank) continue;
-    if (save.coins >= rankCost(rid, entry.level)) rankBuyable++;
-  }
-  if (rankBuyable > 0) badges.labs = rankBuyable;
+  // Ranks: no badge — Andy prefers clean Research tab without notification noise
 
   // Goals: count claimable milestones
   let claimable = 0;
@@ -1162,7 +1320,7 @@ function renderSubmenu() {
   document.querySelectorAll('.submenu-btn').forEach(b => {
     const tab = b.dataset.tab;
     const unlocked = featureUnlocked(tab);
-    b.classList.toggle('active', tab === activeSubmenu && unlocked);
+    b.classList.toggle('active', !homeViewActive && tab === activeSubmenu && unlocked);
     b.classList.toggle('tab-locked', !unlocked);
     b.disabled = !unlocked;
     // Update badge
@@ -1192,12 +1350,12 @@ function renderSubmenu() {
     }
   });
   const c = document.getElementById('submenuContent');
-  // v0.7.16: prepend a big neon panel title matching the mockup
+  // Prepend a big neon panel title matching the mockup
   const titles = {
     labs:       { t: 'RESEARCH',   s: 'PERMANENT UPGRADES' },
     milestones: { t: 'GOALS',      s: 'EARN REWARDS · GET STRONGER' },
     cards:      { t: 'LOADOUT',    s: 'CARDS' },
-    shop:       { t: 'STORE',      s: 'GEMS · COINS · BOOSTERS' },
+    shop:       { t: 'STORE',      s: 'GEMS · SCRAP · BOOSTERS' },
     skins:      { t: 'SKINS',      s: 'CUSTOMIZE YOUR EXPERIENCE' },
     tournament: { t: 'TOURNAMENT', s: 'COMPETE · RANK UP · EARN REWARDS' },
     settings:   { t: 'SETTINGS',   s: 'CUSTOMIZE YOUR GAME' }
@@ -1350,7 +1508,7 @@ function renderLabsTab(c) {
 
   // Section label
   const stMeta = RESEARCH_SUBTABS.find(s => s.id === activeResearchTab);
-  html += `<div class="mockup-rank-section">⚙ <b>${stMeta ? stMeta.label : 'Ranks'}</b> · ${visibleRankIds.length} rank${visibleRankIds.length === 1 ? '' : 's'} · coin-bought · permanent</div>`;
+  html += `<div class="mockup-rank-section">⚙ <b>${stMeta ? stMeta.label : 'Ranks'}</b> · ${visibleRankIds.length} rank${visibleRankIds.length === 1 ? '' : 's'} · scrap-bought · permanent</div>`;
 
   if (visibleRankIds.length === 0) {
     html += `<div class="lab-section-header" style="opacity:0.55;border-style:dashed;text-align:center;padding:20px 10px;">No ranks in this category yet.<br><span style="color:var(--muted);font-weight:normal;font-size:10px;">Unlock a family above to reveal more.</span></div>`;
@@ -1401,6 +1559,21 @@ function renderLabsTab(c) {
       const rid = btn.dataset.rank;
       const mul = save.settings.buyMultiplier || 1;
       const maxToBuy = mul === 'max' ? 10000 : mul;
+
+      // For numeric multiplier (x10 etc), pre-validate total cost
+      if (typeof mul === 'number' && mul > 1) {
+        const def = RANK_DEFS[rid];
+        const entry = save.ranks[rid] || { level: 0 };
+        const want = Math.min(mul, def.maxRank - entry.level);
+        let totalCost = 0;
+        for (let i = 0; i < want; i++) {
+          const c = rankCost(rid, entry.level + i);
+          if (c === Infinity) { totalCost = Infinity; break; }
+          totalCost += c;
+        }
+        if (save.coins < totalCost) return; // Can't afford full batch — do nothing
+      }
+
       let bought = 0;
       while (bought < maxToBuy) {
         if (!purchaseRank(rid)) break;
@@ -1431,7 +1604,7 @@ function renderLabsTab(c) {
   });
 }
 
-// v0.7.17: icon + color per rank for the tile-at-left mockup look
+// Icon + color per rank for the tile-at-left mockup look
 const RANK_ICON_META = {
   damage:        { icon: '🚀', color: 'var(--danger)' },
   fireRate:      { icon: '⏫', color: 'var(--accent)' },
@@ -1458,7 +1631,7 @@ const RANK_ICON_META = {
   knockback:        { icon: '💨', color: 'var(--accent)' },
   shieldHP:         { icon: '🔷', color: 'var(--cyan2)' },
   shieldRegen:      { icon: '♻',  color: 'var(--cyan2)' },
-  coinMultiplier:   { icon: '🪙', color: 'var(--gold)' },
+  coinMultiplier:   { icon: '🔩', color: 'var(--gold)' },
   gemFind:          { icon: '💎', color: 'var(--purple)' },
   projSpeed:        { icon: '➤',  color: 'var(--accent)' },
   pierce:           { icon: '⫸',  color: 'var(--accent)' },
@@ -1484,26 +1657,48 @@ function renderRankRow(rid) {
   // Calculate buy-N cost for multiplier display
   const mul = save.settings.buyMultiplier || 1;
   let buyLabel = 'MAXED';
+  let canAffordBatch = can; // default: can afford at least 1
   if (!maxed) {
-    if (mul === 'max' || mul > 1) {
-      const limit = mul === 'max' ? (def.maxRank - entry.level) : Math.min(mul, def.maxRank - entry.level);
+    if (mul === 'max') {
+      // MAX: buy as many as affordable
+      const limit = def.maxRank - entry.level;
       let totalCost = 0, count = 0;
       for (let i = 0; i < limit; i++) {
         const c = rankCost(rid, entry.level + i);
         if (c === Infinity) break;
-        if (totalCost + c > save.coins && mul === 'max') break;
+        if (totalCost + c > save.coins) break;
         totalCost += c;
         count++;
       }
       if (count === 0) count = 1;
       const costForFirst = rankCost(rid, entry.level);
-      const displayCost = mul === 'max' ? totalCost : totalCost;
-      const canBuy = save.coins >= costForFirst;
+      canAffordBatch = save.coins >= costForFirst;
       buyLabel = count > 1
-        ? `Rank Up ×${count} · ${formatNum(displayCost)} coins`
-        : `Rank Up · ${formatNum(costForFirst)} coins`;
+        ? `Rank Up ×${count} · ${formatNum(totalCost)} scrap`
+        : `Rank Up · ${formatNum(costForFirst)} scrap`;
+    } else if (mul > 1) {
+      // x10 etc: require ALL N to be affordable, or show can't afford
+      const want = Math.min(mul, def.maxRank - entry.level);
+      let totalCost = 0, count = 0;
+      for (let i = 0; i < want; i++) {
+        const c = rankCost(rid, entry.level + i);
+        if (c === Infinity) break;
+        totalCost += c;
+        count++;
+      }
+      if (count < want) {
+        // Not enough ranks remaining for a full batch — show what's available
+        canAffordBatch = save.coins >= totalCost;
+        buyLabel = count > 1
+          ? `Rank Up ×${count} · ${formatNum(totalCost)} scrap`
+          : `Rank Up · ${formatNum(rankCost(rid, entry.level))} scrap`;
+      } else {
+        // Full batch — require player can afford all N
+        canAffordBatch = save.coins >= totalCost;
+        buyLabel = `Rank Up ×${count} · ${formatNum(totalCost)} scrap`;
+      }
     } else {
-      buyLabel = `Rank Up · ${formatNum(cost)} coins`;
+      buyLabel = `Rank Up · ${formatNum(cost)} scrap`;
     }
   }
 
@@ -1516,7 +1711,7 @@ function renderRankRow(rid) {
       </div>
       <div class="lab-desc">${def.desc}</div>
       <div class="lab-stat">+${fmt(curBonus)} → +${fmt(nextBonus)}</div>
-      <button class="lab-buy ${maxed ? 'maxed' : ''}" data-rank="${rid}" ${maxed || !can ? 'disabled' : ''}>
+      <button class="lab-buy ${maxed ? 'maxed' : ''}" data-rank="${rid}" ${maxed || !canAffordBatch ? 'disabled' : ''}>
         ${buyLabel}
       </button>
     </div>`;
@@ -1539,7 +1734,7 @@ function renderMilestonesTab(c) {
     readyCounts[t] = n;
   }
 
-  // v0.7.17: Tier hex progression bar — all 18 tiers, scrollable horizontally
+  // Tier hex progression bar — all 18 tiers, scrollable horizontally
   let html = `<div class="tier-hex-strip">`;
   for (let t = 1; t <= MAX_TIER; t++) {
     const state = t > unlockedTier ? 'locked'
@@ -1574,7 +1769,7 @@ function renderMilestonesTab(c) {
       <div class="milestone ${stateClass}">
         <div class="milestone-info">
           <div class="milestone-target">Wave ${w}</div>
-          <div class="milestone-reward"><b>${formatNum(r.coins)}</b> coins${gemPart}</div>
+          <div class="milestone-reward"><b>${formatNum(r.coins)}</b> scrap${gemPart}</div>
         </div>
         <button class="milestone-btn ${!ready ? 'locked' : ''}" data-tier="${activeGoalTier}" data-wave="${w}" ${!ready ? 'disabled' : ''}>
           ${btnText}
@@ -1694,7 +1889,7 @@ function renderCardsTab(c) {
     { key: 'crit',         label: '🎯 crit',      pct: true, flat: true },
     { key: 'critPower',    label: '✸ crit pwr',   pct: true },
     { key: 'cash',         label: '💰 cash',      pct: true },
-    { key: 'coinGain',     label: '⊙ coin gain',  pct: true },
+    { key: 'coinGain',     label: '⊙ scrap gain', pct: true },
     { key: 'waveBonus',    label: '≋ wave bonus', pct: true },
     { key: 'multiChance',  label: '⌘ multi%',     pct: true, flat: true },
     { key: 'multiPower',   label: '✚ multi pwr',  pct: true },
@@ -2052,28 +2247,38 @@ function renderShopTab(c) {
     });
   }
 
-  // Single pull
+  // Single pull (throttled to prevent accidental double-pulls)
   const pullBtn = document.getElementById('cardPullSingleBtn');
   if (pullBtn) {
+    let pullCooldown = false;
     pullBtn.addEventListener('click', () => {
+      if (pullCooldown) return;
       const result = performPull();
       if (result) {
+        pullCooldown = true;
+        pullBtn.disabled = true;
         showPullReveal([result]);
         renderHud();
         renderSubmenu();
+        setTimeout(() => { pullCooldown = false; pullBtn.disabled = false; }, 800);
       }
     });
   }
 
-  // Bundle pull
+  // Bundle pull (throttled to prevent accidental double-pulls)
   const bundleBtn = document.getElementById('cardPullBundleBtn');
   if (bundleBtn) {
+    let bundleCooldown = false;
     bundleBtn.addEventListener('click', () => {
+      if (bundleCooldown) return;
       const results = performBundle();
       if (results) {
+        bundleCooldown = true;
+        bundleBtn.disabled = true;
         showPullReveal(results);
         renderHud();
         renderSubmenu();
+        setTimeout(() => { bundleCooldown = false; bundleBtn.disabled = false; }, 800);
       }
     });
   }
@@ -2468,11 +2673,11 @@ function renderDevPanel() {
     </div>
 
     <div class="dev-section">Currency</div>
-    <button class="dev-btn" data-act="coins1k">+ 1,000 coins</button>
-    <button class="dev-btn" data-act="coins100k">+ 100,000 coins</button>
-    <button class="dev-btn" data-act="coins10m">+ 10,000,000 coins</button>
+    <button class="dev-btn" data-act="coins1k">+ 1,000 scrap</button>
+    <button class="dev-btn" data-act="coins100k">+ 100,000 scrap</button>
+    <button class="dev-btn" data-act="coins10m">+ 10,000,000 scrap</button>
     <button class="dev-btn" data-act="gems100">+ 100 gems</button>
-    <button class="dev-btn" data-act="coins1b">+ 1,000,000,000 coins</button>
+    <button class="dev-btn" data-act="coins1b">+ 1,000,000,000 scrap</button>
     <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
 
     <div class="dev-section">Progression</div>
@@ -2532,7 +2737,7 @@ function devAct(act) {
     case 'gems100':   save.gems += 100; break;
     case 'gems10k':   save.gems += 10000; break;
     case 'maxLabs':
-      // v0.7.15: max all ranks + unlock all families
+      // Max all ranks + unlock all families
       for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
       for (const rid of Object.keys(RANK_DEFS)) {
         if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
@@ -2708,6 +2913,7 @@ function renderTournamentTab(c) {
         <div class="tourney-band-info">
           <div class="tourney-band-name">${band.name} · T${band.minTier}${band.maxTier < 999 ? '-T'+band.maxTier : '+'}</div>
           <div class="tourney-league-pill" style="background:${leagueMeta.color}20;border-color:${leagueMeta.color};color:${leagueMeta.color}">
+            <span class="tourney-league-icon">${leagueMeta.icon || ''}</span>
             ${leagueMeta.name.toUpperCase()} LEAGUE
           </div>
         </div>
@@ -2789,9 +2995,10 @@ function renderTournamentTab(c) {
     let rowZoneColor = 'var(--muted)';
     if (rank <= promoteCut) rowZoneColor = 'var(--good)';
     else if (rank >= demoteCutRank) rowZoneColor = 'var(--danger)';
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
     html += `
       <div class="tourney-row ${isPlayer ? 'is-player' : ''}">
-        <span class="tourney-row-rank" style="color:${rowZoneColor}">#${rank}</span>
+        <span class="tourney-row-rank" style="color:${rowZoneColor}">${medal || '#' + rank}</span>
         <span class="tourney-row-name">${isPlayer ? 'YOU' : entry.name}</span>
         <span class="tourney-row-wave">W${entry.bestWave || '—'}</span>
       </div>`;

@@ -51,7 +51,7 @@ function showOfflineToast(elapsedMs, cappedMs, earned, capMin, rate) {
   m.innerHTML = `
     <b>Welcome back</b><br>
     Away ${elapsedH} ${capped ? `(capped at ${cappedDisp})` : ''}<br>
-    +${formatNum(earned)} coins (${(rate*100).toFixed(0)}% rate)
+    +${formatNum(earned)} scrap (${(rate*100).toFixed(0)}% rate)
   `;
   t.style.display = 'block';
   setTimeout(() => { if (t) t.style.display = 'none'; }, 9000);
@@ -94,9 +94,11 @@ const orbState = {
 };
 
 function resetOrbStateForRun() {
-  // Show the first orb early enough that short tester runs still see it.
+  // When a run starts, schedule first orb at 45s real-time from now
   orbState.lastSpawnTime = performance.now();
-  orbState.nextSpawnDelay = 35 * 1000; // 35 seconds
+  const gemAttractorBonus = typeof getGemFindChance === 'function' ? getGemFindChance() : 0;
+  const spawnMul = Math.max(0.15, 1 - gemAttractorBonus); // cap at 85% reduction
+  orbState.nextSpawnDelay = Math.floor(45000 * spawnMul); // 45s base (was 2 min)
   if (orbState.currentOrb) {
     orbState.currentOrb.remove();
     orbState.currentOrb = null;
@@ -138,7 +140,8 @@ function updateOrbSystem() {
           orbState.currentOrb = null;
           // Schedule next
           orbState.lastSpawnTime = performance.now();
-          orbState.nextSpawnDelay = (3.5 + Math.random() * 1.5) * 60 * 1000; // 3.5-5 min
+          const gaMul1 = Math.max(0.15, 1 - (typeof getGemFindChance === 'function' ? getGemFindChance() : 0));
+          orbState.nextSpawnDelay = Math.floor((3 + Math.random() * 1) * 60 * 1000 * gaMul1); // 3-4 min base
         }
       }, 400);
     }
@@ -180,7 +183,8 @@ function onOrbTapped(ev) {
   orbState.currentOrb = null;
   // Schedule next orb
   orbState.lastSpawnTime = performance.now();
-  orbState.nextSpawnDelay = (3.5 + Math.random() * 1.5) * 60 * 1000;
+  const gaMul2 = Math.max(0.15, 1 - (typeof getGemFindChance === 'function' ? getGemFindChance() : 0));
+  orbState.nextSpawnDelay = Math.floor((6 + Math.random() * 2) * 60 * 1000 * gaMul2);
   // Spawn ad-bonus pill near orb location
   spawnAdPill(relTop);
 }
@@ -415,6 +419,121 @@ async function registerAppShell() {
 
 
 // ============================================================
+// KEYBOARD SHORTCUTS — desktop play convenience
+// ============================================================
+function wireKeyboardShortcuts() {
+  document.addEventListener('keydown', function(event) {
+    // Don't intercept when typing in an input or textarea
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    // Don't intercept during simulated ad overlay
+    if (adSimState && adSimState.active) return;
+
+    // Don't intercept during end-of-run overlay
+    var endOv = document.getElementById('endOverlay');
+    if (endOv && endOv.classList.contains('active')) return;
+
+    var key = event.key;
+    var inBattle = game.running;
+    var onMenu = !inBattle;
+    var overlayUp = inBattle && typeof isOverlayActive === 'function' && isOverlayActive();
+
+    // --- SPACE or ENTER ---
+    if (key === ' ' || key === 'Enter') {
+      event.preventDefault();
+      if (onMenu) {
+        startBattle();
+      } else if (inBattle) {
+        // Toggle pause
+        game.paused = !game.paused;
+        // Show/hide a simple pause indicator
+        var pi = document.getElementById('pauseIndicator');
+        if (!pi) {
+          pi = document.createElement('div');
+          pi.id = 'pauseIndicator';
+          pi.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+            'background:rgba(0,0,0,0.75);color:#fff;font-size:28px;font-weight:bold;' +
+            'padding:18px 36px;border-radius:12px;z-index:9000;pointer-events:none;';
+          pi.textContent = 'PAUSED';
+          document.body.appendChild(pi);
+        }
+        pi.style.display = game.paused ? 'block' : 'none';
+      }
+      return;
+    }
+
+    // --- 1-6: Buy in-run upgrades by visible slot position ---
+    if (inBattle && !overlayUp && key >= '1' && key <= '6') {
+      event.preventDefault();
+      var btns = document.querySelectorAll('.upgrade-grid .upgrade-btn');
+      var idx = parseInt(key) - 1;
+      if (btns[idx]) {
+        var upgradeKey = btns[idx].dataset.key;
+        if (upgradeKey) buyInRun(upgradeKey);
+      }
+      return;
+    }
+
+    // --- H: Buy heal ---
+    if (inBattle && !overlayUp && (key === 'h' || key === 'H')) {
+      event.preventDefault();
+      buyInRun('heal');
+      return;
+    }
+
+    // --- ESCAPE ---
+    if (key === 'Escape') {
+      event.preventDefault();
+      // Close More sheet if open
+      var moreSheet = document.getElementById('moreSheet');
+      if (moreSheet && moreSheet.classList.contains('visible')) {
+        closeMoreSheet();
+        return;
+      }
+      if (inBattle) {
+        if (overlayUp) {
+          closeMenuOverlay();
+        } else {
+          openMenuOverlay();
+        }
+      } else {
+        // On menu: go to home screen
+        showScreen('menu');
+        renderMenu();
+      }
+      return;
+    }
+
+    // --- R: Open Research tab ---
+    if (key === 'r' || key === 'R') {
+      event.preventDefault();
+      if (inBattle && !overlayUp) openMenuOverlay();
+      activeSubmenu = 'labs';
+      renderSubmenu();
+      return;
+    }
+
+    // --- L: Open Loadout tab ---
+    if (key === 'l' || key === 'L') {
+      event.preventDefault();
+      if (typeof featureUnlocked === 'function' && !featureUnlocked('cards')) return;
+      if (inBattle && !overlayUp) openMenuOverlay();
+      activeSubmenu = 'cards';
+      renderSubmenu();
+      return;
+    }
+
+    // --- M: Open More sheet ---
+    if (key === 'm' || key === 'M') {
+      event.preventDefault();
+      openMoreSheet();
+      return;
+    }
+  });
+}
+
+// ============================================================
 // BOOT
 // ============================================================
 function updateSplash(pct) {
@@ -481,6 +600,7 @@ window.addEventListener('load', async () => {
         return;
       }
       activeSubmenu = tab;
+      setHomeView(false);
       renderSubmenu();
     });
   });
@@ -502,6 +622,7 @@ window.addEventListener('load', async () => {
   wireBattlefieldSideButtons();
   wireGlobalNav();
   wireInstallBanner();
+  wireKeyboardShortcuts();
   startPassiveAccrual();
   updateSplash(100);
   setTimeout(dismissSplash, 300);
@@ -530,3 +651,25 @@ window.addEventListener('appinstalled', () => {
 window._game = game;
 window._save = () => save;
 window._dev = () => { save.settings.devMode = true; persistSave(); openDevPanel(); };
+
+// ============================================================
+// GLOBAL ERROR BOUNDARY — prevent blank screen on crash
+// ============================================================
+window.onerror = function(msg, src, line, col, err) {
+  console.error('Uncaught error:', msg, 'at', src, line, col, err);
+  try {
+    const toast = document.createElement('div');
+    toast.className = 'skin-toast';
+    toast.style.background = 'rgba(180,40,40,0.95)';
+    toast.style.zIndex = '99999';
+    toast.textContent = '⚠ Something went wrong. Try reloading the game.';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+    // Try to save progress before anything worse happens
+    if (typeof persistSave === 'function') persistSave();
+  } catch (_) { /* last resort — don't throw in the error handler */ }
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('Unhandled promise rejection:', event.reason);
+});

@@ -4,6 +4,9 @@
 
 - Project: Core Surge / Tower Game
 - GitHub repo: `mcrdminted-jpg/Core-Surge`
+- Primary working folder: `C:\Users\admin\OneDrive - Atlas Home Services\Tower Mobile App Game`
+- Do not continue gameplay or content work in `tower-game-git` as a separate divergent copy
+- When git work is needed, reconcile from the primary working folder back into the repo instead of letting the two folders drift
 
 ## Git account rule
 

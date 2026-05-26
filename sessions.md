@@ -837,3 +837,45 @@ Examples:
 - The current failing deploy logs are from the old repo state that still had root asset upload behavior
 
 ---
+
+## 2026-05-25 - Codex - Folder Alignment And Source Of Truth Reset
+
+**What I did:**
+- Mirrored the verified live asset and deployment files from the git-backed repo into this Claude/Cowork folder so it now contains the current icon pack, Firebase public config hook, Cloudflare Wrangler config, build scripts, and shell files.
+- Updated package.json here to v0.7.28 and kept the Claude mobile run scripts while adding the assets:icons generator script.
+- Added AGENTS.md here and set this folder as the primary working folder to stop future Codex and Claude drift between two separate copies.
+- Verified this folder directly with npm.cmd run typecheck, npm.cmd run build, and npm.cmd run test.
+
+**Verification:**
+- npm.cmd run typecheck passed
+- npm.cmd run build passed with core-surge-shell-v0-7-28
+- npm.cmd run test passed with 251 passed, 0 failed
+
+**What other agents need to know:**
+- Primary working folder is now C:\Users\admin\OneDrive - Atlas Home Services\Tower Mobile App Game.
+- Do not keep developing tower-game-git as a separate copy. Reconcile git work from this folder back into the repo when pushing.
+- This folder now contains the current live asset pack and deployment config that were previously only in the git-backed repo.
+
+**Blockers:**
+- The git-backed repo still needs a controlled merge of the newer Claude gameplay and UI files from this folder before the next push, but the folder split itself is now corrected.
+## 2026-05-25 - Codex - Deploy Merge From Primary Working Folder
+
+**What I did:**
+- Treated C:\Users\admin\OneDrive - Atlas Home Services\Tower Mobile App Game as the source of truth and copied the current gameplay and UI batch back into the git repo.
+- Brought over the Claude feature set that was not in the repo copy, including home-view separation, battle popup support, balance changes, and the newer save schema.
+- Updated the stale automated test expectations to match the current v0.7.28 data model instead of the old 6-family progression assumptions.
+
+**Verification:**
+- 
+pm.cmd run build passed
+- 
+pm.cmd run typecheck passed
+- 
+pm.cmd run test pending rerun after test expectation update
+
+**What other agents need to know:**
+- Keep using Tower Mobile App Game as the working folder and reconcile git from there.
+- The earlier drift between Claude and Codex copies was the real cause of the deploy confusion.
+
+**Blockers:**
+- None if the rerun passes. Next step is git push and Cloudflare redeploy.

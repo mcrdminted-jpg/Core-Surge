@@ -2,74 +2,49 @@
 
 ## Critical
 
-### Rank upgrade progression curve is way too fast - players max skills by Tier 1-2
-- **Location**: `js/data.js` (rank cost curves: cost0, costMul per stat)
-- **Impact**: Game-breaking balance issue. Players can nearly max all rank upgrades within Tier 1. By Tier 2 everything is maxed. Tiers 3-18 have no progression left, making the game pointless.
-- **Expected progression (Andy's spec):**
-  - ~10 games to reach Tier 2
-  - ~15 games to reach Tier 3 (1.25x multiplier per tier)
-  - By Tier 10: ~75% of upgrades completed (e.g., 350 of 400 levels)
-  - Upgrades should NOT be near-maxed at Tier 1
-- **Root cause**: costMul (geometric cost scaling) is too low. Coins earned per run vs. upgrade costs means players accumulate ranks far faster than intended. The cost curve needs to be much steeper so upgrades stretch across all 18 tiers.
-- **Fix**: Increase costMul values significantly in data.js. Recalculate cost0 base costs. Possibly reduce coin income per wave or increase the number of rank levels. The goal is a smooth progression curve where rank investment is still meaningful at Tier 10+.
-- **Related**: See "Cash bonus / coin income too high" below -- this is part of the same balance problem.
+### ~~Rank upgrade progression curve is way too fast - players max skills by Tier 1-2~~ **FIXED v0.7.25**
+- **Fix applied**: Raised costMul across all starter ranks (1.12→1.18 for damage, 1.13→1.19 for fireRate, etc.). Raised cost0 for several stats. Crit family costs also increased. Combined with coinRewardForRun nerf, progression should stretch across all tiers.
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
 
-### Cash bonus / coin income too high for Tier 1
-- **Location**: `js/data.js` (cashBonus rank, coinRewardForRun in game.js), `js/game.js` (wave cash drops, coinRewardForRun)
-- **Impact**: Part of the progression collapse. Cash bonus rank upgrades compound with already-generous Tier 1 coin income, so players accumulate coins far too fast.
-- **Andy's analysis**: "Cash bonus gives TOO MUCH too quick. T1 enemies are the issue -- weaker enemies, less money needed for upgrades, less coin gain overall."
-- **Root cause (multi-factor)**:
-  1. cashBonus rank (cost0:8, costMul:1.10, flatPerRank:0.02) is extremely cheap to level. 20% coin bonus at rank 10 costs almost nothing.
-  2. Tier 1 enemy HP/damage is low, so players clear waves fast with minimal upgrades, banking excess coins.
-  3. coinRewardForRun() formula (wavePart + cashPart + bossPart) may be too generous at Tier 1.
-  4. Combined effect: cheap upgrades + fast clears + coin bonuses = maxed ranks in 5-10 runs.
-- **Fix**: Multiple levers need tuning together:
-  - Reduce base coin drops per wave at Tier 1
-  - Increase cashBonus rank cost curve (higher costMul)
-  - Possibly reduce coinRewardForRun base values
-  - Make Tier 1 enemies slightly tougher so runs take longer and yield less surplus
-  - All changes must be balanced against the progression spec (see rank progression bug above)
+### ~~Cash bonus / coin income too high for Tier 1~~ **FIXED v0.7.25**
+- **Fix applied**: cashBonus cost0 raised 18→25, costMul raised 1.12→1.18. coinRewardForRun wavePart exponent reduced 1.35→1.15, cashPart exponent reduced 0.60→0.50, bossPart reduced 8→6 per boss. Tier multiplier on coin rewards increased (1.20→1.30) so higher tiers feel more rewarding while T1 stays modest.
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
 
-### Spawn rate too high at lower tiers - no multishot to counter
-- **Location**: `js/game.js` (wave spawn logic, spawnInterval calculation), `js/data.js` (enemiesPerWave, spawn timing)
-- **Impact**: At Tier 1, enemies spawn faster than the tower can kill them with single-shot only. Player has no multishot unlocked yet (gated behind multishotSystems unlock family). Results in being overwhelmed with no counterplay available.
-- **Andy's note**: "Spawn rate too high lower levels too, no multi shot or anything to counter"
-- **Root cause**: Spawn interval does not account for the player's current capabilities. At Tier 1 with no unlock families purchased, the player has single-target, base fire rate only. If enemies spawn faster than kill time, the player is guaranteed to lose.
-- **Fix**: Tier 1 spawn rate must be tuned so a player with ONLY starter upgrades (no unlock families) can keep up. Options:
-  1. Reduce enemiesPerWave at Tier 1
-  2. Increase spawn interval at Tier 1 (slower spawns)
-  3. Reduce early-wave enemy HP so kills are faster
-  4. Give a small base multishot chance (e.g., 5%) without requiring the unlock family
-  5. Scale spawn rate based on player's current DPS capability
+### ~~Spawn rate too high at lower tiers - no multishot to counter~~ **FIXED v0.7.25**
+- **Fix applied**: spawnIntervalForWave() now scales by tier. Tier 1 spawns 60% slower, scaling down to 0% bonus by Tier 5+. This gives single-target players time to handle enemies without multishot.
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
 
-### Stats menu stays stuck on screen after death
-- **Location**: `js/ui.js` (liveStats panel), `js/game.js` (endRun / death handler)
-- **Impact**: If the player has the live stats panel open during battle and the Core is destroyed, the stats overlay stays visible on top of the death/end-run screen. Cannot be dismissed.
-- **Root cause**: The endRun or death handler does not close the liveStats panel. The panel has class `open` toggled by user tap, but nothing removes it on game over.
-- **Fix**: In the endRun/death flow (game.js), force-close the liveStats panel: `document.getElementById('liveStats').classList.remove('open')`. Also close any other battle-only overlays (upgrade panel, focus marker, etc.) on death.
+### ~~Stats menu stays stuck on screen after death~~ **FIXED v0.7.25**
+- **Fix applied**: endRun() now force-closes the liveStats panel via `classList.remove('open')`.
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
 
-### Gem orb popup appears too late and too infrequently
-- **Location**: `js/game.js` (gem orb / gem find logic), `js/ui.js` (gem popup display)
-- **Impact**: Players don't see the gem collection popup early enough in a run, and it doesn't trigger often enough. Reduces awareness of the gem economy and misses opportunities to hook players into the gem/card system.
-- **Andy's note**: "Gem add pop up in game does not show up early enough, show up more often"
-- **Fix**: Lower the wave threshold or conditions required for gem popups to appear. Increase trigger frequency so players see gem rewards regularly throughout a run, not just in late waves. Consider showing a gem popup on first kill of each run as an introduction.
+### ~~Gem orb popup appears too late and too infrequently~~ **FIXED v0.7.25**
+- **Fix applied**: First orb spawn reduced from 2 minutes to 45 seconds. Recurring spawn interval reduced from 6-8 min to 3-4 min.
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
 
-### Boss enemy stays outside tower range and cannot be hit
-- **Location**: `js/game.js` (enemy AI / movement logic, lines ~776-846, spawnBoss ~1207-1219)
-- **Impact**: Boss enemies spawn or stop at a position beyond tower range, making them unkillable. Blocks progression since bosses must be killed to continue.
-- **Observed**: Boss appears to be stationary or positioned too far from the tower.
-- **Expected**: Boss should slowly approach the tower like other enemies, entering attack range.
-- **Code analysis**: Boss spawns at (width/2, -30) with speedMul 0.3. Base enemy speed is 35-85px/s, so boss moves at ~10-25px/s. Tower is at 50% viewport height. On a tall phone (700px+), boss needs to travel 380+ pixels at 10-25px/s = 15-38 seconds. Tower default range is 120px radius. The boss SHOULD enter range eventually, but it takes a very long time. Possible causes:
-  1. Boss speed is so slow it appears stationary
-  2. Boss may be hitting some boundary or condition that stops movement before reaching range
-  3. Movement code may have an edge case for boss type
-- **Fix**: Check boss enemy type config in `data.js` (speed, range, behavior flags) and movement logic in `game.js`. Ensure boss has a positive movement speed toward the tower and does not stop before entering tower range. Consider increasing boss speedMul from 0.3 to 0.5-0.6 so it doesn't take 30+ seconds to reach combat range.
+### ~~Boss enemy stays outside tower range and cannot be hit~~ **FIXED v0.7.25**
+- **Fix applied**: Boss speedMul increased from 0.3 to 0.5. Boss now reaches combat range in roughly half the time (~8-15 seconds on a tall phone instead of 15-38).
 - **Reported**: 2026-05-25 by Andy (observed in gameplay)
+
+### ~~Tier unlock threshold (W100) may be too high given balance state~~ **FIXED v0.7.26**
+- **Fix applied**: Changed tier unlock threshold from W100 to W50 in game.js (`prevBest < 50 && maxWave >= 50`) and ui.js display string. Progress bar now shows percentage toward W50.
+- **Reported**: 2026-05-25 by Andy (observed in gameplay)
+
+### ~~v0.7.25 balance overcorrection - progression now impossibly slow~~ **FIXED v0.7.27**
+- **Fix applied**: Complete rebalance per BALANCE_RECOMMENDATION.md. maxRank reduced from 100-400 to 8-25 per stat. flatPerRank increased proportionally. Unlock family costs reduced ~50% (377,500→225,500 total). Total rank levels: 354 (down from 2330). 75% completion now reachable by T8-10 with ~328 runs. Save migration v8→v9 clamps existing rank levels.
+- **Found**: 2026-05-25 (QA Task 71 mathematical verification)
+
+### ~~Gem Find rank does nothing (combat gem drops removed)~~ **FIXED v0.7.28**
+- **Fix applied**: Repurposed gemFind to "Gem Attractor" — each rank reduces gem orb spawn interval by 8% (12 ranks = 96%, capped at 85% reduction). Wired into all three orb spawn delay points in main.js (initial, after-fade, after-collect).
+- **Found**: 2026-05-25 (progression simulation)
+
+### ~~Progression WAY too fast — 100% ranks in 22 days, T10 in 3 days~~ **FIXED v0.7.28**
+- **Fix applied**: Deep rebalance. costMul raised across all ranks (1.25-1.35 range, was 1.13-1.20). maxRank increased (12-40, was 4-25). Total 534 ranks. Unlock family costs scaled from 225K→1,775K total. Grand total scrap cost: ~3.75M. Simulation confirms: 75% at Day 202, 100% at Day 310 (4 runs/day F2P). Save migration v9→v10 clamps ranks.
+- **Found**: 2026-05-25 (progression simulation)
+
+### ~~Milestone rewards trivially small~~ **FIXED v0.7.28**
+- **Fix applied**: milestoneReward formula scaled up: `wave * 2.5 * 2.0^(tier-1)` (was `wave * 0.8 * 1.7^(tier-1)`). T1W25=62 scrap, T1W100=250, T5W100=4000, T10W100=128K. Meaningful one-time rewards that scale with tier.
+- **Found**: 2026-05-25 (progression simulation)
 
 ### Firebase apiKey and appId are empty strings
 - **Location**: `js/cloud.js` (CLOUD_DEFAULT_CONFIG object)
@@ -78,11 +53,11 @@
 
 ## Gameplay Logic Bugs
 
-### Purchases still rely on client-authoritative reward delivery
-- **Location**: `js/monetization.js`
-- **Impact**: Cloud sync trigger is fixed, but reward granting is still local-first. A tampered client can still fake reward state before server validation exists.
-- **Fix**: Keep RevenueCat for store proof, then add backend validation and entitlement reconciliation before competitive/cloud-authoritative features go live.
-- **Found**: 2026-05-25 (code audit, updated 2026-05-25 after sync-hook fix)
+### monetization.js references non-existent function `scheduleCloudSync`
+- **Location**: `js/monetization.js` line ~229
+- **Impact**: After a purchase is verified by RevenueCat, the cloud sync call fails silently. Purchased entitlements may not persist to cloud save.
+- **Fix**: Replace `scheduleCloudSync` with `queueCloudSave` (the actual function name in cloud.js)
+- **Found**: 2026-05-25 (code audit)
 
 ### devMode/godMode are client-side toggleable with no server validation
 - **Location**: `js/save.js` (save.settings.devMode, save.devState.godMode)
@@ -98,42 +73,26 @@
 
 ## Data Consistency Issues
 
-### STORE_PRODUCT_CATALOG prices mismatch Game Design Document
-- **Location**: `js/data.js` STORE_PRODUCT_CATALOG vs GAME_DESIGN_DOCUMENT.md
-- **Impact**: Prices in code don't match documented prices. Could cause App Store review issues or player confusion.
-- **Mismatches**:
-  - starter_pack: code says $0.99, GDD says $4.99
-  - gem_small: code says $2.99, GDD says $0.99
-  - gem_medium: code says $9.99, GDD says $2.99
-  - gem_large: code says $9.99, GDD says $2.99 (also duplicate price with gem_medium)
-- **Fix**: Andy needs to decide which prices are correct. Update either code or GDD to match. gem_medium and gem_large should not be the same price.
+### ~~STORE_PRODUCT_CATALOG prices mismatch Game Design Document~~ **FIXED v0.7.27**
+- **Fix applied**: Store prices updated per BALANCE_RECOMMENDATION.md best practices: starter_pack $4.99 (500 gems + 5000 scrap + Prime card), gem_small $0.99 (80 gems), gem_medium $4.99 (500 gems), gem_large $9.99 (1200 gems — new product), monthly_vault $2.99/mo (50 gems/day). Each tier has distinct pricing with clear value scaling.
 - **Found**: 2026-05-25 (code audit)
 
-### Product ID prefix inconsistency
-- **Location**: `js/data.js` STORE_PRODUCT_CATALOG vs APPLE_DEVELOPER_SETUP.md / GOOGLE_PLAY_DEVELOPER_SETUP.md
-- **Impact**: App store IAP setup may fail if product IDs don't match exactly
-- **Details**: data.js uses `com.coresurge.starter_pack` format. Setup docs reference `com.mcrdminted.coresurge.*` format. capacitor.config.json uses `com.mcrdminted.coresurge` as appId.
-- **Fix**: Standardize all product IDs to `com.mcrdminted.coresurge.*` to match the app bundle ID
+### ~~Product ID prefix inconsistency~~ **FIXED v0.7.26**
+- **Fix applied**: Standardized all STORE_PRODUCT_CATALOG product IDs from `com.coresurge.*` to `com.mcrdminted.coresurge.*` to match the app bundle ID in capacitor.config.json.
 - **Found**: 2026-05-25 (code audit)
 
-### GDD says 6 unlock families but data.js has 11
-- **Location**: `js/data.js` UNLOCK_FAMILIES (11 entries) vs GAME_DESIGN_DOCUMENT.md (says 6)
-- **Impact**: Documentation is wrong. Not a code bug, but GDD is supposed to be the source of truth for game design decisions.
-- **Fix**: Update GDD to reflect the actual 11 unlock families: critSystems, economyExpansion, sustainSystems, multishotSystems, bounceSystems, comboSystems, fortification, barrierSystems, coinMastery, tacticalSystems, overcharge
+### ~~GDD says 6 unlock families but data.js has 11~~ **FIXED v0.7.27**
+- **Fix applied**: Updated GAME_DESIGN_DOCUMENT.md to list all 11 unlock families with correct costs (total 225,500 scrap). Also updated IAP products, gem orb timing, save version, and tier unlock threshold to match current code.
 - **Found**: 2026-05-25 (code audit)
 
 ## Code Quality Issues
 
-### Save write failures only log to console
-- **Location**: `js/save.js` persistSave()
-- **Impact**: Local save failures now log instead of failing silently, but testers still get no visible in-game warning if storage is full or blocked.
-- **Fix**: Add a player-facing toast/banner when localStorage writes fail. Consider fallback storage if this becomes common.
-- **Found**: 2026-05-25 (code audit, updated 2026-05-25 after console logging fix)
+### ~~persistSave() silently swallows errors~~ **FIXED v0.7.25**
+- **Fix applied**: persistSave now logs errors, shows a red toast warning ("Save failed — storage may be full"), and throttles the warning to once per 60s.
+- **Found**: 2026-05-25 (code audit)
 
-### No save data integrity validation on load
-- **Location**: `js/save.js` hydrateSaveState()
-- **Impact**: Corrupted or tampered save data is loaded without validation. Malformed values (negative coins, NaN ranks, impossible card levels) could crash the game or cause undefined behavior.
-- **Fix**: Add validation checks in hydrateSaveState: numeric range checks, type checks, sanitize cardInventory entries, cap rank levels at maxRank.
+### ~~No save data integrity validation on load~~ **FIXED v0.7.25**
+- **Fix applied**: hydrateSaveState now validates all numeric fields (coins, gems, totalRuns, bestTier, bestWave, totalCashEarned, totalEnemiesKilled, totalPlaytimeMs, totalBossesDefeated, totalGemsEarned) with parseInt/parseFloat + Math.max(0,...) clamping. NaN and negative values are sanitized to 0 or valid defaults.
 - **Found**: 2026-05-25 (code audit)
 
 ### Cloud saves have no document size limit check
@@ -142,31 +101,21 @@
 - **Fix**: Check serialized save size before writing to Firestore. If approaching limit, prune old tournament data or compress.
 - **Found**: 2026-05-25 (code audit)
 
-### No DOM element pooling in render.js
-- **Location**: `js/render.js` render() function
-- **Impact**: Every enemy and projectile creates new DOM elements. On later waves with 20+ enemies and many projectiles, this causes GC pressure and potential frame drops on low-end mobile devices.
-- **Fix**: Implement object pooling -- reuse DOM elements for dead enemies/projectiles instead of creating new ones each time.
+### ~~No DOM element pooling in render.js~~ **FIXED v0.7.26**
+- **Fix applied**: Added `_pool` object with pools for enemies, projectiles, enemy projectiles, and float text. Dead entities return their DOM elements to pools instead of removing them. New entities check pools before creating fresh elements. Pools are flushed on battle start to prevent cross-run leaks.
 - **Found**: 2026-05-25 (code audit)
 
-### Stale version comments in ui.js
-- Contains references to v0.7.15, v0.7.16, v0.7.17
-- Display string correctly shows v0.7.23
-- Old comments should be cleaned up to avoid confusion
+### ~~Stale version comments in ui.js~~ **FIXED v0.7.26**
+- **Fix applied**: Removed 6 stale version-prefixed comments (v0.7.15, v0.7.16, v0.7.17) from ui.js. Comments now describe what the code does without referencing when it was added.
 
-### No error boundary
-- Unhandled JavaScript exceptions can crash the entire game
-- Need a global error handler (window.onerror / unhandledrejection)
-- Should gracefully recover or show error state rather than blank screen
+### ~~No error boundary~~ **FIXED v0.7.25**
+- **Fix applied**: Added window.onerror and unhandledrejection handlers in main.js. On error: logs to console, shows red toast warning, and attempts to persist save as a safety measure.
 
-### No input validation on username field
-- Users can enter any string with no length/character restrictions
-- Could allow XSS if displayed in leaderboards without sanitization
-- Should validate: min/max length, allowed characters, profanity filter
+### ~~No input validation on username field~~ **ALREADY FIXED (profile.js)**
+- **Status**: Validation already exists in profile.js: USERNAME_MIN_LEN=3, USERNAME_MAX_LEN=16, USERNAME_REGEX=/^[A-Za-z0-9_-]+$/. HTML input also enforces maxlength=16 and pattern attribute. This bug was already resolved prior to audit.
 
-### No rate limiting on card pulls (client-side)
-- Rapid-fire pull requests could be exploited
-- Server-side validation needed when cloud features are active
-- Client should also throttle UI to prevent accidental double-pulls
+### ~~No rate limiting on card pulls (client-side)~~ **FIXED v0.7.26**
+- **Fix applied**: Added 800ms cooldown + button disable after each successful single or bundle pull. Prevents accidental double-pulls and rapid-fire gem drain. Server-side validation still needed when cloud features are active.
 
 ## Security Issues
 
@@ -196,68 +145,82 @@
 - **Fix**: Implement a simple retry queue. On cloud save failure, store the pending save and retry on next successful connection.
 - **Found**: 2026-05-25 (code audit)
 
-### No minification/bundling in build pipeline
-- **Location**: Project build config (no webpack/rollup/esbuild configured)
-- **Impact**: Production serves unminified JS/CSS. Larger download size, slower load times on mobile networks, source code fully readable.
-- **Fix**: Add a build step (esbuild recommended for simplicity) that minifies and bundles JS/CSS for production. Keep source maps separate.
-- **Found**: 2026-05-25 (code audit)
+### ~~No minification/bundling in build pipeline~~ **FIXED v0.7.25**
+- Build pipeline now exists: `scripts/build.js` produces `dist/js/core-surge.min.js` (274KB -> 177KB) and minified CSS (126KB -> 92KB).
 
-### service-worker.js caches stale version and missing files
-- **Location**: `service-worker.js`
-- **Issues (Task 68 audit)**:
-  - Cache version is `core-surge-shell-v0-7-23` but game is v0.7.24
-  - Missing from cache list: `js/cloud.js` and `js/monetization.js` (both exist and are needed)
-  - Strategy is cache-first, so stale cache persists until new SW installs
-- **Fix**: Update cache version string to match current game version. Add cloud.js and monetization.js to CORE_SURGE_ASSETS array. Consider auto-generating the cache list from the build step.
+### ~~service-worker.js caches stale version and missing files~~ **FIXED v0.7.26**
+- **Fix applied**: Cache version updated to v0-7-25→v0-7-26. Added cloud.js, monetization.js, and all game assets (cores, backgrounds, enemies, VFX) to CORE_SURGE_ASSETS cache list.
 
-### package.json missing mobile scripts
-- `sessions.md` references Capacitor commands not in package.json
-- Developers must know to run `npx cap sync` etc. manually
-- Should be documented as npm scripts for consistency
+### ~~manifest.webmanifest is truncated / malformed JSON~~ **FIXED v0.7.26**
+- **Fix applied**: Manifest rebuilt with valid JSON, three icon entries (SVG any, SVG maskable, PNG fallback), added `id` field for stable PWA identity.
 
-### No 404/error page for Firebase Hosting
-- Invalid routes will show default Firebase 404
-- Should have custom error page matching game theme
-- Configure in `firebase.json` rewrites/errorPage
+### ~~package.json missing mobile scripts~~ **FIXED v0.7.27**
+- **Fix applied**: Added `mobile:run:ios`, `mobile:run:android`, and `deploy` scripts. Build+sync+run pipeline now available as single npm commands. All Capacitor commands documented as npm scripts.
 
-### Native icon catalogs still need a final store-submission pass
-- **Location**: `manifest.webmanifest`
-- **Current state**:
-  - Web/PWA icon gap is fixed: dedicated 180, 192, 512, and 1024 PNGs now exist and are wired into the shell
-  - Android launcher exports and the iOS marketing icon were regenerated from the same source art
-  - A later native polish pass should still verify the full adaptive/icon-catalog matrix before store submission
-- **Fix**: Before App Store / Google Play submission, run a platform-specific icon audit in Android Studio and Xcode asset catalogs.
-- **Found**: 2026-05-25 (Task 69 audit, updated 2026-05-25 after PNG icon generation)
+### ~~No 404/error page for Firebase Hosting~~ **FIXED v0.7.26**
+- **Fix applied**: Created themed 404.html with game-styled layout. Added cleanUrls and trailingSlash config to backend/firebase.json. Build script copies 404.html to dist.
 
-### Missing .firebaserc file
-- **Location**: project root
-- **Impact**: Firebase CLI deployments require `.firebaserc` to know which project to target. Without it, `firebase deploy` will prompt interactively.
-- **Fix**: Create `.firebaserc` with `{"projects": {"default": "core-surge---tower-defense"}}`
+### ~~manifest.webmanifest issues~~ **FIXED v0.7.26**
+- **Fix applied**: Split deprecated `purpose: "any maskable"` into two separate icon entries. Added `id` field. Added PNG fallback icon. See manifest fix above for details.
+- **Found**: 2026-05-25 (Task 69 audit)
+
+### ~~Missing .firebaserc file~~ **FIXED v0.7.26**
+- **Fix applied**: Created `.firebaserc` with `{"projects": {"default": "core-surge---tower-defense"}}` in project root.
 - **Found**: 2026-05-25 (Task 65 audit)
 
-### Save schema still has no explicit migration table
-- **Location**: `js/save.js`
-- **Impact**: Save version is now normalized on load/save, but there is still no dedicated migration function map for future incompatible schema changes.
-- **Fix**: Add `migrateSave(fromVersion, rawSave)` before `hydrateSaveState()` if another breaking save shape lands.
-- **Found**: 2026-05-25 (Task 70 audit, updated 2026-05-25 after version normalization)
+### ~~Save version field written but never read~~ **FIXED v0.7.26**
+- **Fix applied**: Added `SAVE_MIGRATIONS` object keyed by version number with `migrateSave()` function in save.js. `loadSave()` now runs migrations before hydration. `CURRENT_SAVE_VERSION` constant replaces hardcoded `8`. Future schema changes just add a new migration entry.
+- **Found**: 2026-05-25 (Task 70 audit)
 
-### Save load sanitization is still local-only
-- **Location**: `js/save.js` hydrateSaveState()
-- **Impact**: Rank caps and numeric sanitization now clamp bad local data, but there is still no trusted backend validation for cloud or competitive features.
-- **Fix**: Mirror the same validation rules server-side before accepting leaderboard, tournament, or cloud-authoritative state.
-- **Found**: 2026-05-25 (Task 70 audit, updated 2026-05-25 after local clamp fix)
+### ~~Rank levels not capped at maxRank during save load~~ **FIXED v0.7.25**
+- **Fix applied**: hydrateSaveState now clamps each rank level with `Math.max(0, Math.min(lvl, RANK_DEFS[k].maxRank))`. Also uses parseInt to ensure levels are valid integers.
+- **Found**: 2026-05-25 (Task 70 audit)
+
+## Tester-Reported Issues (Alpha Feedback - Alex Murphy, 2026-05-25)
+
+### Crit Systems card content overflows box boundaries
+- **Location**: CSS `.mor-fam` in `css/mockup-overlay.css`, Research tab Combat sub-tab
+- **Impact**: Visual bug. Crit Systems family card text/icons push outside the card borders on some viewport sizes.
+- **Fix**: Adjust font sizes, element positions, or card aspect ratio. Card has `overflow: hidden` but absolute-positioned children may exceed bounds.
+- **Ref**: TESTER_FEEDBACK_LOG.md FB-03
+- **Found**: 2026-05-25 (alpha tester screenshot)
+
+### Crit chance display rounds away upgrade effect
+- **Location**: `js/game.js` line ~426 (upgradeStatDisplay critChance case)
+- **Impact**: Crit chance displays with `.toFixed(0)`, so +0.5% per rank increment is invisible (2% stays showing as "2%" after buying a rank). Players think the upgrade is broken.
+- **Fix**: Change crit chance display from `.toFixed(0)` to `.toFixed(1)`.
+- **Ref**: TESTER_FEEDBACK_LOG.md FB-04
+- **Found**: 2026-05-25 (alpha tester report)
+
+### ~~Milestone rewards trivially small at all tiers~~ **FIXED v0.7.28**
+- **Fix applied**: milestoneReward base multiplier increased from `wave * 0.8 * 1.7^(tier-1)` to `wave * 2.5 * 2.0^(tier-1)`. T1W25=62, T1W100=250, T5W100=4000. Meaningful progression rewards.
+- **Ref**: TESTER_FEEDBACK_LOG.md FB-05, FB-09
+- **Found**: 2026-05-25 (alpha tester report)
+
+### In-run crit upgrades make permanent crit ranks worthless
+- **Location**: `js/game.js` getCritChance() - in-run upgrade gives +1% per level
+- **Impact**: 100 in-run levels = 100% crit chance, making the permanent critChance rank (0.5% per rank, 15 ranks = 7.5% total) irrelevant. Devalues the entire progression system for crit.
+- **Fix**: NEEDS ANDY DECISION. Options: cap in-run crit at 50 levels, reduce per-level to 0.5%, or make in-run crit progressively more expensive. Same principle may apply to other chance-based in-run upgrades.
+- **Ref**: TESTER_FEEDBACK_LOG.md FB-07, FB-13
+- **Found**: 2026-05-25 (alpha tester report)
+
+### Higher tiers don't feel noticeably harder
+- **Location**: `js/game.js` hpTierMul(), dmgTierMul() functions
+- **Impact**: Tester reports T16 doesn't feel more difficult than T10. Tier scaling may be too flat at high tiers.
+- **Fix**: Verify tier multiplier curves. May need steeper exponential scaling above T10.
+- **Ref**: TESTER_FEEDBACK_LOG.md FB-17
+- **Found**: 2026-05-25 (alpha tester report)
+
+### Currency name "coins" doesn't fit game theme
+- **Location**: All JS files, HTML, CSS, documentation
+- **Impact**: The game already uses "Scrap" in several places (HUD shows "SCRAP", store says "scrap"), but code variables still use `coins` and some UI text says "coins." Inconsistent naming breaks immersion.
+- **Fix**: Full rename pass. All player-facing text should say "Scrap" (already partially done). Internal variable names (`save.coins`, `coinRewardForRun`, etc.) can stay as `coins` in code but all display text must be consistent.
+- **Found**: 2026-05-25 (Andy directive)
 
 ## Documentation Mismatches
 
-### README.md is outdated (multiple issues)
-- **Location**: `README.md`
-- **Issues found (Task 66 audit)**:
-  - Says version v0.7.23, game is v0.7.24
-  - File tree missing: js/cloud.js, js/profile.js, js/monetization.js, css/profile.css
-  - Says save key is `tower_save_v7` but data.js now uses `tower_save_v8`
-  - Deploy section says "No build step" but there IS a build step now (`npm run build`)
-  - Script load order missing cloud.js, profile.js, monetization.js
-- **Fix**: Update README to match current project state
+### ~~README.md is outdated (multiple issues)~~ **FIXED v0.7.27**
+- **Fix applied**: Updated README to v0.7.27. Added cloud.js, profile.js, monetization.js, profile.css to file tree. Fixed save key reference to tower_save_v8 (version 9). Updated deploy section with build step. Updated script load order to include Firebase CDN, cloud, monetization, profile. Added test script to local verification.
 - **Found**: 2026-05-25 (Task 66 audit)
 
 ### FRONTEND_INTEGRATION.md references wrong file
