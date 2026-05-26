@@ -394,8 +394,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 5px 8px;
+    gap: 4px 8px;
+    flex-wrap: wrap;
+    padding: 3px 8px;
     background: linear-gradient(180deg, rgba(8,12,20,0.95), rgba(12,18,30,0.95));
     border-top: 1px solid var(--accent-dim);
     border-bottom: 1px solid var(--accent-dim);
@@ -404,8 +405,8 @@
   .binfo-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 10px;
+    gap: 3px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--muted);
     letter-spacing: 0.3px;
@@ -413,7 +414,7 @@
   }
   .binfo-pill b {
     color: var(--text);
-    font-size: 11px;
+    font-size: 10px;
   }
   .binfo-icon {
     font-size: 10px;

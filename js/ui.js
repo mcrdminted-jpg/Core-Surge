@@ -1398,9 +1398,9 @@ function renderHomePanelsVisual() {
       '<div class="mock-info-card mock-info-purple" data-home-action="milestones">' +
         '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
         '<div class="mock-info-body">' +
-          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
-          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">+5% Damage</span></div>' +
-          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">Scrap Bonus</span></div>' +
+          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">' + (MILESTONE_BONUS[100] || '+10% HP') + '</span></div>' +
+          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">' + (MILESTONE_BONUS[50] || '+5% Damage') + '</span></div>' +
+          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">' + (MILESTONE_BONUS[25] || '+3% Damage') + '</span></div>' +
           '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
         '</div>' +
       '</div>' +
@@ -2167,6 +2167,9 @@ function renderMilestonesTab(c) {
     let rewardParts = [`<b>${formatNum(r.coins)}</b> scrap`];
     if (r.gems > 0) rewardParts.push(`<b class="gem">${r.gems}</b> gems`);
     if (r.manuals > 0) rewardParts.push(`<b class="manual">${r.manuals}</b> manuals`);
+    // Stat bonus label from MILESTONE_BONUS
+    const bonusLabel = (typeof MILESTONE_BONUS !== 'undefined' && MILESTONE_BONUS[w]) ? MILESTONE_BONUS[w] : '';
+    if (bonusLabel) rewardParts.push(`<span class="ms-bonus">${bonusLabel}</span>`);
     // Wave difficulty label
     let diffLabel = '';
     if (w >= 1000) diffLabel = '<span class="ms-diff ms-ultra">ULTRA</span>';

@@ -290,59 +290,55 @@ function rankBaseValue(rankId) {
   return def ? def.base : 0;
 }
 
-// === Damage ===
+// === Damage === (flat: base 5 + 3/level via RANK_DEFS flatPerRank)
 function getDamage() {
   const eff = effectiveLevel('damage');
-  const base = rankBaseValue('damage'); // 5
-  const run = 1 + longStatBonus(eff);
+  const val = 5 + eff * 3; // base + effectiveLevel * flatPerRank
   const cardBucket = getCardBucket('damage');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.dmg * (game.bossesDefeated || 0) : 0;
-  return base * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
+  return val * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
 }
 function getDamageNext() {
   const eff = effectiveLevel('damage') + 1;
-  const base = rankBaseValue('damage');
-  const run = 1 + longStatBonus(eff);
+  const val = 5 + eff * 3;
   const cardBucket = getCardBucket('damage');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.dmg * (game.bossesDefeated || 0) : 0;
-  return base * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
+  return val * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
 }
 
-// === Fire Rate === (65% of curve per audit — multiplies DPS)
+// === Fire Rate === (flat: base 1.0 + 0.04/level via RANK_DEFS flatPerRank)
 function getAttackSpeed() {
   const eff = effectiveLevel('attackSpeed');
-  const base = rankBaseValue('fireRate'); // 1.0
+  const val = 1.0 + eff * 0.04; // base + effectiveLevel * flatPerRank
   const cardBucket = getCardBucket('attackSpeed');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.aps * (game.bossesDefeated || 0) : 0;
-  return base * (1 + longStatBonus(eff) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
+  return val * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
 }
 function getAttackSpeedNext() {
   const eff = effectiveLevel('attackSpeed') + 1;
-  const base = rankBaseValue('fireRate');
+  const val = 1.0 + eff * 0.04;
   const cardBucket = getCardBucket('attackSpeed');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.aps * (game.bossesDefeated || 0) : 0;
-  return base * (1 + longStatBonus(eff) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
+  return val * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
 }
 function getAttackInterval() { return 1000 / getAttackSpeed(); }
 
-// === Core Integrity (max HP) ===
+// === Core Integrity (max HP) === (flat: base 100 + 15/level via RANK_DEFS flatPerRank)
 function getMaxHp() {
   const eff = effectiveLevel('health');
-  const base = rankBaseValue('coreHealth'); // 100
-  const run = 1 + longStatBonus(eff);
+  const val = 100 + eff * 15; // base + effectiveLevel * flatPerRank
   const cardBucket = getCardBucket('health');
-  return Math.floor(base * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
+  return Math.floor(val * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 function getMaxHpNext() {
   const eff = effectiveLevel('health') + 1;
-  const base = rankBaseValue('coreHealth');
-  const run = 1 + longStatBonus(eff);
+  const val = 100 + eff * 15;
   const cardBucket = getCardBucket('health');
-  return Math.floor(base * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
+  return Math.floor(val * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 
 // === Armor === (0.5% per effective level, cap 75%)

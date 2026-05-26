@@ -509,6 +509,12 @@
   .milestone-reward b { color: var(--gold); }
   .milestone-reward b.gem { color: var(--purple); }
   .milestone-reward b.manual { color: #22d3ee; }
+  .ms-bonus {
+    display: inline-block; font-size: 8px; font-weight: 900;
+    letter-spacing: 0.3px; padding: 1px 5px; border-radius: 3px;
+    background: rgba(80,220,120,0.15); color: var(--good);
+    margin-left: 2px; vertical-align: middle;
+  }
   .ms-diff {
     display: inline-block; font-size: 8px; font-weight: 900;
     letter-spacing: 0.5px; padding: 1px 5px; border-radius: 3px;

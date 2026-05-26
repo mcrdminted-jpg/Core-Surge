@@ -23,6 +23,26 @@ const MILESTONE_WAVES = [
   600, 750, 1000,            // endgame: god-tier players
   1250, 1500, 1750, 2000     // ultra: 2-hour marathon at x10
 ];
+// Bonus labels shown on milestone cards — describes the meta-benefit of that wave's rewards
+const MILESTONE_BONUS = {
+  25:  '+3% Damage',
+  50:  '+5% Damage',
+  75:  '+5% Fire Rate',
+  100: '+10% HP',
+  150: '+5% Crit Chance',
+  200: '+8% Damage',
+  250: '+10% Fire Rate',
+  300: '+15% HP',
+  400: '+10% Crit Power',
+  500: '+15% Damage',
+  600: '+20% HP',
+  750: '+20% Damage',
+  1000: '+25% All Stats',
+  1250: '+30% Damage',
+  1500: '+35% All Stats',
+  1750: '+40% Damage',
+  2000: '+50% All Stats'
+};
 
 // ============================================================
 // CARD POOL (v0.7.6 placeholders — real 25-card pool in v0.8)
