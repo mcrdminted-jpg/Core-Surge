@@ -879,6 +879,7 @@ function openMenuOverlay() {
   menu.classList.add('active');
   const rtb = document.getElementById('returnToBattleBtn');
   if (rtb) rtb.classList.add('visible');
+  setHomeView(false);
   renderSubmenu();
   updateGlobalNavActive();
 }
@@ -902,12 +903,21 @@ function isOverlayActive() {
 // Highlight the active bottom nav button based on the current submenu tab.
 function updateGlobalNavActive() {
   const onMenu = document.getElementById('screen-menu').classList.contains('active');
+  // Update old global nav (hidden but kept for compat)
   document.querySelectorAll('.global-nav-btn').forEach(btn => {
     const nav = btn.dataset.nav;
     const match = onMenu && !homeViewActive && activeSubmenu === nav;
     btn.classList.toggle('active', match);
   });
+  // Update submenu (primary fixed bottom nav)
+  document.querySelectorAll('.submenu-btn').forEach(btn => {
+    const tab = btn.dataset.tab;
+    const match = onMenu && !homeViewActive && activeSubmenu === tab;
+    btn.classList.toggle('active', match);
+  });
 }
+// Alias for submenu callers
+function updateSubmenuActive() { updateGlobalNavActive(); }
 
 // ============================================================
 // MAIN MENU
@@ -988,7 +998,7 @@ function renderMenu() {
   const previewLabel = document.getElementById('menuPreviewLabel');
   if (previewLabel) previewLabel.textContent = `CORE: ${coreNames[previewCore] || 'SENTINEL'}`;
 
-  renderHomePanels();
+  renderHomePanelsVisual();
   setHomeView(true);
   renderSubmenu();
 }
@@ -1237,6 +1247,160 @@ function renderDailyObjective() {
 }
 
 // Badge counts for submenu tabs — returns object { labs: N, milestones: N, cards: N }
+function renderDailyObjectiveVisual() {
+  const el = document.getElementById('homeDaily');
+  if (!el) return;
+
+  const objectives = [
+    { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
+    { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
+    { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
+    { task: 'Buy 3 Upgrades', check: () => Object.values(save.ranks).reduce((s, r) => s + r.level, 0), target: 3, reward: { coins: 500, gems: 5 } }
+  ];
+
+  const dayIndex = Math.floor(Date.now() / 86400000) % objectives.length;
+  const obj = objectives[dayIndex];
+  const current = Math.min(obj.check(), obj.target);
+  const pct = Math.min(100, (current / obj.target) * 100);
+  const html = `
+    <div class="home-daily-bar">
+      <div class="home-daily-info">
+        <div class="home-daily-label">Daily Objective</div>
+        <div class="home-daily-task">${obj.task}</div>
+        <div class="home-daily-progress">
+          <div class="home-daily-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="home-daily-rewards">
+        <span class="home-daily-reward">+${obj.reward.coins}âŠ™ +${obj.reward.gems}ðŸ’Ž</span>
+      </div>
+    </div>`;
+
+  const existing = el.querySelector('.home-daily-bar');
+  if (existing) existing.remove();
+  el.insertAdjacentHTML('beforeend', html);
+}
+
+function renderHomePanelsVisual() {
+  const el = document.getElementById('homePanels');
+  if (!el) return;
+
+  const sel = save.selectedTier;
+  const bestThisTier = save.bestWavePerTier[sel] || 0;
+  const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
+  const totalSlots = getUnlockedSlots();
+  const progressPct = Math.min(100, (bestThisTier / 100) * 100);
+  const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
+  const dmgBonus = rankFlatBonus('damage');
+  const hpBonus = rankFlatBonus('coreHealth');
+
+  const coreNames = { sentinel: 'Sentinel', industrial: 'Industrial', verdant: 'Verdant', aegis: 'Aegis', frost: 'Frost', royal: 'Royal' };
+  const bgNames = { cyber_grid: 'Cyber Grid', industrial: 'Industrial', organic: 'Organic', steel: 'Steel Bay' };
+  const coreAssets = {
+    sentinel: 'assets/cores/core_01_sentinel.png',
+    industrial: 'assets/cores/core_02_industrial.png',
+    verdant: 'assets/cores/core_03_verdant.png',
+    aegis: 'assets/cores/core_04_aegis.png',
+    frost: 'assets/cores/core_05_frost.png',
+    royal: 'assets/cores/core_06_royal.png'
+  };
+  const bgAssets = {
+    cyber_grid: 'assets/backgrounds/bg_01_cyber_grid.png',
+    industrial: 'assets/backgrounds/bg_02_industrial.png',
+    organic: 'assets/backgrounds/bg_03_organic.png',
+    steel: 'assets/backgrounds/bg_04_steel.png'
+  };
+  const previewCore = save.equippedCoreSkin || 'sentinel';
+  const previewBg = save.equippedBgSkin || 'cyber_grid';
+
+  let claimableCount = 0;
+  for (const wave of MILESTONE_WAVES) {
+    if (milestoneReady(sel, wave) && !save.claimedMilestones[milestoneKey(sel, wave)]) claimableCount++;
+  }
+
+  const actionCards = [
+    { action: 'labs', eyebrow: 'Permanent Power', title: 'Ranks', subtitle: `${totalRanks} ranks banked`, art: 'assets/mockups/research_hdr.png', accent: 'cyan' },
+    { action: 'milestones', eyebrow: 'Claim Rewards', title: 'Goals', subtitle: claimableCount > 0 ? `${claimableCount} rewards ready` : 'Next milestones waiting', art: bgAssets[previewBg], accent: 'gold', badge: claimableCount > 0 ? String(claimableCount) : '' },
+    { action: 'cards', eyebrow: 'Active Build', title: 'Loadout', subtitle: `${equippedCount}/${totalSlots} equipped`, art: coreAssets[previewCore], accent: 'purple', badge: equippedCount > 0 ? String(equippedCount) : '' },
+    { action: 'shop', eyebrow: 'Boost Progress', title: 'Store', subtitle: `${formatNum(save.gems)} gems ready`, art: 'assets/vfx/proj_star_gold.png', accent: 'orange', badge: save.gems >= (CARD_PRICING ? CARD_PRICING.pullSingle : 20) ? '!' : '' },
+    { action: 'skins', eyebrow: 'Visual Setup', title: 'Skins', subtitle: `${coreNames[previewCore] || 'Sentinel'} core`, art: bgAssets[previewBg], overlay: coreAssets[previewCore], accent: 'cyan' },
+    { action: 'tournament', eyebrow: featureUnlocked('tournament') ? 'Competitive' : 'Locked', title: 'Tourney', subtitle: featureUnlocked('tournament') ? 'Enter the ladder' : 'Reach W50 on T1', art: 'assets/enemies/enemy_12_boss_void.png', accent: featureUnlocked('tournament') ? 'purple' : 'steel', locked: !featureUnlocked('tournament') }
+  ];
+
+  el.innerHTML = `
+    <section class="home-showcase">
+      <div class="home-showcase-bg" style="background-image:url('${bgAssets[previewBg]}')"></div>
+      <div class="home-showcase-grid"></div>
+      <div class="home-showcase-ring"></div>
+      <div class="home-showcase-core" style="background-image:url('${coreAssets[previewCore]}')"></div>
+      <div class="home-showcase-enemy enemy-one"></div>
+      <div class="home-showcase-enemy enemy-two"></div>
+      <div class="home-showcase-enemy enemy-three"></div>
+      <div class="home-showcase-copy">
+        <div class="home-showcase-kicker">${bgNames[previewBg] || 'Cyber Grid'} Arena</div>
+        <div class="home-showcase-title">${coreNames[previewCore] || 'Sentinel'} Core</div>
+        <div class="home-showcase-subtitle">Tier T${sel} · ×${tierMultiplier(sel).toFixed(2)} · ${bestThisTier >= 100 && sel < MAX_TIER ? `T${sel + 1} Ready` : `Best W${bestThisTier}`}</div>
+      </div>
+      <div class="home-showcase-stats">
+        <div class="home-showcase-stat">
+          <span class="home-showcase-stat-label">Damage</span>
+          <span class="home-showcase-stat-value">+${dmgBonus.toFixed(1)}</span>
+        </div>
+        <div class="home-showcase-stat">
+          <span class="home-showcase-stat-label">Integrity</span>
+          <span class="home-showcase-stat-value">+${hpBonus.toFixed(0)}</span>
+        </div>
+        <div class="home-showcase-stat">
+          <span class="home-showcase-stat-label">Progress</span>
+          <span class="home-showcase-stat-value">${progressPct.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div class="home-showcase-actions">
+        <button class="home-feature-btn primary" data-home-action="battle">Begin Defense</button>
+        <button class="home-feature-btn secondary" data-home-action="skins">Customize</button>
+      </div>
+    </section>
+    <section class="home-action-grid">
+      ${actionCards.map((card) => `
+        <button class="home-action-card home-accent-${card.accent}${card.locked ? ' locked' : ''}" data-home-action="${card.action}">
+          <span class="home-action-art" style="background-image:url('${card.art}')"></span>
+          ${card.overlay ? `<span class="home-action-art home-action-art-secondary" style="background-image:url('${card.overlay}')"></span>` : ''}
+          <span class="home-action-scrim"></span>
+          <span class="home-action-copy">
+            <span class="home-action-eyebrow">${card.eyebrow}</span>
+            <span class="home-action-title">${card.title}</span>
+            <span class="home-action-subtitle">${card.subtitle}</span>
+          </span>
+          ${card.badge ? `<span class="home-action-badge">${card.badge}</span>` : ''}
+        </button>
+      `).join('')}
+    </section>`;
+
+  el.querySelectorAll('[data-home-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.homeAction;
+      if (action === 'battle') {
+        startBattle();
+        return;
+      }
+      if (!featureUnlocked(action)) {
+        const toast = document.createElement('div');
+        toast.className = 'skin-toast';
+        toast.textContent = action === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+        return;
+      }
+      activeSubmenu = action;
+      setHomeView(false);
+      renderSubmenu();
+    });
+  });
+
+  renderDailyLogin();
+  renderDailyObjectiveVisual();
+}
+
 function getSubmenuBadges() {
   const badges = {};
 

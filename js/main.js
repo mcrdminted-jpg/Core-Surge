@@ -586,7 +586,6 @@ window.addEventListener('load', async () => {
     b.addEventListener('click', () => {
       const tab = b.dataset.tab;
       if (typeof featureUnlocked === 'function' && !featureUnlocked(tab)) {
-        // Show locked feedback
         const t2 = document.createElement('div');
         t2.className = 'skin-toast';
         t2.textContent = tab === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
@@ -594,9 +593,20 @@ window.addEventListener('load', async () => {
         setTimeout(() => t2.remove(), 2000);
         return;
       }
+      // If in battle overlay and tapping same tab, close overlay
+      if (game.running && typeof isOverlayActive === 'function' && isOverlayActive() && activeSubmenu === tab) {
+        closeMenuOverlay();
+        return;
+      }
       activeSubmenu = tab;
-      setHomeView(false);
-      renderSubmenu();
+      if (game.running) {
+        openMenuOverlay();
+      } else {
+        setHomeView(false);
+        renderSubmenu();
+        showScreen('menu');
+      }
+      updateSubmenuActive();
     });
   });
 

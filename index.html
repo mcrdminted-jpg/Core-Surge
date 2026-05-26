@@ -375,15 +375,6 @@
   <!-- Home info panels (progress + milestones + loadout preview) -->
   <div class="home-panels" id="homePanels"></div>
 
-  <div class="submenu" id="submenu">
-    <button class="submenu-btn active" data-tab="labs">Ranks</button>
-    <button class="submenu-btn" data-tab="milestones">Goals</button>
-    <button class="submenu-btn" data-tab="cards">Loadout</button>
-    <button class="submenu-btn" data-tab="tournament">Tourney</button>
-    <button class="submenu-btn" data-tab="shop">Store</button>
-    <button class="submenu-btn" data-tab="skins">Skins</button>
-    <button class="submenu-btn" data-tab="settings">Settings</button>
-  </div>
   <div class="submenu-content" id="submenuContent"></div>
 </div>
 
@@ -459,7 +450,18 @@
   <div class="upgrades-wrap" id="upgradesWrap"></div>
 </div>
 
-<!-- PERSISTENT BOTTOM NAV (always visible) -->
+<!-- PRIMARY BOTTOM NAV (7-tab submenu, always visible) -->
+<div class="submenu" id="submenu">
+  <button class="submenu-btn active" data-tab="labs">Ranks</button>
+  <button class="submenu-btn" data-tab="milestones">Goals</button>
+  <button class="submenu-btn" data-tab="cards">Loadout</button>
+  <button class="submenu-btn" data-tab="tournament">Tourney</button>
+  <button class="submenu-btn" data-tab="shop">Store</button>
+  <button class="submenu-btn" data-tab="skins">Skins</button>
+  <button class="submenu-btn" data-tab="settings">Settings</button>
+</div>
+
+<!-- OLD GLOBAL NAV (hidden, kept for JS compat) -->
 <div class="global-nav" id="globalNav">
   <button class="global-nav-btn" data-nav="home">
     <span class="global-nav-icon">⌂</span>

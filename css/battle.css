@@ -1,7 +1,7 @@
 /* battle.css — battle screen, battlefield, Core, enemies, HP bar, upgrade panel, projectiles */
 
   /* ==================== BATTLE ==================== */
-  #screen-battle { flex: 1; display: none; flex-direction: column; min-height: 0; padding-bottom: 36px; }
+  #screen-battle { flex: 1; display: none; flex-direction: column; min-height: 0; padding-bottom: 70px; }
   #screen-battle.active { display: flex; }
 
   .status {
