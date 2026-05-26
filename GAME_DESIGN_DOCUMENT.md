@@ -57,18 +57,18 @@ Start Run → Battle Waves → Earn Scrap → Die/Complete → Spend Scrap on Ra
 
 ### 3.3 Unlock Families
 - One-time scrap purchases that reveal groups of rank-able stats
-- 11 families with escalating costs (total: 1,775,000 scrap):
-  1. Crit Systems (5,000) - unlocks critChance, critPower
-  2. Economy Expansion (15,000) - unlocks waveBonus, bossBounty
-  3. Sustain Systems (30,000) - unlocks regen, lifesteal
-  4. Fortification (50,000) - unlocks thorns, knockback
-  5. Scrap Mastery (75,000) - unlocks coinMultiplier, gemFind
-  6. Multishot Systems (100,000) - unlocks multiChance, multiPower, multiTargets
-  7. Barrier Systems (150,000) - unlocks shieldHP, shieldRegen
-  8. Tactical Systems (200,000) - unlocks projSpeed, pierce
-  9. Bounce Systems (275,000) - unlocks bounceChance, bouncePower, bounceTargets
-  10. Overcharge (375,000) - unlocks overchargeChance, overchargePower
-  11. Combo Systems (500,000) - unlocks comboBonus, comboDuration
+- 11 families with escalating costs (total: 10,650,000 scrap — tuned for 365-day @ 3hr/day progression):
+  1. Crit Systems (30,000) - unlocks critChance, critPower
+  2. Economy Expansion (90,000) - unlocks waveBonus, bossBounty
+  3. Sustain Systems (180,000) - unlocks regen, lifesteal
+  4. Fortification (300,000) - unlocks thorns, knockback
+  5. Scrap Mastery (450,000) - unlocks coinMultiplier, gemFind
+  6. Multishot Systems (600,000) - unlocks multiChance, multiPower, multiTargets
+  7. Barrier Systems (900,000) - unlocks shieldHP, shieldRegen
+  8. Tactical Systems (1,200,000) - unlocks projSpeed, pierce
+  9. Bounce Systems (1,650,000) - unlocks bounceChance, bouncePower, bounceTargets
+  10. Overcharge (2,250,000) - unlocks overchargeChance, overchargePower
+  11. Combo Systems (3,000,000) - unlocks comboBonus, comboDuration
 
 ### 3.4 Cards
 - Collectible passive bonuses equipped in loadout slots

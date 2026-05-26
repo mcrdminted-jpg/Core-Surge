@@ -608,71 +608,71 @@ function tourneyExpectedWaveRange(bandId, league) {
 // Everything else requires buying the parent unlock family first.
 
 const UNLOCK_FAMILIES = {
-  // v0.7.28: costs scaled up for 1-year F2P completion target.
-  // Total unlock cost: 1,775,000
+  // v0.7.28: costs scaled for 3hrs/day, 365-day F2P target (6x base).
+  // Total unlock cost: 10,650,000
   critSystems: {
     id: 'critSystems', name: 'Crit Systems', icon: '🎯',
-    cost: 5000,
+    cost: 30000,
     unlocks: ['critChance', 'critPower'],
     order: 1
   },
   economyExpansion: {
     id: 'economyExpansion', name: 'Economy Expansion', icon: '💰',
-    cost: 15000,
+    cost: 90000,
     unlocks: ['waveBonus', 'bossBounty'],
     order: 2
   },
   sustainSystems: {
     id: 'sustainSystems', name: 'Sustain Systems', icon: '💚',
-    cost: 30000,
+    cost: 180000,
     unlocks: ['regen', 'lifesteal'],
     order: 3
   },
   fortification: {
     id: 'fortification', name: 'Fortification', icon: '🔰',
-    cost: 50000,
+    cost: 300000,
     unlocks: ['thorns', 'knockback'],
     order: 4
   },
   coinMastery: {
     id: 'coinMastery', name: 'Scrap Mastery', icon: '🔩',
-    cost: 75000,
+    cost: 450000,
     unlocks: ['coinMultiplier', 'gemFind'],
     order: 5
   },
   multishotSystems: {
     id: 'multishotSystems', name: 'Multishot Systems', icon: '🔱',
-    cost: 100000,
+    cost: 600000,
     unlocks: ['multiChance', 'multiPower', 'multiTargets'],
     order: 6
   },
   barrierSystems: {
     id: 'barrierSystems', name: 'Barrier Systems', icon: '🛡',
-    cost: 150000,
+    cost: 900000,
     unlocks: ['shieldHP', 'shieldRegen'],
     order: 7
   },
   tacticalSystems: {
     id: 'tacticalSystems', name: 'Tactical Systems', icon: '🎯',
-    cost: 200000,
+    cost: 1200000,
     unlocks: ['projSpeed', 'pierce'],
     order: 8
   },
   bounceSystems: {
     id: 'bounceSystems', name: 'Bounce Systems', icon: '⚡',
-    cost: 275000,
+    cost: 1650000,
     unlocks: ['bounceChance', 'bouncePower', 'bounceTargets'],
     order: 9
   },
   overcharge: {
     id: 'overcharge', name: 'Overcharge', icon: '⚡',
-    cost: 375000,
+    cost: 2250000,
     unlocks: ['overchargeChance', 'overchargePower'],
     order: 10
   },
   comboSystems: {
     id: 'comboSystems', name: 'Combo Systems', icon: '🔥',
-    cost: 500000,
+    cost: 3000000,
     unlocks: ['comboBonus', 'comboDuration'],
     order: 11
   }
@@ -686,31 +686,32 @@ const UNLOCK_FAMILIES = {
 // Cost curves tuned so early ranks are cheap, late ranks brutal.
 const RANK_DEFS = {
   // === STARTER (always unlocked) ===
-  // v0.7.28: Deep rebalance for 1-year F2P completion target.
-  // Total rank cost ~1.97M, unlock cost ~1.78M, grand total ~3.75M scrap.
-  // 75% completion ~Day 200, 100% ~Day 310 at 4 runs/day.
+  // v0.7.28: Deep rebalance for 1-year F2P target (3 hrs/day, 365 days).
+  // costMul bumped +0.147 across board for 25 runs/day economy.
+  // Total rank cost ~78M, unlock cost ~10.65M, grand total ~88M scrap.
+  // 50% at Day 26, 75% at Day 98, 100% at Day 367 (25 runs/day).
   damage: {
     id: 'damage', name: 'Damage', family: null, startsUnlocked: true,
     base: 5, flatPerRank: 3, maxRank: 40,
-    cost0: 15, costMul: 1.28,
+    cost0: 15, costMul: 1.427,
     desc: '+3 damage per rank'
   },
   fireRate: {
     id: 'fireRate', name: 'Fire Rate', family: null, startsUnlocked: true,
     base: 1.0, flatPerRank: 0.04, maxRank: 30,
-    cost0: 20, costMul: 1.28,
+    cost0: 20, costMul: 1.427,
     desc: '+0.04 shots/sec per rank'
   },
   coreHealth: {
     id: 'coreHealth', name: 'Core Integrity', family: null, startsUnlocked: true,
     base: 100, flatPerRank: 15, maxRank: 40,
-    cost0: 12, costMul: 1.25,
+    cost0: 12, costMul: 1.397,
     desc: '+15 max HP per rank'
   },
   armor: {
     id: 'armor', name: 'Armor', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 0.004, maxRank: 25,
-    cost0: 25, costMul: 1.30,
+    cost0: 25, costMul: 1.447,
     desc: '+0.4% damage reduction per rank (cap 75%)'
   },
   range: {
@@ -722,7 +723,7 @@ const RANK_DEFS = {
   cashBonus: {
     id: 'cashBonus', name: 'Cash Bonus', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 0.02, maxRank: 25,
-    cost0: 25, costMul: 1.28,
+    cost0: 25, costMul: 1.427,
     desc: '+2% cash per kill per rank'
   },
 
@@ -730,13 +731,13 @@ const RANK_DEFS = {
   critChance: {
     id: 'critChance', name: 'Crit Chance', family: 'critSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.005, maxRank: 20,
-    cost0: 50, costMul: 1.28,
+    cost0: 50, costMul: 1.427,
     desc: '+0.5% crit chance per rank'
   },
   critPower: {
     id: 'critPower', name: 'Crit Power', family: 'critSystems', startsUnlocked: false,
     base: 2.0, flatPerRank: 0.02, maxRank: 20,
-    cost0: 60, costMul: 1.28,
+    cost0: 60, costMul: 1.427,
     desc: '+0.02× crit multiplier per rank'
   },
 
@@ -744,13 +745,13 @@ const RANK_DEFS = {
   waveBonus: {
     id: 'waveBonus', name: 'Wave Bonus', family: 'economyExpansion', startsUnlocked: false,
     base: 0, flatPerRank: 0.05, maxRank: 18,
-    cost0: 55, costMul: 1.28,
+    cost0: 55, costMul: 1.427,
     desc: '+5% end-of-wave cash per rank'
   },
   bossBounty: {
     id: 'bossBounty', name: 'Boss Bounty', family: 'economyExpansion', startsUnlocked: false,
     base: 0, flatPerRank: 0.05, maxRank: 18,
-    cost0: 60, costMul: 1.28,
+    cost0: 60, costMul: 1.427,
     desc: '+5% boss kill reward per rank'
   },
 
@@ -758,13 +759,13 @@ const RANK_DEFS = {
   regen: {
     id: 'regen', name: 'Regen', family: 'sustainSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.0005, maxRank: 20,
-    cost0: 45, costMul: 1.26,
+    cost0: 45, costMul: 1.407,
     desc: '+0.05% max HP/sec regen per rank'
   },
   lifesteal: {
     id: 'lifesteal', name: 'Lifesteal', family: 'sustainSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.003, maxRank: 18,
-    cost0: 70, costMul: 1.28,
+    cost0: 70, costMul: 1.427,
     desc: '+0.3% lifesteal per rank'
   },
 
@@ -772,19 +773,19 @@ const RANK_DEFS = {
   multiChance: {
     id: 'multiChance', name: 'Multishot Chance', family: 'multishotSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.01, maxRank: 15,
-    cost0: 120, costMul: 1.30,
+    cost0: 120, costMul: 1.447,
     desc: '+1% multishot chance per rank'
   },
   multiPower: {
     id: 'multiPower', name: 'Multishot Power', family: 'multishotSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.02, maxRank: 15,
-    cost0: 100, costMul: 1.28,
+    cost0: 100, costMul: 1.427,
     desc: '+2% multishot power per rank'
   },
   multiTargets: {
     id: 'multiTargets', name: 'Multishot Targets', family: 'multishotSystems', startsUnlocked: false,
     base: 1, flatPerRank: 1, maxRank: 8,
-    cost0: 300, costMul: 1.35,
+    cost0: 300, costMul: 1.497,
     desc: '+1 target per rank (max 9 total)'
   },
 
@@ -792,19 +793,19 @@ const RANK_DEFS = {
   bounceChance: {
     id: 'bounceChance', name: 'Bounce Chance', family: 'bounceSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.01, maxRank: 12,
-    cost0: 180, costMul: 1.30,
+    cost0: 180, costMul: 1.447,
     desc: '+1% bounce chance per rank'
   },
   bouncePower: {
     id: 'bouncePower', name: 'Bounce Power', family: 'bounceSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.025, maxRank: 12,
-    cost0: 150, costMul: 1.28,
+    cost0: 150, costMul: 1.427,
     desc: '+2.5% bounce damage per rank'
   },
   bounceTargets: {
     id: 'bounceTargets', name: 'Bounce Targets', family: 'bounceSystems', startsUnlocked: false,
     base: 0, flatPerRank: 1, maxRank: 6,
-    cost0: 500, costMul: 1.35,
+    cost0: 500, costMul: 1.497,
     desc: '+1 bounce per rank'
   },
 
@@ -812,13 +813,13 @@ const RANK_DEFS = {
   comboBonus: {
     id: 'comboBonus', name: 'Combo Multiplier', family: 'comboSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.02, maxRank: 15,
-    cost0: 100, costMul: 1.28,
+    cost0: 100, costMul: 1.427,
     desc: '+2% combo damage bonus per rank'
   },
   comboDuration: {
     id: 'comboDuration', name: 'Combo Window', family: 'comboSystems', startsUnlocked: false,
     base: 2000, flatPerRank: 200, maxRank: 12,
-    cost0: 120, costMul: 1.30,
+    cost0: 120, costMul: 1.447,
     desc: '+200ms combo window per rank'
   },
 
@@ -826,13 +827,13 @@ const RANK_DEFS = {
   thorns: {
     id: 'thorns', name: 'Thorns', family: 'fortification', startsUnlocked: false,
     base: 0, flatPerRank: 0.005, maxRank: 18,
-    cost0: 55, costMul: 1.28,
+    cost0: 55, costMul: 1.427,
     desc: '+0.5% damage reflected per rank'
   },
   knockback: {
     id: 'knockback', name: 'Knockback', family: 'fortification', startsUnlocked: false,
     base: 0, flatPerRank: 0.008, maxRank: 12,
-    cost0: 70, costMul: 1.28,
+    cost0: 70, costMul: 1.427,
     desc: '+0.8% knockback chance per rank'
   },
 
@@ -840,13 +841,13 @@ const RANK_DEFS = {
   shieldHP: {
     id: 'shieldHP', name: 'Shield Capacity', family: 'barrierSystems', startsUnlocked: false,
     base: 0, flatPerRank: 5, maxRank: 18,
-    cost0: 60, costMul: 1.28,
+    cost0: 60, costMul: 1.427,
     desc: '+5 shield HP per rank'
   },
   shieldRegen: {
     id: 'shieldRegen', name: 'Shield Recharge', family: 'barrierSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.5, maxRank: 15,
-    cost0: 80, costMul: 1.28,
+    cost0: 80, costMul: 1.427,
     desc: '+0.5 shield/sec regen per rank'
   },
 
@@ -854,13 +855,13 @@ const RANK_DEFS = {
   coinMultiplier: {
     id: 'coinMultiplier', name: 'Scrap Multiplier', family: 'coinMastery', startsUnlocked: false,
     base: 0, flatPerRank: 0.02, maxRank: 18,
-    cost0: 65, costMul: 1.28,
+    cost0: 65, costMul: 1.427,
     desc: '+2% end-run scrap per rank'
   },
   gemFind: {
     id: 'gemFind', name: 'Gem Attractor', family: 'coinMastery', startsUnlocked: false,
     base: 0, flatPerRank: 0.08, maxRank: 12,
-    cost0: 90, costMul: 1.30,
+    cost0: 90, costMul: 1.447,
     desc: '+8% faster gem orb spawns per rank'
   },
 
@@ -868,13 +869,13 @@ const RANK_DEFS = {
   projSpeed: {
     id: 'projSpeed', name: 'Projectile Speed', family: 'tacticalSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.03, maxRank: 15,
-    cost0: 50, costMul: 1.26,
+    cost0: 50, costMul: 1.407,
     desc: '+3% projectile speed per rank'
   },
   pierce: {
     id: 'pierce', name: 'Pierce', family: 'tacticalSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.01, maxRank: 12,
-    cost0: 120, costMul: 1.30,
+    cost0: 120, costMul: 1.447,
     desc: '+1% pierce chance per rank'
   },
 
@@ -882,13 +883,13 @@ const RANK_DEFS = {
   overchargeChance: {
     id: 'overchargeChance', name: 'Overcharge Chance', family: 'overcharge', startsUnlocked: false,
     base: 0, flatPerRank: 0.005, maxRank: 15,
-    cost0: 110, costMul: 1.29,
+    cost0: 110, costMul: 1.437,
     desc: '+0.5% overcharge chance per rank'
   },
   overchargePower: {
     id: 'overchargePower', name: 'Overcharge Power', family: 'overcharge', startsUnlocked: false,
     base: 0, flatPerRank: 0.02, maxRank: 15,
-    cost0: 85, costMul: 1.28,
+    cost0: 85, costMul: 1.427,
     desc: '+2% overcharge damage per rank'
   }
 };
