@@ -538,6 +538,41 @@
   transform: translateY(-1px);
 }
 
+/* Ad Speed Boost */
+.speed-ad-boost {
+  margin-top: 8px;
+  text-align: center;
+}
+.speed-ad-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(245,166,35,0.08));
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.speed-ad-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(245,166,35,0.35), rgba(245,166,35,0.15));
+  transform: translateY(-1px);
+}
+.speed-ad-btn.active {
+  background: linear-gradient(135deg, rgba(102,187,106,0.2), rgba(102,187,106,0.08));
+  border-color: var(--good);
+  color: var(--good);
+  cursor: default;
+}
+.speed-ad-desc {
+  font-size: 9px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 4px;
+}
+
 /* ==================== GOALS TAB ==================== */
 .tier-progress-bar {
   display: grid;
@@ -3089,6 +3124,9 @@ body[data-preview-core="royal"]      #menuPreviewCore { background-image: url(".
 .hc-passive { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 1px; }
 .hc-level { font-size: 10px; color: var(--cyan2); margin-top: 2px; }
 .hc-lock-reason { font-size: 10px; color: rgba(255,255,255,0.4); }
+.hc-progress-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.hc-progress-fill { height: 100%; background: var(--cyan2); border-radius: 2px; transition: width 0.3s; }
+.hc-progress-text { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; }
 .hc-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 .hc-btn-level, .hc-btn-garrison {
   padding: 5px 10px;

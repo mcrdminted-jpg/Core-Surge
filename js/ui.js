@@ -723,7 +723,16 @@ function wireBattlefieldSideButtons() {
 
 function updateBattlefieldSpeedLabel() {
   const v = document.getElementById('bfSpeedValue');
-  if (v) v.textContent = '×' + (save.settings.gameSpeed || 1);
+  if (!v) return;
+  const base = save.settings.gameSpeed || 1;
+  const boosted = typeof isAdSpeedBoostActive === 'function' && isAdSpeedBoostActive();
+  if (boosted) {
+    v.textContent = '×' + (base * 2);
+    v.style.color = 'var(--gold)';
+  } else {
+    v.textContent = '×' + base;
+    v.style.color = '';
+  }
 }
 
 // ============================================================
@@ -1775,6 +1784,16 @@ function renderLabsTab(c) {
         `}
       </div>`;
     }
+    // Ad-for-speed boost button
+    const adBoostActive = typeof isAdSpeedBoostActive === 'function' && isAdSpeedBoostActive();
+    const adBoostRemain = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
+    const adBoostMin = Math.ceil(adBoostRemain / 60000);
+    html += `<div class="speed-ad-boost">
+      ${adBoostActive
+        ? `<button class="speed-ad-btn active" disabled>📺 2× Speed Active · ${adBoostMin}m left</button>`
+        : `<button class="speed-ad-btn" id="adSpeedBoostBtn">📺 Watch Ad · 2× Speed for 10 min</button>`}
+      <div class="speed-ad-desc">Doubles your current speed tier. Stacks with purchased speeds!</div>
+    </div>`;
     html += `</div>`;
   }
 
@@ -1846,6 +1865,22 @@ function renderLabsTab(c) {
       renderLabsTab(c);
     });
   });
+
+  // --- Wire ad speed boost button ---
+  const adSpeedBtn = c.querySelector('#adSpeedBoostBtn');
+  if (adSpeedBtn) {
+    adSpeedBtn.addEventListener('click', () => {
+      // Placeholder: in production this triggers an ad SDK
+      // For now it activates immediately (like the gem ad)
+      if (typeof claimAdSpeedBoost === 'function') {
+        claimAdSpeedBoost();
+        haptic('success');
+        renderLabsTab(c);
+        renderHud();
+        updateBattlefieldSpeedLabel();
+      }
+    });
+  }
 
   // --- Wire speed unlock buttons ---
   c.querySelectorAll('.speed-buy-btn[data-speed-tier]').forEach(btn => {

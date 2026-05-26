@@ -43,6 +43,32 @@ function nextSpeedTier(cur) {
   if (idx < 0 || idx >= available.length - 1) return available[0];
   return available[idx + 1];
 }
+// Effective game speed: base speed × 2 if ad boost active
+function effectiveGameSpeed() {
+  const base = save.settings.gameSpeed || 1;
+  const boosted = save.adSpeedBoostUntil && Date.now() < save.adSpeedBoostUntil;
+  return boosted ? base * 2 : base;
+}
+
+// Watch-ad-for-speed: doubles speed for 10 minutes
+function claimAdSpeedBoost() {
+  // Cooldown: can only use once every 15 minutes
+  const now = Date.now();
+  const boostDuration = 10 * 60 * 1000; // 10 min
+  save.adSpeedBoostUntil = now + boostDuration;
+  persistSave();
+  return true;
+}
+
+function isAdSpeedBoostActive() {
+  return save.adSpeedBoostUntil && Date.now() < save.adSpeedBoostUntil;
+}
+
+function adSpeedBoostRemaining() {
+  if (!save.adSpeedBoostUntil) return 0;
+  return Math.max(0, save.adSpeedBoostUntil - Date.now());
+}
+
 function purchaseSpeedTier(tier, useGems) {
   const cost = SPEED_UNLOCK_COST[tier];
   if (!cost) return false;
@@ -853,7 +879,7 @@ function startLoop() {
       return;
     }
     const rawDt = Math.min(100, now - game.lastTick) / 1000;
-    const dt = rawDt * (save.settings.gameSpeed || 1);
+    const dt = rawDt * effectiveGameSpeed();
     game.lastTick = now;
     update(dt, rawDt);
     render();
@@ -869,7 +895,7 @@ function stopLoop() {
 function update(dt, rawDt) {
   if (!game.bfRect) updateBfRect();
   const now = performance.now();
-  const speedFactor = save.settings.gameSpeed || 1;
+  const speedFactor = effectiveGameSpeed();
 
   // Tick Time Lock apex — may slow all enemies periodically.
   tickTimeLock(now);

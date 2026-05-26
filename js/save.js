@@ -34,6 +34,7 @@ const defaultSave = {
     godMode: false
   },
   lastAdRewardTime: 0,  // last time the shop's ad-for-gems was claimed (ms epoch)
+  adSpeedBoostUntil: 0, // ms epoch — ad-for-2x-speed active until this time
   // Cards system (v0.7.6+)
   // cardInventory: { 'heavyCaliber': { level: 1, copies: 3 }, ... }
   // equippedCards: array sized by unlockedSlots, null if empty

@@ -421,13 +421,14 @@
     background: var(--bg-2);
     border-top: 1px solid var(--accent-dim);
     flex-shrink: 0;
+    flex-grow: 0;  /* NEVER stretch — only as tall as content */
     display: flex; flex-direction: column;
-    transition: max-height 0.3s ease;
+    padding: 0 6px 4px;  /* shared horizontal padding — all children align */
   }
   .upgrade-heal-slot {
-    padding: 3px 6px;
+    padding: 4px 0;
     display: flex;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
     flex-shrink: 0;
   }
@@ -463,7 +464,7 @@
   .upgrade-tabs {
     display: flex;
     gap: 4px;
-    padding: 4px 6px 0;
+    padding: 4px 0 0;
     flex-shrink: 0;
   }
   .upgrade-tab {
@@ -498,9 +499,9 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
-    padding: 4px 6px;
-    /* No flex:1 — only as tall as content needs, max 3 rows then scroll */
-    max-height: calc(3 * 72px + 2 * 4px + 8px); /* 3 rows + 2 gaps + padding */
+    padding: 4px 0;
+    /* Only as tall as content needs, max 3 rows then scroll */
+    max-height: calc(3 * 72px + 2 * 4px + 8px);
     min-height: 0;
     overflow-y: auto;
   }
