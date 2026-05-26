@@ -269,6 +269,49 @@ const UPGRADE_ICONS = {
   coinBonus:        { icon: '⊙',  color: 'var(--gold)' }
 };
 
+// Calculate batch buy info for current multiplier setting
+function batchUpgradeInfo(key) {
+  const u = game.upgrades[key];
+  const mul = save.settings.buyMultiplier || 1;
+  const maxed = u.max !== undefined && u.level >= u.max;
+  if (maxed) return { count: 0, totalCost: 0, canAfford: false, maxed: true };
+
+  const remaining = (u.max !== undefined) ? (u.max - u.level) : 10000;
+
+  if (mul === 'max') {
+    let totalCost = 0, count = 0;
+    for (let i = 0; i < remaining && i < 10000; i++) {
+      const c = Math.floor(u.cost0 * Math.pow(u.costMul, u.level + i));
+      if (totalCost + c > game.cash) break;
+      totalCost += c;
+      count++;
+    }
+    if (count === 0) {
+      // Can't afford any — show cost of next single level
+      return { count: 0, totalCost: Math.floor(u.cost0 * Math.pow(u.costMul, u.level)), canAfford: false, maxed: false };
+    }
+    return { count, totalCost, canAfford: true, maxed: false };
+  } else {
+    const want = Math.min(mul, remaining);
+    let totalCost = 0;
+    for (let i = 0; i < want; i++) {
+      totalCost += Math.floor(u.cost0 * Math.pow(u.costMul, u.level + i));
+    }
+    return { count: want, totalCost, canAfford: game.cash >= totalCost, maxed: false };
+  }
+}
+
+// Get stat descriptor at +N levels (temporarily bumps level, reads, restores)
+function upgradeDescriptorAt(key, bonusLevels) {
+  if (bonusLevels <= 0) return upgradeDescriptor(key);
+  const u = game.upgrades[key];
+  const orig = u.level;
+  u.level += bonusLevels;
+  const desc = upgradeDescriptor(key);
+  u.level = orig;
+  return desc;
+}
+
 function renderUpgrades() {
   const wrap = document.getElementById('upgradesWrap');
   wrap.innerHTML = '';
@@ -350,22 +393,46 @@ function buildUpgradeBtn(key) {
     return btn;
   }
 
-  const maxed = u.max && u.level >= u.max;
-  const desc = upgradeDescriptor(key);
-  const deltaText = maxed ? 'MAXED' : `${desc.cur} → ${desc.next}${desc.unit}`;
-  const costText = maxed ? '—' : formatNum(upgradeCost(u));
+  const batch = batchUpgradeInfo(key);
+  const maxed = batch.maxed;
   const iconMeta = UPGRADE_ICONS[key] || { icon: '?', color: 'var(--accent)' };
 
-  // Progress bar: for capped stats, show level/max; for uncapped, show log-scale L up to 500
+  // Delta: show cur → value-after-N-levels
+  let deltaText;
+  if (maxed) {
+    deltaText = 'MAXED';
+  } else {
+    const desc = upgradeDescriptor(key);
+    const descN = upgradeDescriptorAt(key, batch.count);
+    deltaText = batch.count > 1
+      ? `${desc.cur} → ${descN.cur}${desc.unit}`
+      : `${desc.cur} → ${desc.next}${desc.unit}`;
+  }
+
+  // Cost: show total batch cost
+  const mul = save.settings.buyMultiplier || 1;
+  let costText;
+  if (maxed) {
+    costText = '—';
+  } else if (mul === 'max' && batch.count > 0) {
+    costText = `${formatNum(batch.totalCost)} (×${batch.count})`;
+  } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
+    costText = `${formatNum(batch.totalCost)} (×${batch.count})`;
+  } else {
+    costText = formatNum(batch.totalCost);
+  }
+
+  // Progress bar
   const effLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
   let progPct = 0;
   if (u.max) {
     progPct = Math.min(100, (effLvl / u.max) * 100);
   } else {
-    // Uncapped: just show a fill out to level 500 (purely cosmetic feedback)
     progPct = Math.min(100, (effLvl / 500) * 100);
   }
 
+  btn.disabled = !batch.canAfford && !maxed;
+  btn.classList.toggle('affordable', batch.canAfford);
   btn.style.setProperty('--upg-color', iconMeta.color);
   btn.innerHTML = `
     <div class="upgrade-body">
@@ -373,7 +440,7 @@ function buildUpgradeBtn(key) {
       <div class="upgrade-data">
         <div class="upgrade-name">${u.name.toUpperCase()}</div>
         <div class="upgrade-delta" data-delta>${deltaText}</div>
-        <div class="upgrade-level" data-level>Lv. ${typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level}${u.max ? ' / ' + u.max : ''}</div>
+        <div class="upgrade-level" data-level>Lv. ${effLvl}${u.max ? ' / ' + u.max : ''}</div>
       </div>
     </div>
     <div class="upgrade-prog"><div class="upgrade-prog-fill" style="width:${progPct}%;background:${iconMeta.color}"></div></div>
@@ -532,18 +599,48 @@ function refreshBtn(key) {
     if (descEl) descEl.textContent = `Instantly restore ${formatNum(amt)} HP`;
     if (costEl) costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(getHealCost())}`;
   } else {
-    const maxed = u.max && u.level >= u.max;
+    const batch = batchUpgradeInfo(key);
+    const maxed = batch.maxed;
     const desc = upgradeDescriptor(key);
+    const mul = save.settings.buyMultiplier || 1;
     const deltaEl = btn.querySelector('[data-delta]');
     const levelEl = btn.querySelector('[data-level]');
     const costEl = btn.querySelector('[data-cost]');
-    if (deltaEl) deltaEl.textContent = maxed ? 'MAXED' : `${desc.cur} → ${desc.next}${desc.unit}`;
-    if (levelEl) levelEl.textContent = `Lv. ${typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level}${u.max ? ' / ' + u.max : ''}`;
-    if (costEl) costEl.innerHTML = maxed ? '—' : `<span class="cost-cash">$</span>${formatNum(upgradeCost(u))}`;
+
+    // Delta: show stat change for batch
+    if (deltaEl) {
+      if (maxed) {
+        deltaEl.textContent = 'MAXED';
+      } else {
+        const descN = upgradeDescriptorAt(key, batch.count);
+        deltaEl.textContent = batch.count > 1
+          ? `${desc.cur} → ${descN.cur}${desc.unit}`
+          : `${desc.cur} → ${desc.next}${desc.unit}`;
+      }
+    }
+    const eLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
+    if (levelEl) levelEl.textContent = `Lv. ${eLvl}${u.max ? ' / ' + u.max : ''}`;
+
+    // Cost: show batch total
+    if (costEl) {
+      if (maxed) {
+        costEl.innerHTML = '—';
+      } else if (mul === 'max' && batch.count > 0) {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
+      } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
+      } else {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
+      }
+    }
+
+    // Affordability
+    btn.disabled = !batch.canAfford && !maxed;
+    btn.classList.toggle('affordable', batch.canAfford);
+
     // Update progress bar
     const progFill = btn.querySelector('.upgrade-prog-fill');
     if (progFill) {
-      const eLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
       let pct;
       if (u.max) pct = Math.min(100, (eLvl / u.max) * 100);
       else pct = Math.min(100, (eLvl / 500) * 100);
@@ -572,16 +669,41 @@ function updateUpgradeAffordability() {
     }
     const u = game.upgrades[key];
     if (!u) continue; // safety guard for non-battle buttons
-    const maxed = u.max && u.level >= u.max;
-    if (maxed) {
+    const batch = batchUpgradeInfo(key);
+    if (batch.maxed) {
       btn.disabled = true;
       btn.classList.remove('affordable');
       continue;
     }
-    const cost = upgradeCost(u);
-    const can = game.cash >= cost;
-    btn.disabled = !can;
-    btn.classList.toggle('affordable', can);
+    btn.disabled = !batch.canAfford;
+    btn.classList.toggle('affordable', batch.canAfford);
+
+    // Update cost display to reflect current cash (important for MAX which changes as cash changes)
+    const mul = save.settings.buyMultiplier || 1;
+    const costEl = btn.querySelector('[data-cost]');
+    if (costEl) {
+      if (mul === 'max' && batch.count > 0) {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
+      } else if (mul === 'max' && batch.count === 0) {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
+      } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
+      } else {
+        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
+      }
+    }
+
+    // Update delta for MAX mode (count changes as cash grows)
+    if (mul === 'max') {
+      const deltaEl = btn.querySelector('[data-delta]');
+      if (deltaEl && batch.count > 0) {
+        const desc = upgradeDescriptor(key);
+        const descN = upgradeDescriptorAt(key, batch.count);
+        deltaEl.textContent = batch.count > 1
+          ? `${desc.cur} → ${descN.cur}${desc.unit}`
+          : `${desc.cur} → ${desc.next}${desc.unit}`;
+      }
+    }
   }
 }
 
