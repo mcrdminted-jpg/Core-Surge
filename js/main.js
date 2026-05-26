@@ -261,21 +261,16 @@ function showSimulatedAd(title, body, onComplete) {
   titleEl.textContent = title || 'Supporting the devs';
   bodyEl.textContent = body || 'Real ads will be rewarded, opt-in, and never interrupt gameplay. This is a placeholder.';
   adSimState.active = true;
-  adSimState.countdown = 30;
+  adSimState.countdown = 3;
   adSimState.onComplete = onComplete || null;
-  countEl.textContent = '30';
-  skipBtn.textContent = 'Please wait...';
-  skipBtn.disabled = true;
-  skipBtn.classList.remove('enabled');
+  countEl.textContent = '3';
+  skipBtn.textContent = 'Collect Reward';
+  skipBtn.disabled = false;
+  skipBtn.classList.add('enabled');
   overlay.classList.add('active');
   adSimState.timer = setInterval(() => {
     adSimState.countdown--;
-    countEl.textContent = adSimState.countdown;
-    if (adSimState.countdown <= 25) {
-      skipBtn.disabled = false;
-      skipBtn.textContent = 'Skip (give reward)';
-      skipBtn.classList.add('enabled');
-    }
+    countEl.textContent = Math.max(0, adSimState.countdown);
     if (adSimState.countdown <= 0) {
       completeSimulatedAd();
     }
