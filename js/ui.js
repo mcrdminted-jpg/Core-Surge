@@ -1332,14 +1332,6 @@ function renderHomePanelsVisual() {
   }
 
   el.innerHTML =
-    // ─── RESOURCE HUD BAR ───
-    '<div class="mock-hud">' +
-      '<div class="mock-hud-item" data-home-action="labs"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">SCRAP</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div><span class="mock-hud-plus">+</span></div>' +
-      '<div class="mock-hud-item" data-home-action="shop"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div><span class="mock-hud-plus">+</span></div>' +
-      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
-      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
-    '</div>' +
-
     // ─── HERO SECTION ───
     '<div class="mock-hero">' +
       '<div class="mock-hero-bg"></div>' +
@@ -1437,6 +1429,7 @@ function renderHomePanelsVisual() {
   renderDailyLogin();
   renderDailyObjectiveVisual();
   renderHomeUpgrades();
+  renderGlobalCurrencyBar();
 }
 
 // =========================================================
@@ -1587,6 +1580,52 @@ function getSubmenuBadges() {
   return badges;
 }
 
+// =========================================================
+//  GLOBAL CURRENCY BAR — persistent across all menu tabs
+// =========================================================
+function renderGlobalCurrencyBar() {
+  var bar = document.getElementById('globalCurrencyBar');
+  if (!bar) return;
+  // Don't show during battle if menu is not overlaying
+  if (game.running && !document.getElementById('screen-menu').classList.contains('active')) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = '';
+  var bestOverall = save.bestWave || 0;
+  bar.innerHTML =
+    '<div class="gcb-item" data-action="labs">' +
+      '<span class="gcb-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span>' +
+      '<div class="gcb-data"><span class="gcb-label">SCRAP</span><span class="gcb-val">' + formatNum(save.coins) + '</span></div>' +
+      '<span class="gcb-plus">+</span>' +
+    '</div>' +
+    '<div class="gcb-item" data-action="shop">' +
+      '<span class="gcb-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span>' +
+      '<div class="gcb-data"><span class="gcb-label">GEMS</span><span class="gcb-val">' + formatNum(save.gems) + '</span></div>' +
+      '<span class="gcb-plus">+</span>' +
+    '</div>' +
+    '<div class="gcb-item">' +
+      '<span class="gcb-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span>' +
+      '<div class="gcb-data"><span class="gcb-label">BEST</span><span class="gcb-val">W' + bestOverall + '</span></div>' +
+    '</div>' +
+    '<div class="gcb-item">' +
+      '<span class="gcb-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span>' +
+      '<div class="gcb-data"><span class="gcb-label">RUNS</span><span class="gcb-val">' + save.totalRuns + '</span></div>' +
+    '</div>';
+  // Wire click actions
+  bar.querySelectorAll('[data-action]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var action = this.getAttribute('data-action');
+      if (action === 'labs') { activeSubmenu = 'labs'; renderSubmenu(); showSubmenuView(); }
+      else if (action === 'shop') { activeSubmenu = 'shop'; renderSubmenu(); showSubmenuView(); }
+    });
+  });
+}
+
+function showSubmenuView() {
+  if (typeof setHomeView === 'function') setHomeView(false);
+}
+
 function renderSubmenu() {
   const badges = getSubmenuBadges();
   // Sync badges and lock state on bottom nav buttons
@@ -1650,6 +1689,7 @@ function renderSubmenu() {
   else if (activeSubmenu === 'tournament') renderTournamentTab(inner);
   else if (activeSubmenu === 'settings')   renderSettingsTab(inner);
   updateGlobalNavActive();
+  renderGlobalCurrencyBar();
 }
 
 let activeLabTab = 'combat';

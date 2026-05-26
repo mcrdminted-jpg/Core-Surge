@@ -178,6 +178,8 @@ function render() {
   updateRangeRing();
   updateOrbSystem();
   renderHeroActivesHud();
+  renderAdBoostIndicator();
+  if (typeof renderGlobalCurrencyBar === 'function') renderGlobalCurrencyBar();
 }
 
 function flashTower() {
@@ -441,6 +443,56 @@ function renderHeroActivesHud() {
       }
     });
   });
+}
+
+// ============================================================
+// AD SPEED BOOST INDICATOR — shows 2x time remaining during battle
+// ============================================================
+let _adBoostIndicatorInitialized = false;
+
+function renderAdBoostIndicator() {
+  const el = document.getElementById('adBoostIndicator');
+  if (!el) return;
+
+  // Only show during battle
+  if (!game.running) {
+    el.style.display = 'none';
+    return;
+  }
+
+  const remaining = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
+  if (remaining <= 0) {
+    el.style.display = 'none';
+    el.classList.remove('expired');
+    return;
+  }
+
+  el.style.display = 'flex';
+  el.classList.remove('expired');
+
+  // Format remaining time as MM:SS
+  const totalSec = Math.ceil(remaining / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  const timeStr = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  const textEl = document.getElementById('adBoostText');
+  if (textEl) textEl.textContent = '2× ' + timeStr;
+
+  // Wire click handler once — show a toast with info
+  if (!_adBoostIndicatorInitialized) {
+    el.addEventListener('click', function() {
+      const rem = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
+      if (rem <= 0) return;
+      const m = Math.ceil(rem / 60000);
+      var toast = document.createElement('div');
+      toast.className = 'skin-toast';
+      toast.textContent = '2× Speed Boost: ' + m + ' min remaining';
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.remove(); }, 2000);
+    });
+    _adBoostIndicatorInitialized = true;
+  }
 }
 
 // ============================================================

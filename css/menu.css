@@ -3215,3 +3215,60 @@ body[data-preview-core="royal"]      #menuPreviewCore { background-image: url(".
 .hero-store-pack.disabled { opacity: 0.3; pointer-events: none; }
 .hsp-name { font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 4px; }
 .hsp-cost { font-size: 10px; color: var(--gold); }
+
+/* ==================== GLOBAL CURRENCY BAR ==================== */
+.global-currency-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 6px 8px;
+  background: rgba(8, 16, 28, 0.92);
+  border-bottom: 1px solid var(--accent-dim);
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.gcb-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: default;
+}
+.gcb-item[data-action] { cursor: pointer; }
+.gcb-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+.gcb-data {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.gcb-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #7eb8d0;
+  text-transform: uppercase;
+}
+.gcb-val {
+  font-size: 12px;
+  font-weight: 800;
+  color: #e8f4ff;
+}
+.gcb-plus {
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-left: 2px;
+  opacity: 0.7;
+}

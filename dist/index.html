@@ -344,6 +344,8 @@
     <span>◂ Return to Battle</span>
     <span class="return-to-battle-hp" id="returnToBattleHp"></span>
   </button>
+  <!-- Persistent currency bar — visible on all menu tabs -->
+  <div class="global-currency-bar" id="globalCurrencyBar"></div>
   <div class="menu-bg"></div>
   <div class="menu-hero">
     <div class="menu-title">CORE SURGE</div>
@@ -409,6 +411,12 @@
         <div class="bf-side-icon">⏩</div>
         <div class="bf-side-value" id="bfSpeedValue">×1</div>
       </button>
+    </div>
+
+    <!-- Ad speed boost indicator during battle -->
+    <div class="ad-boost-indicator" id="adBoostIndicator" style="display:none">
+      <span class="abi-icon">&#9889;</span>
+      <span class="abi-text" id="adBoostText">2&#215; 00:00</span>
     </div>
 
     <div class="range-ring" id="rangeRing"></div>
