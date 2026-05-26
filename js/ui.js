@@ -1294,15 +1294,13 @@ function renderHomePanelsVisual() {
 
   const sel = save.selectedTier;
   const bestThisTier = save.bestWavePerTier[sel] || 0;
+  const bestOverall = Math.max(...Object.values(save.bestWavePerTier || {1:0}));
   const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
   const totalSlots = getUnlockedSlots();
   const progressPct = Math.min(100, (bestThisTier / 100) * 100);
   const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
-  const dmgBonus = rankFlatBonus('damage');
-  const hpBonus = rankFlatBonus('coreHealth');
+  const maxTier = highestUnlockedTier();
 
-  const coreNames = { sentinel: 'Sentinel', industrial: 'Industrial', verdant: 'Verdant', aegis: 'Aegis', frost: 'Frost', royal: 'Royal' };
-  const bgNames = { cyber_grid: 'Cyber Grid', industrial: 'Industrial', organic: 'Organic', steel: 'Steel Bay' };
   const coreAssets = {
     sentinel: 'assets/cores/core_01_sentinel.png',
     industrial: 'assets/cores/core_02_industrial.png',
@@ -1320,82 +1318,127 @@ function renderHomePanelsVisual() {
   const previewCore = save.equippedCoreSkin || 'sentinel';
   const previewBg = save.equippedBgSkin || 'cyber_grid';
 
-  let claimableCount = 0;
-  for (const wave of MILESTONE_WAVES) {
-    if (milestoneReady(sel, wave) && !save.claimedMilestones[milestoneKey(sel, wave)]) claimableCount++;
+  // Tier difficulty label
+  const tierLabels = {1:'Normal',2:'Hard',3:'Brutal',4:'Inferno',5:'Mythic',6:'Ascended',7:'Eternal',8:'Omega'};
+  const tierLabel = tierLabels[sel] || 'Normal';
+
+  // Tier unlock hint
+  let tierHint = '';
+  if (sel === maxTier && maxTier < MAX_TIER) {
+    const need = 100 - bestThisTier;
+    tierHint = need > 0 ? `W100 on T${sel} to unlock T${sel+1}` : `T${sel+1} unlocked!`;
+  } else if (sel < maxTier) {
+    tierHint = `Best on T${sel}: W${bestThisTier}`;
+  } else {
+    tierHint = 'Max difficulty reached';
   }
 
-  const actionCards = [
-    { action: 'labs', eyebrow: 'Permanent Power', title: 'Ranks', subtitle: `${totalRanks} ranks banked`, art: 'assets/mockups/research_hdr.png', accent: 'cyan' },
-    { action: 'milestones', eyebrow: 'Claim Rewards', title: 'Goals', subtitle: claimableCount > 0 ? `${claimableCount} rewards ready` : 'Next milestones waiting', art: bgAssets[previewBg], accent: 'gold', badge: claimableCount > 0 ? String(claimableCount) : '' },
-    { action: 'cards', eyebrow: 'Active Build', title: 'Loadout', subtitle: `${equippedCount}/${totalSlots} equipped`, art: coreAssets[previewCore], accent: 'purple', badge: equippedCount > 0 ? String(equippedCount) : '' },
-    { action: 'shop', eyebrow: 'Boost Progress', title: 'Store', subtitle: `${formatNum(save.gems)} gems ready`, art: 'assets/vfx/proj_star_gold.png', accent: 'orange', badge: save.gems >= (CARD_PRICING ? CARD_PRICING.pullSingle : 20) ? '!' : '' },
-    { action: 'skins', eyebrow: 'Visual Setup', title: 'Skins', subtitle: `${coreNames[previewCore] || 'Sentinel'} core`, art: bgAssets[previewBg], overlay: coreAssets[previewCore], accent: 'cyan' },
-    { action: 'tournament', eyebrow: featureUnlocked('tournament') ? 'Competitive' : 'Locked', title: 'Tourney', subtitle: featureUnlocked('tournament') ? 'Enter the ladder' : 'Reach W50 on T1', art: 'assets/enemies/enemy_12_boss_void.png', accent: featureUnlocked('tournament') ? 'purple' : 'steel', locked: !featureUnlocked('tournament') }
-  ];
+  // Milestone data for the bottom cards
+  let claimableCount = 0;
+  const msWaves = [25, 50, 75, 100, 200, 500];
+  let msHTML = '';
+  for (const w of msWaves) {
+    const key = milestoneKey(sel, w);
+    const claimed = save.claimedMilestones[key];
+    const ready = milestoneReady(sel, w) && !claimed;
+    if (ready) claimableCount++;
+  }
 
-  el.innerHTML = `
-    <section class="home-showcase">
-      <div class="home-showcase-bg" style="background-image:url('${bgAssets[previewBg]}')"></div>
-      <div class="home-showcase-grid"></div>
-      <div class="home-showcase-ring"></div>
-      <div class="home-showcase-core" style="background-image:url('${coreAssets[previewCore]}')"></div>
-      <div class="home-showcase-enemy enemy-one"></div>
-      <div class="home-showcase-enemy enemy-two"></div>
-      <div class="home-showcase-enemy enemy-three"></div>
-      <div class="home-showcase-copy">
-        <div class="home-showcase-kicker">${bgNames[previewBg] || 'Cyber Grid'} Arena</div>
-        <div class="home-showcase-title">${coreNames[previewCore] || 'Sentinel'} Core</div>
-        <div class="home-showcase-subtitle"><button class="home-tier-arrow" data-tier-dir="down" ${sel <= 1 ? 'disabled' : ''}>&#8249;</button> Tier T${sel} · ×${tierMultiplier(sel).toFixed(2)} · Best W${bestThisTier} <button class="home-tier-arrow" data-tier-dir="up" ${sel >= highestUnlockedTier() ? 'disabled' : ''}>&#8250;</button></div>
-      </div>
-      <div class="home-showcase-stats">
-        <div class="home-showcase-stat">
-          <span class="home-showcase-stat-label">Damage</span>
-          <span class="home-showcase-stat-value">+${dmgBonus.toFixed(1)}</span>
-        </div>
-        <div class="home-showcase-stat">
-          <span class="home-showcase-stat-label">Integrity</span>
-          <span class="home-showcase-stat-value">+${hpBonus.toFixed(0)}</span>
-        </div>
-        <div class="home-showcase-stat">
-          <span class="home-showcase-stat-label">Progress</span>
-          <span class="home-showcase-stat-value">${progressPct.toFixed(0)}%</span>
-        </div>
-      </div>
-      <div class="home-showcase-actions">
-        <button class="home-feature-btn primary" data-home-action="battle">Begin Defense</button>
-        <button class="home-feature-btn secondary" data-home-action="skins">Customize</button>
-      </div>
-    </section>
-    <section class="home-action-grid">
-      ${actionCards.map((card) => `
-        <button class="home-action-card home-accent-${card.accent}${card.locked ? ' locked' : ''}" data-home-action="${card.action}">
-          <span class="home-action-art" style="background-image:url('${card.art}')"></span>
-          ${card.overlay ? `<span class="home-action-art home-action-art-secondary" style="background-image:url('${card.overlay}')"></span>` : ''}
-          <span class="home-action-scrim"></span>
-          <span class="home-action-copy">
-            <span class="home-action-eyebrow">${card.eyebrow}</span>
-            <span class="home-action-title">${card.title}</span>
-            <span class="home-action-subtitle">${card.subtitle}</span>
-          </span>
-          ${card.badge ? `<span class="home-action-badge">${card.badge}</span>` : ''}
-        </button>
-      `).join('')}
-    </section>`;
+  // Build card slot preview
+  let cardSlotsHTML = '';
+  for (let i = 0; i < Math.min(totalSlots, 3); i++) {
+    const cid = save.equippedCards[i];
+    if (cid && CARD_POOL[cid]) {
+      const card = CARD_POOL[cid];
+      cardSlotsHTML += '<div class="mock-card-slot filled"><span>' + card.icon + '</span></div>';
+    } else {
+      cardSlotsHTML += '<div class="mock-card-slot empty">+</div>';
+    }
+  }
 
-  el.querySelectorAll('[data-home-action]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const action = button.dataset.homeAction;
-      if (action === 'battle') {
-        startBattle();
-        return;
-      }
-      if (!featureUnlocked(action)) {
-        const toast = document.createElement('div');
+  el.innerHTML =
+    // ─── RESOURCE HUD BAR ───
+    '<div class="mock-hud">' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">COINS</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
+    '</div>' +
+
+    // ─── HERO SECTION ───
+    '<div class="mock-hero">' +
+      '<div class="mock-hero-bg" style="background-image:url(\'' + bgAssets[previewBg] + '\')"></div>' +
+      '<div class="mock-hero-vignette"></div>' +
+      '<div class="mock-hero-beam"></div>' +
+      '<div class="mock-hero-title">CORE<br>SURGE</div>' +
+      '<div class="mock-hero-subtitle">&#8226; ENDLESS TOWER DEFENSE &#8226;</div>' +
+      '<img class="mock-hero-core" src="' + coreAssets[previewCore] + '" alt="Core">' +
+    '</div>' +
+
+    // ─── TIER SELECTOR ───
+    '<div class="mock-tier-box">' +
+      '<div class="mock-tier-row">' +
+        '<button class="mock-tier-arrow" data-tier-dir="down"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
+        '<div class="mock-tier-center">' +
+          '<div class="mock-tier-num">T' + sel + '</div>' +
+          '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
+        '</div>' +
+        '<button class="mock-tier-arrow" data-tier-dir="up"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
+      '</div>' +
+      '<div class="mock-tier-hint">' + tierHint + '</div>' +
+    '</div>' +
+
+    // ─── BEGIN DEFENSE BUTTON ───
+    '<button class="mock-start-btn" data-home-action="battle">' +
+      '<span class="mock-start-icon">&#9812;</span>' +
+      '<span>BEGIN DEFENSE (T' + sel + ')</span>' +
+      '<span class="mock-start-arrows">&raquo;</span>' +
+    '</button>' +
+
+    // ─── THREE INFO CARDS ───
+    '<div class="mock-info-row">' +
+      // Recent Progress
+      '<div class="mock-info-card mock-info-purple" data-home-action="labs">' +
+        '<div class="mock-info-header">RECENT PROGRESS</div>' +
+        '<div class="mock-info-body">' +
+          '<div class="mock-info-stat"><span class="mock-info-stat-label">BEST THIS TIER</span><span class="mock-info-stat-val">W ' + bestThisTier + '</span></div>' +
+          '<div class="mock-info-stat"><span class="mock-info-stat-label">TOTAL RANKS</span><span class="mock-info-stat-val">' + totalRanks + '</span></div>' +
+          '<div class="mock-info-bar"><div class="mock-info-bar-fill" style="width:' + progressPct + '%"></div></div>' +
+          '<div class="mock-info-bar-label">' + bestThisTier + ' / 100</div>' +
+        '</div>' +
+      '</div>' +
+      // Tier Milestones
+      '<div class="mock-info-card mock-info-purple" data-home-action="milestones">' +
+        '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
+        '<div class="mock-info-body">' +
+          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
+          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">+5% Damage</span></div>' +
+          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">Scrap Bonus</span></div>' +
+          '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
+        '</div>' +
+      '</div>' +
+      // Loadout Preview
+      '<div class="mock-info-card mock-info-gold" data-home-action="cards">' +
+        '<div class="mock-info-header">LOADOUT PREVIEW</div>' +
+        '<div class="mock-info-body">' +
+          '<div class="mock-card-slots">' + cardSlotsHTML + '</div>' +
+          '<div class="mock-info-hint">Equip towers, modules, and artifacts in LOADOUT.</div>' +
+          '<button class="mock-ms-view gold" data-home-action="cards">GO TO LOADOUT &gt;</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Wire all action buttons
+  el.querySelectorAll('[data-home-action]').forEach(function(button) {
+    button.addEventListener('click', function() {
+      var action = button.dataset.homeAction;
+      if (action === 'battle') { startBattle(); return; }
+      if (typeof featureUnlocked === 'function' && !featureUnlocked(action)) {
+        var toast = document.createElement('div');
         toast.className = 'skin-toast';
         toast.textContent = action === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
+        setTimeout(function() { toast.remove(); }, 2000);
         return;
       }
       activeSubmenu = action;
@@ -1404,16 +1447,13 @@ function renderHomePanelsVisual() {
     });
   });
 
-  // Tier arrows in showcase
-  el.querySelectorAll('[data-tier-dir]').forEach((arrow) => {
-    arrow.addEventListener('click', (ev) => {
+  // Tier arrows
+  el.querySelectorAll('[data-tier-dir]').forEach(function(arrow) {
+    arrow.addEventListener('click', function(ev) {
       ev.stopPropagation();
-      const dir = arrow.dataset.tierDir;
-      if (dir === 'up' && save.selectedTier < highestUnlockedTier()) {
-        save.selectedTier++;
-      } else if (dir === 'down' && save.selectedTier > 1) {
-        save.selectedTier--;
-      }
+      var dir = arrow.dataset.tierDir;
+      if (dir === 'up' && save.selectedTier < highestUnlockedTier()) save.selectedTier++;
+      else if (dir === 'down' && save.selectedTier > 1) save.selectedTier--;
       persistSave();
       renderHomePanelsVisual();
     });
