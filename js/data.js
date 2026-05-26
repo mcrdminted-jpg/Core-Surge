@@ -371,14 +371,84 @@ function grantCard(cardId) {
   return { cardId, newlyUnlocked: false, level: inv.level, leveledUp };
 }
 
-// Roll a random card from the pool based on PULL_ODDS.
+// ============================================================
+// CARD PULL GATING — cards only pullable if their research family is owned.
+// Maps card stat keys → UNLOCK_FAMILIES id.  Starter stats = null (always pullable).
+// ============================================================
+const CARD_STAT_TO_FAMILY = {
+  // Starter stats — always pullable
+  damage: null, attackSpeed: null, health: null, range: null,
+  defense: null, cash: null,
+  // Gated stats
+  crit: 'critSystems', critPower: 'critSystems',
+  lifesteal: 'sustainSystems', regen: 'sustainSystems',
+  waveBonus: 'economyExpansion', bossBounty: 'economyExpansion', bossDmg: 'economyExpansion',
+  coinGain: 'coinMastery',
+  multiChance: 'multishotSystems', multiPower: 'multishotSystems', multiTargetsAdd: 'multishotSystems',
+  bounceChance: 'bounceSystems', bouncePower: 'bounceSystems', bounceTargetsAdd: 'bounceSystems',
+  comboMax: 'comboSystems', comboDecay: 'comboSystems',
+  thorns: 'fortification', knockback: 'fortification',
+  shieldHP: 'barrierSystems', shieldRegen: 'barrierSystems',
+  projSpeed: 'tacticalSystems', pierce: 'tacticalSystems',
+  overchargeChance: 'overcharge', overchargePower: 'overcharge'
+};
+
+// Apex special → required family (null = always pullable)
+const APEX_SPECIAL_FAMILY = {
+  stormThread: null,          // generic damage proc
+  bulwarkVeil: 'barrierSystems',
+  predatorLoop: null,         // generic combat
+  timeLock: null,             // generic utility
+  lastStand: null             // generic defense
+};
+
+// Check if a specific card is pullable based on research unlocks
+function isCardPullable(cardId) {
+  const card = CARD_POOL[cardId];
+  if (!card) return false;
+  // Dev mode: everything pullable
+  if (save.settings && save.settings.devMode) return true;
+  // Single-stat card
+  if (card.stat) {
+    const fam = CARD_STAT_TO_FAMILY[card.stat];
+    if (fam && !familyIsOwned(fam)) return false;
+    return true;
+  }
+  // Multi-bucket card — all buckets must have their family unlocked
+  if (card.buckets) {
+    for (const bk of Object.keys(card.buckets)) {
+      const fam = CARD_STAT_TO_FAMILY[bk];
+      if (fam && !familyIsOwned(fam)) return false;
+    }
+    return true;
+  }
+  // Apex special card
+  if (card.special) {
+    const fam = APEX_SPECIAL_FAMILY[card.special];
+    if (fam && !familyIsOwned(fam)) return false;
+    return true;
+  }
+  return true; // fallback: pullable
+}
+
+// Count how many cards are currently pullable
+function countPullableCards() {
+  return Object.keys(CARD_POOL).filter(isCardPullable).length;
+}
+
+// Roll a random card from the pullable pool based on PULL_ODDS.
 function rollRandomCard() {
   const r = Math.random();
   let tier;
   if (r < PULL_ODDS.apex) tier = 'apex';
   else if (r < PULL_ODDS.apex + PULL_ODDS.prime) tier = 'prime';
   else tier = 'standard';
-  const pool = Object.values(CARD_POOL).filter(c => c.tier === tier);
+  // Filter by tier AND pullability
+  let pool = Object.values(CARD_POOL).filter(c => c.tier === tier && isCardPullable(c.id));
+  // If no pullable cards in this tier, fall back to any pullable card
+  if (pool.length === 0) pool = Object.values(CARD_POOL).filter(c => isCardPullable(c.id));
+  // Ultimate fallback: starter cards only (should never happen)
+  if (pool.length === 0) pool = Object.values(CARD_POOL).filter(c => c.tier === 'standard');
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -406,19 +476,66 @@ function performBundle() {
   return results;
 }
 
-// Direct unlock a specific Standard or Prime card by id.
-function performDirectUnlock(cardId) {
-  const card = CARD_POOL[cardId];
-  if (!card) return null;
-  if (card.tier === 'apex') return null; // not purchasable directly
-  const cost = card.tier === 'standard' ? CARD_PRICING.unlockStandard : CARD_PRICING.unlockPrime;
-  if (save.gems < cost) return null;
-  // Only allowed if not already owned
-  if (save.cardInventory[cardId]) return null;
-  save.gems -= cost;
-  const result = grantCard(cardId);
+// ============================================================
+// HERO PULL SYSTEM — heroes obtained through RNG pulls, not auto-unlock.
+// Meeting unlock conditions adds hero to the pull pool, NOT to inventory.
+// ============================================================
+const HERO_PULL_PRICING = {
+  pullSingle: 50,    // gems per single hero pull
+  pullBundle: 225    // 5-pull bundle (save 25 gems)
+};
+
+// Get the pool of heroes that are pullable (conditions met + family owned + not yet owned)
+function getHeroPullPool() {
+  const unlocked = save.heroesUnlocked || [];
+  const devMode = save.settings && save.settings.devMode;
+  const pool = [];
+  for (const hid of Object.keys(HERO_DEFS)) {
+    // Skip already owned heroes
+    if (unlocked.indexOf(hid) !== -1) continue;
+    const def = HERO_DEFS[hid];
+    if (devMode) {
+      pool.push(hid);
+      continue;
+    }
+    // Must own the family if one is required
+    if (def.family && !familyIsOwned(def.family)) continue;
+    // Must meet unlock condition (tier, kills, etc.)
+    if (!isHeroUnlockMet(def.unlock)) continue;
+    pool.push(hid);
+  }
+  return pool;
+}
+
+// Perform a single hero pull. Returns { hero: HERO_DEFS entry, heroId } or null.
+function performHeroPull() {
+  if (save.gems < HERO_PULL_PRICING.pullSingle) return null;
+  const pool = getHeroPullPool();
+  if (pool.length === 0) return null;
+  save.gems -= HERO_PULL_PRICING.pullSingle;
+  const heroId = pool[Math.floor(Math.random() * pool.length)];
+  unlockHero(heroId);
   persistSave();
-  return { card, cost, ...result };
+  return { hero: HERO_DEFS[heroId], heroId, newlyUnlocked: true };
+}
+
+// Perform a 5-pull hero bundle. Returns array of results or null.
+function performHeroBundle() {
+  if (save.gems < HERO_PULL_PRICING.pullBundle) return null;
+  const pool = getHeroPullPool();
+  if (pool.length === 0) return null;
+  save.gems -= HERO_PULL_PRICING.pullBundle;
+  const results = [];
+  // Pull up to 5, but stop if pool runs out
+  for (let i = 0; i < 5; i++) {
+    const currentPool = getHeroPullPool();
+    if (currentPool.length === 0) break;
+    const heroId = currentPool[Math.floor(Math.random() * currentPool.length)];
+    unlockHero(heroId);
+    results.push({ hero: HERO_DEFS[heroId], heroId, newlyUnlocked: true });
+  }
+  persistSave();
+  return results.length > 0 ? results : null;
 }
 
 // Card bucket accumulator. Returns fraction to ADD to (1 + runBonus) * labMul calculation.
@@ -1276,38 +1393,44 @@ function heroUnlockProgress(unlock) {
   return Math.min(1, current / unlock.value);
 }
 
-// Check and grant hero unlocks based on all unlock conditions.
-// Returns array of newly unlocked hero IDs (empty if none).
+// Check which heroes have become pullable (conditions met + family owned).
+// No longer auto-unlocks — heroes must be pulled from the shop.
+// Returns array of newly-pullable hero IDs (for notification purposes).
 function checkHeroUnlocks() {
-  const newlyUnlocked = [];
+  // Track which heroes we've already notified about being pullable
+  if (!save._notifiedPullable) save._notifiedPullable = [];
+  const newlyPullable = [];
+  const unlocked = save.heroesUnlocked || [];
+  const devMode = typeof save !== 'undefined' && save.settings && save.settings.devMode;
+
   for (const hid of Object.keys(HERO_DEFS)) {
+    // Already owned — skip
+    if (unlocked.indexOf(hid) !== -1) continue;
+    // Already notified — skip
+    if (save._notifiedPullable.indexOf(hid) !== -1) continue;
     const def = HERO_DEFS[hid];
-    // Dev mode: skip all gates — unlock everything
-    const devMode = typeof save !== 'undefined' && save.settings && save.settings.devMode;
     if (!devMode) {
-      // Must own the family if one is required
       if (def.family && !familyIsOwned(def.family)) continue;
-      // Must meet unlock condition
       if (!isHeroUnlockMet(def.unlock)) continue;
     }
-    // Unlock if not already
-    if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(hid) === -1) {
-      unlockHero(hid);
-      newlyUnlocked.push(hid);
-    }
+    // This hero just became pullable
+    save._notifiedPullable.push(hid);
+    newlyPullable.push(hid);
   }
+
   // Dev mode: give manuals if low
-  if (typeof save !== 'undefined' && save.settings && save.settings.devMode) {
+  if (devMode) {
     if ((save.trainingManuals || 0) < 100) save.trainingManuals = 999;
   }
-  // Show notification for each newly unlocked hero
-  for (let i = 0; i < newlyUnlocked.length; i++) {
-    const def = HERO_DEFS[newlyUnlocked[i]];
-    if (def && typeof showHeroUnlockToast === 'function') {
-      setTimeout(showHeroUnlockToast.bind(null, def), i * 1200);
+
+  // Show notification for each newly pullable hero
+  for (let i = 0; i < newlyPullable.length; i++) {
+    const def = HERO_DEFS[newlyPullable[i]];
+    if (def && typeof showHeroPullableToast === 'function') {
+      setTimeout(showHeroPullableToast.bind(null, def), i * 1200);
     }
   }
-  return newlyUnlocked;
+  return newlyPullable;
 }
 
 // Training manual store packs (gem cost)

@@ -1579,6 +1579,11 @@ function getSubmenuBadges() {
   // Cards: show badge if player can afford a pull
   if (save.gems >= (CARD_PRICING ? CARD_PRICING.pullSingle : 20)) badges.cards = '!';
 
+  // Shop: badge if hero pulls available
+  if (typeof getHeroPullPool === 'function' && typeof HERO_PULL_PRICING !== 'undefined') {
+    if (save.gems >= HERO_PULL_PRICING.pullSingle && getHeroPullPool().length > 0) badges.shop = '!';
+  }
+
   return badges;
 }
 
@@ -2147,6 +2152,15 @@ function showHeroUnlockToast(heroDef) {
   setTimeout(function() { toast.remove(); }, 3500);
 }
 
+function showHeroPullableToast(heroDef) {
+  const toast = document.createElement('div');
+  toast.className = 'skin-toast hero-unlock-toast';
+  toast.style.background = 'rgba(170,68,255,0.92)';
+  toast.innerHTML = `<span style="font-size:1.3em">${heroDef.icon}</span> New hero pullable: <b>${heroDef.name}</b> — visit Shop!`;
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.remove(); }, 4000);
+}
+
 // Loadout sub-tab state: 'cards' or 'heroes'
 let loadoutSubTab = 'cards';
 
@@ -2561,7 +2575,7 @@ function renderHeroesTab(c) {
     const catColor = def.category === 'combat' ? 'var(--danger)' : def.category === 'economy' ? 'var(--gold)' : 'var(--good)';
 
     if (!isUnlocked) {
-      // Locked hero — show unlock condition + progress
+      // Locked hero — show pullable status or unlock requirements
       const unlockDesc = typeof heroUnlockDescription === 'function' ? heroUnlockDescription(def.unlock) : '???';
       const progress = typeof heroUnlockProgress === 'function' ? heroUnlockProgress(def.unlock) : 0;
       const progressPct = Math.min(100, Math.floor(progress * 100));
@@ -2569,14 +2583,20 @@ function renderHeroesTab(c) {
       if (def.family) lockReason += ' + ' + (UNLOCK_FAMILIES[def.family] ? UNLOCK_FAMILIES[def.family].name : def.family);
       const familyMet = !def.family || (typeof familyIsOwned === 'function' && familyIsOwned(def.family));
       const condMet = typeof isHeroUnlockMet === 'function' && isHeroUnlockMet(def.unlock);
+      const devMode = save.settings && save.settings.devMode;
+      const isPullable = devMode || (familyMet && condMet);
       html += `
-        <div class="hero-card locked">
-          <div class="hc-icon">?</div>
+        <div class="hero-card locked ${isPullable ? 'pullable' : ''}">
+          <div class="hc-icon">${isPullable ? def.icon : '?'}</div>
           <div class="hc-info">
             <div class="hc-name">${def.name}</div>
-            <div class="hc-lock-reason">${lockReason}</div>
-            <div class="hc-progress-bar"><div class="hc-progress-fill" style="width:${progressPct}%"></div></div>
-            <div class="hc-progress-text">${condMet ? '&#10003;' : progressPct + '%'}${def.family && !familyMet ? ' &middot; Need family' : ''}</div>
+            ${isPullable ? `
+              <div class="hc-pullable-badge">✦ PULLABLE — Visit Shop</div>
+            ` : `
+              <div class="hc-lock-reason">${lockReason}</div>
+              <div class="hc-progress-bar"><div class="hc-progress-fill" style="width:${progressPct}%"></div></div>
+              <div class="hc-progress-text">${condMet ? '&#10003;' : progressPct + '%'}${def.family && !familyMet ? ' &middot; Need family' : ''}</div>
+            `}
           </div>
         </div>`;
     } else {
@@ -2660,12 +2680,17 @@ function renderShopTab(c) {
   const available = remaining === 0;
   const hrLeft = Math.ceil(remaining / (60 * 60 * 1000));
 
-  // Direct unlock list — only cards not yet owned
-  const unownedStandard = Object.values(CARD_POOL).filter(c => c.tier === 'standard' && !save.cardInventory[c.id]);
-  const unownedPrime = Object.values(CARD_POOL).filter(c => c.tier === 'prime' && !save.cardInventory[c.id]);
-
   const singlePullDisabled = save.gems < CARD_PRICING.pullSingle;
   const bundleDisabled = save.gems < CARD_PRICING.pullBundle;
+  const pullableCards = typeof countPullableCards === 'function' ? countPullableCards() : Object.keys(CARD_POOL).length;
+  const totalCards = Object.keys(CARD_POOL).length;
+
+  // Hero pull pool
+  const heroPullPool = typeof getHeroPullPool === 'function' ? getHeroPullPool() : [];
+  const heroSingleDisabled = save.gems < HERO_PULL_PRICING.pullSingle || heroPullPool.length === 0;
+  const heroBundleDisabled = save.gems < HERO_PULL_PRICING.pullBundle || heroPullPool.length === 0;
+  const totalHeroes = typeof HERO_COUNT !== 'undefined' ? HERO_COUNT : 30;
+  const ownedHeroes = (save.heroesUnlocked || []).length;
 
   c.innerHTML = `
     <div class="shop-section-title">Free Gems</div>
@@ -2681,7 +2706,8 @@ function renderShopTab(c) {
     </div>
 
     <div class="shop-section-title">Card Packs</div>
-    <div class="shop-section-sub">78% Standard · 20% Prime · 2% Apex · Duplicates level cards</div>
+    <div class="shop-section-sub">78% Standard · 20% Prime · 2% Apex · Duplicates level cards · ${pullableCards}/${totalCards} cards in pool</div>
+    ${pullableCards < totalCards ? `<div class="shop-section-hint">🔬 Unlock more research families to expand the card pool</div>` : ''}
     <div class="card-pack-grid">
       <button class="card-pack-btn" id="cardPullSingleBtn" ${singlePullDisabled ? 'disabled' : ''}>
         <div class="pack-title">Single Pull</div>
@@ -2695,36 +2721,25 @@ function renderShopTab(c) {
       </button>
     </div>
 
-    ${unownedStandard.length > 0 || unownedPrime.length > 0 ? `
-      <div class="shop-section-title">Direct Unlock</div>
-      <div class="shop-section-sub">Buy a specific new card you don't own yet</div>
-      <div class="direct-unlock-list">
-        ${unownedPrime.map(card => {
-          const disabled = save.gems < CARD_PRICING.unlockPrime;
-          return `
-          <button class="direct-unlock-btn prime" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
-            <span class="du-icon">${card.icon}</span>
-            <span class="du-info">
-              <span class="du-name" style="color:var(--purple)">${card.name}</span>
-              <span class="du-tier">PRIME</span>
-            </span>
-            <span class="du-cost">${CARD_PRICING.unlockPrime} 💎</span>
-          </button>`;
-        }).join('')}
-        ${unownedStandard.map(card => {
-          const disabled = save.gems < CARD_PRICING.unlockStandard;
-          return `
-          <button class="direct-unlock-btn standard" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
-            <span class="du-icon">${card.icon}</span>
-            <span class="du-info">
-              <span class="du-name">${card.name}</span>
-              <span class="du-tier">STANDARD</span>
-            </span>
-            <span class="du-cost">${CARD_PRICING.unlockStandard} 💎</span>
-          </button>`;
-        }).join('')}
-      </div>
-    ` : ''}
+    <div class="shop-section-title">Hero Summons</div>
+    <div class="shop-section-sub">${heroPullPool.length} hero${heroPullPool.length !== 1 ? 's' : ''} available · ${ownedHeroes}/${totalHeroes} owned</div>
+    ${heroPullPool.length === 0 && ownedHeroes < totalHeroes
+      ? `<div class="shop-section-hint">⚔ Progress further to unlock heroes in the pull pool</div>`
+      : heroPullPool.length === 0
+        ? `<div class="shop-section-hint">🏆 All available heroes obtained!</div>`
+        : ''}
+    <div class="card-pack-grid">
+      <button class="card-pack-btn hero-pull" id="heroPullSingleBtn" ${heroSingleDisabled ? 'disabled' : ''}>
+        <div class="pack-title">Hero Pull</div>
+        <div class="pack-desc">1 random hero</div>
+        <div class="pack-cost">${HERO_PULL_PRICING.pullSingle} 💎</div>
+      </button>
+      <button class="card-pack-btn hero-pull bundle" id="heroPullBundleBtn" ${heroBundleDisabled ? 'disabled' : ''}>
+        <div class="pack-title">5-Pull Bundle</div>
+        <div class="pack-desc">5 random heroes · save 25💎</div>
+        <div class="pack-cost">${HERO_PULL_PRICING.pullBundle} 💎</div>
+      </button>
+    </div>
 
     <div class="shop-section-title">Mobile Store</div>
     <div class="shop-section-sub">${purchasePlatformLabel()} · ${monetizationStatusText()}</div>
@@ -2830,18 +2845,41 @@ function renderShopTab(c) {
     });
   }
 
-  // Direct unlock buttons
-  c.querySelectorAll('.direct-unlock-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.unlock;
-      const result = performDirectUnlock(id);
+  // Hero single pull
+  const heroPullBtn = document.getElementById('heroPullSingleBtn');
+  if (heroPullBtn) {
+    let heroPullCd = false;
+    heroPullBtn.addEventListener('click', () => {
+      if (heroPullCd) return;
+      const result = performHeroPull();
       if (result) {
-        showPullReveal([result]);
+        heroPullCd = true;
+        heroPullBtn.disabled = true;
+        showHeroPullReveal([result]);
         renderHud();
         renderSubmenu();
+        setTimeout(() => { heroPullCd = false; heroPullBtn.disabled = false; }, 800);
       }
     });
-  });
+  }
+
+  // Hero bundle pull
+  const heroBundleBtn = document.getElementById('heroPullBundleBtn');
+  if (heroBundleBtn) {
+    let heroBundleCd = false;
+    heroBundleBtn.addEventListener('click', () => {
+      if (heroBundleCd) return;
+      const results = performHeroBundle();
+      if (results) {
+        heroBundleCd = true;
+        heroBundleBtn.disabled = true;
+        showHeroPullReveal(results);
+        renderHud();
+        renderSubmenu();
+        setTimeout(() => { heroBundleCd = false; heroBundleBtn.disabled = false; }, 800);
+      }
+    });
+  }
 
   c.querySelectorAll('.mobile-store-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -2897,6 +2935,37 @@ function showPullReveal(results) {
   document.getElementById('pullRevealClose').addEventListener('click', () => {
     overlay.remove();
     // Re-render the shop so newly-owned cards are removed from direct-unlock list
+    renderSubmenu();
+  });
+}
+
+// Reveal hero pull results as a full-screen overlay
+function showHeroPullReveal(results) {
+  const overlay = document.createElement('div');
+  overlay.className = 'pull-reveal-overlay';
+  const catColors = { combat: 'var(--danger)', economy: 'var(--gold)', defense: 'var(--good)' };
+  const grid = results.map(r => {
+    const hero = r.hero;
+    const catLabel = hero.category.charAt(0).toUpperCase() + hero.category.slice(1);
+    const catColor = catColors[hero.category] || 'var(--accent)';
+    return `
+      <div class="pull-card hero-pull-card" style="border-color:${catColor}; background:rgba(20,180,160,0.15)">
+        <div class="pull-card-icon" style="font-size:2em">${hero.icon}</div>
+        <div class="pull-card-tier" style="color:${catColor}">${catLabel}</div>
+        <div class="pull-card-name">${hero.name}</div>
+        <div class="pull-badge new">NEW HERO!</div>
+      </div>`;
+  }).join('');
+  overlay.innerHTML = `
+    <div class="pull-reveal-card">
+      <div class="pull-reveal-title">${results.length === 1 ? 'Hero Recruited!' : `${results.length} Heroes Recruited!`}</div>
+      <div class="pull-reveal-grid">${grid}</div>
+      <button class="pull-reveal-btn" id="pullRevealClose">Continue</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('pullRevealClose').addEventListener('click', () => {
+    overlay.remove();
     renderSubmenu();
   });
 }
@@ -3149,7 +3218,7 @@ function renderSettingsTab(c) {
   // Version text — tap 7 times to unlock dev panel
   const ver = document.createElement('div');
   ver.style.cssText = 'text-align:center;color:var(--muted);font-size:9px;margin-top:12px;line-height:1.5;cursor:pointer;padding:10px;user-select:none';
-  const verDefault = 'Core Surge v0.7.30 · Installable App Shell · tap 7x for dev tools';
+  const verDefault = 'Core Surge v0.7.31 · Installable App Shell · tap 7x for dev tools';
   ver.textContent = verDefault;
   let tapCount = 0;
   let tapTimer = null;
@@ -3368,7 +3437,10 @@ function devAct(act) {
       save.claimedMilestones = {};
       break;
     case 'unlockAllHeroes':
-      checkHeroUnlocks(); // dev mode already bypasses all gates
+      // Dev shortcut: directly unlock every hero (bypasses pull system)
+      for (const hid of Object.keys(HERO_DEFS)) {
+        unlockHero(hid);
+      }
       break;
     case 'addManuals100':
       save.trainingManuals = (save.trainingManuals || 0) + 100;

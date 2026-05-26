@@ -592,18 +592,32 @@ function cashWaveMul(w) {
   return Math.pow(1.060, 29) * Math.pow(1.030, 90) * Math.pow(1.011, w - 120);
 }
 // Tier multipliers — SPLIT per stat (was uniform ×1.5)
-function hpTierMul(t)   { return Math.pow(1.18, t - 1); }
-function dmgTierMul(t)  { return Math.pow(1.11, t - 1); }
+// v0.7.31: Tiers 1-10 ramp gently so day-1 players reach T6-10 quickly.
+// T1-5: ×1.08/tier (barely harder each tier — onboarding)
+// T6-10: ×1.14/tier (moderate ramp — player has some ranks)
+// T11+: ×1.18/tier (full difficulty — serious progression)
+function hpTierMul(t) {
+  if (t <= 1) return 1;
+  if (t <= 5)  return Math.pow(1.08, t - 1);
+  if (t <= 10) return Math.pow(1.08, 4) * Math.pow(1.14, t - 5);
+  return Math.pow(1.08, 4) * Math.pow(1.14, 5) * Math.pow(1.18, t - 10);
+}
+function dmgTierMul(t) {
+  if (t <= 1) return 1;
+  if (t <= 5)  return Math.pow(1.06, t - 1);
+  if (t <= 10) return Math.pow(1.06, 4) * Math.pow(1.09, t - 5);
+  return Math.pow(1.06, 4) * Math.pow(1.09, 5) * Math.pow(1.11, t - 10);
+}
 function cashTierMul(t) { return Math.pow(1.24, t - 1); }
 // Legacy compatibility for UI code that still calls tierMultiplier()
 function tierMultiplier(tier) { return hpTierMul(tier); }
 
 function enemyHpForWave(wave) {
-  // v0.7.15: Tier 1 onboarding — waves 1-10 get HP = wave number exactly.
-  // So W1 = 1 HP, W2 = 2 HP, ..., W10 = 10 HP. Lets new players breathe.
+  // v0.7.15: Tier 1-5 onboarding — waves 1-10 get HP = wave * tierMul.
+  // So T1W1 = 1 HP, T1W10 = 10 HP. T3W5 = ~6 HP. Lets new players breathe.
   // From W11 onward, normal scaling resumes.
-  if (game.tier === 1 && wave <= 10) {
-    return wave; // 1,2,3,4,5,6,7,8,9,10
+  if (game.tier <= 5 && wave <= 10) {
+    return Math.max(1, Math.floor(wave * hpTierMul(game.tier)));
   }
   // Base HP 5 so regular scaling lands Wave 11 around 11-13 HP.
   return Math.floor(5 * hpWaveMul(wave) * hpTierMul(game.tier));
@@ -628,8 +642,14 @@ function spawnIntervalForWave(wave) {
   else if (wave <= 120) base = Math.max(200, 580 - (wave - 30) * 4);
   else base = 180;
   // Tier scaling: higher tiers spawn FASTER (enemies come in harder & quicker)
-  // T1 = ×1.0, T2 = ×0.92, T5 = ×0.70, T10 = ×0.52, T50 = ×0.20 (floor)
-  const tierSpeedUp = Math.max(0.20, 1 - (game.tier - 1) * 0.06);
+  // v0.7.31: gentler ramp for T1-10 so early tiers feel breezy.
+  // T1-5: ×0.03/tier (barely faster), T6-10: ×0.05/tier, T11+: ×0.06/tier
+  // T1=1.0, T5=0.88, T10=0.63, T20=0.20 (floor)
+  var tierSteps;
+  if (game.tier <= 5) tierSteps = (game.tier - 1) * 0.03;
+  else if (game.tier <= 10) tierSteps = 4 * 0.03 + (game.tier - 5) * 0.05;
+  else tierSteps = 4 * 0.03 + 5 * 0.05 + (game.tier - 10) * 0.06;
+  const tierSpeedUp = Math.max(0.20, 1 - tierSteps);
   return Math.floor(base * tierSpeedUp);
 }
 // End-run coin reward: sublinear in wave, linear in tier, so deep runs have diminishing returns.

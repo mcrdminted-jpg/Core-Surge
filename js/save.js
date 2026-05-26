@@ -203,6 +203,7 @@ function hydrateSaveState(loaded) {
   nextSave.coreLevel = Math.max(1, parseInt(source.coreLevel, 10) || 1);
   nextSave.trainingManuals = Math.max(0, parseInt(source.trainingManuals, 10) || 0);
   nextSave.heroesUnlocked = Array.isArray(source.heroesUnlocked) ? source.heroesUnlocked : [];
+  nextSave._notifiedPullable = Array.isArray(source._notifiedPullable) ? source._notifiedPullable : [];
   nextSave.unlockedSpeeds = Array.isArray(source.unlockedSpeeds) ? source.unlockedSpeeds : [];
   nextSave.equippedCoreSkin = source.equippedCoreSkin || 'sentinel';
   // v0.7.25: auto-complete tutorial for existing players who already have runs

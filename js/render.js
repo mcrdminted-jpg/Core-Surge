@@ -343,7 +343,7 @@ function renderHeroActivesHud() {
     _heroHudEl.classList.remove('open');
     return;
   }
-  _heroHudEl.style.display = '';
+  _heroHudEl.style.display = 'flex';
 
   // Wire toggle once
   if (!_heroHudInitialized && _heroHudToggle) {
@@ -373,8 +373,24 @@ function renderHeroActivesHud() {
     groups[def.category].push(hid);
   }
 
+  // Count ready heroes for "Activate All" button
+  let readyCount = 0;
+  for (let i = 0; i < garrison.length; i++) {
+    const hid = garrison[i];
+    if (!hid || !HERO_DEFS[hid]) continue;
+    const state = (typeof heroActiveState !== 'undefined') ? heroActiveState[hid] : null;
+    const isActive = state && now < state.activeUntil;
+    const onCooldown = state && now < state.cooldownUntil && !isActive;
+    if (!isActive && !onCooldown) readyCount++;
+  }
+
   let html = '';
-  const catLabels = { combat: '&#9876; OFFENSE', defense: '&#128737; DEFENSE', economy: '&#128176; ECONOMY' };
+  // "Activate All" button when multiple heroes are ready
+  if (readyCount > 1) {
+    html += `<button class="hah-activate-all" id="hahActivateAll">&#9889; ACTIVATE ALL (${readyCount})</button>`;
+  }
+
+  const catLabels = { combat: '&#9876; OFF', defense: '&#128737; DEF', economy: '&#128176; ECO' };
   const catColors = { combat: 'var(--danger)', defense: 'var(--good)', economy: 'var(--gold)' };
   for (const cat of ['combat', 'defense', 'economy']) {
     if (groups[cat].length === 0) continue;
@@ -390,20 +406,35 @@ function renderHeroActivesHud() {
       html += `<button class="${cls}" data-hah="${hid}">` +
         `<span class="hah-icon">${def.icon}</span>` +
         `<span class="hah-name">${def.name}</span>` +
-        (isActive ? '<span class="hah-status" style="color:var(--good)">ACTIVE</span>' : '') +
+        (isActive ? '<span class="hah-status" style="color:var(--good)">ON</span>' : '') +
         (onCooldown ? `<span class="hah-status">${cdSec}s</span>` : '') +
-        (!isActive && !onCooldown ? '<span class="hah-status" style="color:var(--cyan2)">READY</span>' : '') +
+        (!isActive && !onCooldown ? '<span class="hah-status" style="color:var(--cyan2)">&#9889;</span>' : '') +
         `</button>`;
     }
     html += '</div>';
   }
   _heroHudPanel.innerHTML = html;
 
-  // Wire activate clicks
+  // Wire "Activate All" button
+  var activateAllBtn = document.getElementById('hahActivateAll');
+  if (activateAllBtn) {
+    activateAllBtn.addEventListener('pointerdown', function(e) {
+      e.stopPropagation();
+      var g = save.garrisonSlots || [];
+      for (var i = 0; i < g.length; i++) {
+        if (g[i] && typeof activateHeroAbility === 'function') {
+          activateHeroAbility(g[i]);
+        }
+      }
+      _heroHudLastUpdate = 0;
+    });
+  }
+
+  // Wire individual activate clicks
   _heroHudPanel.querySelectorAll('[data-hah]').forEach(function(btn) {
     btn.addEventListener('pointerdown', function(e) {
       e.stopPropagation();
-      const hid = this.getAttribute('data-hah');
+      var hid = this.getAttribute('data-hah');
       if (typeof activateHeroAbility === 'function') {
         activateHeroAbility(hid);
         _heroHudLastUpdate = 0; // force refresh after activation

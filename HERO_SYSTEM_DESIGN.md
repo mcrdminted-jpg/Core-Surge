@@ -62,10 +62,14 @@ Core level 30 = all 30 heroes garrisoned simultaneously. This is deep end-game (
 
 ## Hero Mechanics
 
-### Acquisition
-- Heroes unlock from **milestones** (tier milestones, wave milestones, achievement milestones).
-- First 6 heroes (starter stats) unlock at low tiers. Family heroes unlock as you unlock their family.
-- Can also be purchased in the Hero Shop for gems (expensive, shortcut).
+### Acquisition (Hybrid Unlock System)
+Heroes unlock through **three distinct paths**, keeping progression interesting across all play stages:
+
+1. **Tier-gated (6 starters + 10 deep progression):** Reach a bestTier milestone. Starters come fast (Tier 1-30). Late-game heroes require Tiers 100-2000.
+2. **Achievement-based (14 heroes):** Tied to cumulative stats the game already tracks: totalEnemiesKilled, totalBossesDefeated, totalRuns, bestWave, totalCashEarned, totalGemsEarned. Each hero's achievement is thematically matched to its stat.
+3. **Family gate (24 of 30):** All non-starter heroes also require their unlock family to be purchased with scrap first. This is checked ON TOP of the primary unlock condition.
+
+Locked heroes show a progress bar and description of the unlock condition so players always know what to work toward. Multiple heroes can be progressed simultaneously across different unlock paths.
 
 ### Leveling
 - Heroes start at **Level 1** (1.1x passive multiplier).
@@ -268,40 +272,52 @@ Gets: `(5 + 300) * 1.40 * 2.0 * 1.464 = 1,250 effective damage`
 
 ---
 
-## Milestone Unlock Schedule (Hero Acquisition)
+## Unlock Schedule (Hero Acquisition)
 
-| Hero | Unlock Condition |
-|------|-----------------|
-| Ironclad (damage) | Tutorial complete (Tier 1) |
-| Quickfire (fireRate) | Reach Tier 5 |
-| Bastion (coreHealth) | Reach Tier 10 |
-| Profiteer (cashBonus) | Reach Tier 15 |
-| Sentinel (armor) | Reach Tier 25 |
-| Hawkeye (range) | Reach Tier 40 |
-| Deadeye (critChance) | Unlock Crit Systems family |
-| Executioner (critPower) | Reach Tier 60 |
-| Surplus (waveBonus) | Unlock Economy Expansion family |
-| Headhunter (bossBounty) | Reach Tier 80 |
-| Mender (regen) | Unlock Sustain Systems family |
-| Leech (lifesteal) | Reach Tier 100 |
-| Thornguard (thorns) | Unlock Fortification family |
-| Shockwave (knockback) | Reach Tier 150 |
-| Smelter (coinMultiplier) | Unlock Scrap Mastery family |
-| Prospector (gemFind) | Reach Tier 200 |
-| Scattergun (multiChance) | Unlock Multishot Systems family |
-| Payload (multiPower) | Reach Tier 300 |
-| Hydra (multiTargets) | Reach Tier 400 |
-| Aegis (shieldHP) | Unlock Barrier Systems family |
-| Dynamo (shieldRegen) | Reach Tier 500 |
-| Railgun (projSpeed) | Unlock Tactical Systems family |
-| Piercer (pierce) | Reach Tier 700 |
-| Ricochet (bounceChance) | Unlock Bounce Systems family |
-| Shrapnel (bouncePower) | Reach Tier 900 |
-| Cascade (bounceTargets) | Reach Tier 1200 |
-| Voltaic (overchargeChance) | Unlock Overcharge family |
-| Tesla (overchargePower) | Reach Tier 1500 |
-| Chainlink (comboBonus) | Unlock Combo Systems family |
-| Tempo (comboDuration) | Reach Tier 2000 |
+### Starter Heroes (Tier-gated, no family required)
+
+| Hero | Unlock |
+|------|--------|
+| Ironclad (damage) | Tier 1 |
+| Quickfire (fireRate) | Tier 3 |
+| Bastion (coreHealth) | Tier 8 |
+| Profiteer (cashBonus) | Tier 12 |
+| Sentinel (armor) | Tier 20 |
+| Hawkeye (range) | Tier 30 |
+
+### Achievement Heroes (Family + achievement)
+
+| Hero | Family | Unlock Condition |
+|------|--------|-----------------|
+| Deadeye (critChance) | Crit Systems | Kill 5,000 enemies |
+| Executioner (critPower) | Crit Systems | Reach Wave 75 |
+| Surplus (waveBonus) | Economy Expansion | Earn 100K total cash |
+| Headhunter (bossBounty) | Economy Expansion | Defeat 50 bosses |
+| Mender (regen) | Sustain Systems | Complete 25 runs |
+| Leech (lifesteal) | Sustain Systems | Complete 50 runs |
+| Thornguard (thorns) | Fortification | Kill 25,000 enemies |
+| Shockwave (knockback) | Fortification | Reach Wave 100 |
+| Smelter (coinMultiplier) | Coin Mastery | Earn 500K total cash |
+| Prospector (gemFind) | Coin Mastery | Earn 200 gems |
+| Scattergun (multiChance) | Multishot Systems | Complete 100 runs |
+| Aegis (shieldHP) | Barrier Systems | Kill 100,000 enemies |
+| Railgun (projSpeed) | Tactical Systems | Reach Wave 150 |
+| Chainlink (comboBonus) | Combo Systems | Kill 50,000 enemies |
+
+### Deep Progression Heroes (Family + tier)
+
+| Hero | Family | Unlock Condition |
+|------|--------|-----------------|
+| Payload (multiPower) | Multishot Systems | Tier 100 |
+| Dynamo (shieldRegen) | Barrier Systems | Tier 200 |
+| Hydra (multiTargets) | Multishot Systems | Tier 250 |
+| Piercer (pierce) | Tactical Systems | Tier 300 |
+| Ricochet (bounceChance) | Bounce Systems | Tier 400 |
+| Shrapnel (bouncePower) | Bounce Systems | 200 bosses defeated |
+| Cascade (bounceTargets) | Bounce Systems | Tier 800 |
+| Voltaic (overchargeChance) | Overcharge | Tier 1,000 |
+| Tesla (overchargePower) | Overcharge | Tier 1,500 |
+| Tempo (comboDuration) | Combo Systems | Tier 2,000 |
 
 ---
 

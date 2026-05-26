@@ -797,6 +797,25 @@
   padding-left: 4px;
   margin-bottom: 8px;
 }
+.shop-section-hint {
+  font-size: 10px;
+  color: var(--cyan2);
+  padding-left: 4px;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+.card-pack-btn.hero-pull {
+  border-color: rgba(170,68,255,0.4);
+  background: linear-gradient(180deg, rgba(170,68,255,0.12), rgba(100,40,180,0.08));
+}
+.card-pack-btn.hero-pull:not(:disabled):hover,
+.card-pack-btn.hero-pull:not(:disabled):active {
+  border-color: var(--purple);
+  background: rgba(170,68,255,0.22);
+}
+.hero-pull-card {
+  border-width: 2px !important;
+}
 .shop-pack-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -3112,6 +3131,18 @@ body[data-preview-core="royal"]      #menuPreviewCore { background-image: url(".
   background: rgba(255,255,255,0.03);
 }
 .hero-card.locked { opacity: 0.4; }
+.hero-card.locked.pullable {
+  opacity: 0.85;
+  border-color: var(--purple);
+  background: rgba(170,68,255,0.06);
+}
+.hc-pullable-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--purple);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
 .hero-card.garrisoned {
   border-color: var(--accent);
   background: rgba(100,140,255,0.06);
