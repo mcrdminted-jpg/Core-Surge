@@ -1334,13 +1334,16 @@ function advanceWave() {
 
 function spawnEnemy() {
   const w = game.bfRect.width;
+  const h = game.bfRect.height;
   // Full 180° arc from top-left through top to top-right (enemies come from above & sides)
   const angle = (Math.random() * 2.0 - 1.0) * (Math.PI / 2);
-  const spawnDist = Math.max(w, game.bfRect.height) * 0.65;
+  // Spawn well off-screen so enemies march into view
+  const spawnDist = Math.max(w, h) + 60;
   const sx = game.towerX + Math.sin(angle) * spawnDist;
   const sy = game.towerY - Math.cos(angle) * spawnDist;
-  const x = Math.max(10, Math.min(w - 10, sx));
-  const y = Math.max(-10, Math.min(game.towerY - 40, sy));
+  // Allow off-screen positioning on sides; never below tower approach zone
+  const x = Math.max(-20, Math.min(w + 20, sx));
+  const y = Math.min(game.towerY - 40, sy);
   const r = Math.random();
   let type = 'normal';
   // Tier gates enemy variety. Higher tier = more variety available.
@@ -1365,7 +1368,7 @@ function spawnBoss() {
   const w = game.bfRect.width;
   const t = ENEMY_TYPES.boss;
   game.enemies.push({
-    x: w / 2, y: -15,
+    x: w / 2, y: -(game.bfRect.height * 0.15),
     type: 'boss',
     hp: enemyHpForWave(game.wave) * t.hpMul,
     hpMax: enemyHpForWave(game.wave) * t.hpMul,
