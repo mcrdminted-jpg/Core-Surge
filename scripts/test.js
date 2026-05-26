@@ -185,11 +185,14 @@ async function runTests() {
   // â”€â”€ 8. Rank max rank sum â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Rank Caps â”€â”€');
 
-  let totalMaxRanks = 0;
-  for (const def of Object.values(RANK_DEFS)) {
-    totalMaxRanks += def.maxRank;
+  // Verify naturally-capped stats still have correct caps; uncapped stats have 99999
+  const CAPPED_STATS = { range: 500, multiTargets: 8, bounceTargets: 6 };
+  for (const [id, expected] of Object.entries(CAPPED_STATS)) {
+    assert(RANK_DEFS[id].maxRank === expected, `${id} maxRank = ${expected} (got ${RANK_DEFS[id].maxRank})`);
   }
-  assert(totalMaxRanks === 1019, `Total max ranks = 1019 (got ${totalMaxRanks})`);
+  // Uncapped stats should all be 99999
+  const uncappedCount = Object.values(RANK_DEFS).filter(d => d.maxRank === 99999).length;
+  assert(uncappedCount >= 25, `At least 25 uncapped stats (got ${uncappedCount})`);
 
   // â”€â”€ 9. Tournament constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Tournament â”€â”€');

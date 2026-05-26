@@ -485,7 +485,12 @@ function enemyHpForWave(wave) {
   // Base HP 5 so regular scaling lands Wave 11 around 11-13 HP.
   return Math.floor(5 * hpWaveMul(wave) * hpTierMul(game.tier));
 }
-function enemySpeedForWave(wave) { return 35 + Math.min(50, wave * 0.25); }
+function enemySpeedForWave(wave) {
+  // Base speed scales with wave, plus a tier boost so late-game enemies are faster
+  const waveSpeed = 35 + Math.min(50, wave * 0.25);
+  const tierBoost = 1 + (game.tier - 1) * 0.03; // T1=1.0, T10=1.27, T50=2.47
+  return waveSpeed * tierBoost;
+}
 function cashRewardForWave(wave) {
   // Base cash 5 so first kill buys the first Damage upgrade (cost0 = 5).
   return Math.floor(5 * cashWaveMul(wave) * cashTierMul(game.tier));
@@ -494,15 +499,15 @@ function damageToTowerForWave(wave) {
   return Math.floor(3 * dmgWaveMul(wave) * dmgTierMul(game.tier));
 }
 function spawnIntervalForWave(wave) {
-  // Base interval decreases as waves progress
+  // Base interval decreases as waves progress — faster spawns at higher waves
   let base;
-  if (wave <= 30) base = Math.max(500, 1000 - wave * 12);
-  else if (wave <= 120) base = Math.max(320, 700 - (wave - 30) * 4);
-  else base = 280;
-  // Tier scaling: Tier 1 spawns 60% slower, scaling down to 0% bonus by Tier 5+
-  // This gives single-target players time to handle enemies without multishot
-  const tierSlowdown = Math.max(0, 1 - (game.tier - 1) * 0.15); // T1=1.0, T2=0.85, T3=0.7, T4=0.55, T5+=0
-  return Math.floor(base * (1 + tierSlowdown * 0.6));
+  if (wave <= 30) base = Math.max(400, 900 - wave * 14);
+  else if (wave <= 120) base = Math.max(200, 580 - (wave - 30) * 4);
+  else base = 180;
+  // Tier scaling: higher tiers spawn FASTER (enemies come in harder & quicker)
+  // T1 = ×1.0, T2 = ×0.92, T5 = ×0.70, T10 = ×0.52, T50 = ×0.20 (floor)
+  const tierSpeedUp = Math.max(0.20, 1 - (game.tier - 1) * 0.06);
+  return Math.floor(base * tierSpeedUp);
 }
 // End-run coin reward: sublinear in wave, linear in tier, so deep runs have diminishing returns.
 function coinRewardForRun(maxWave, totalCash) {
@@ -536,13 +541,22 @@ const ENEMY_TYPES = {
 // ============================================================
 // BATTLE FLOW
 // ============================================================
+// Enemies per wave: base ~50, scales with wave number and tier.
+// Boss waves still spawn just the boss. Tier 1 early waves ramp gently.
+function enemiesForWave(wave, tier) {
+  if (wave > 0 && wave % 25 === 0) return 1; // boss wave — just the boss
+  // Tier 1 waves 1-5: gentler start (20,25,30,35,40) then jump to normal
+  if (tier === 1 && wave <= 5) return 15 + wave * 5;
+  // Normal: base 50, +2 per wave, +5 per tier above 1 (cap 200 for perf)
+  return Math.min(200, 50 + Math.floor(wave * 2) + Math.floor((tier - 1) * 5));
+}
 function startBattle(startingWave) {
   game.paused = false;
   game.tier = save.selectedTier;
   game.wave = startingWave || 1;
   game.enemiesKilledInWave = 0;
   game.bossWave = (game.wave % 25 === 0) && game.wave > 0;
-  game.enemiesPerWave = game.bossWave ? 1 : 10;
+  game.enemiesPerWave = enemiesForWave(game.wave, game.tier);
   game.cash = 0;
   game.enemies = [];
   game.projectiles = [];
@@ -806,7 +820,7 @@ function update(dt, rawDt) {
     }
   } else {
     if ((now - game.lastEnemySpawn) * speedFactor > spawnIntervalForWave(game.wave)) {
-      if (game.enemies.length < 80) {
+      if (game.enemies.length < 150) {
         spawnEnemy();
         game.lastEnemySpawn = now;
       }
@@ -1209,7 +1223,7 @@ function advanceWave() {
   game.wave++;
   game.enemiesKilledInWave = 0;
   game.bossWave = game.wave % 25 === 0;
-  game.enemiesPerWave = game.bossWave ? 1 : 10;
+  game.enemiesPerWave = enemiesForWave(game.wave, game.tier);
   game.bossSpawned = false;
   const bonus = Math.floor(cashRewardForWave(game.wave) * 5 * getCashMul() * getWaveBonusMul());
   game.cash += bonus;

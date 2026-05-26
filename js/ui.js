@@ -743,9 +743,13 @@ function showScreen(name) {
   menu.classList.remove('overlay');
   menu.classList.toggle('active', name === 'menu');
   document.getElementById('screen-battle').classList.toggle('active', name === 'battle');
-  // Hide bottom nav during battle — only battle upgrades should show
+  // Hide bottom nav AND top HUD during battle — fullscreen battlefield
   const sub = document.getElementById('submenu');
   if (sub) sub.style.display = (name === 'battle') ? 'none' : '';
+  const hud = document.getElementById('hud');
+  if (hud) hud.style.display = (name === 'battle') ? 'none' : '';
+  const gnav = document.getElementById('globalNav');
+  if (gnav) gnav.style.display = (name === 'battle') ? 'none' : '';
   renderHud();
   updateGlobalNavActive();
 }
