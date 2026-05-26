@@ -424,13 +424,6 @@ function getMultishotTargetsNext() {
   return Math.floor((1 + eff + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
 }
 
-// Determines how many shots fire per volley
-function rollMultishotCount() {
-  const chance = getMultishotChance();
-  if (chance <= 0) return 1;
-  return Math.random() < chance ? 2 : 1;
-}
-
 // === Bounce === (same structure as multishot)
 function getBounceChance() {
   const eff = effectiveLevel('bounceChance');
@@ -450,11 +443,11 @@ function getBouncePowerNext() {
 }
 function getBounceTargets() {
   const eff = effectiveLevel('bounceTargets');
-  return Math.floor((eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
+  return Math.floor((1 + eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
 }
 function getBounceTargetsNext() {
   const eff = effectiveLevel('bounceTargets') + 1;
-  return Math.floor((eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
+  return Math.floor((1 + eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
 }
 
 // === Lifesteal === (0.25% per effective level, cap 100%)
@@ -598,7 +591,7 @@ function upgradeDescriptor(key) {
     case 'range': {
       return { cur: Math.round(getRange()), next: Math.round(getRangeNext()), unit: ' range' };
     }
-    case 'critChance':       return { cur: (getCritChance() * 100).toFixed(0), next: (getCritChanceNext() * 100).toFixed(0), unit: '%' };
+    case 'critChance':       return { cur: (getCritChance() * 100).toFixed(1), next: (getCritChanceNext() * 100).toFixed(1), unit: '%' };
     case 'critPower':        return { cur: '×' + getCritPower().toFixed(2), next: '×' + getCritPowerNext().toFixed(2), unit: '' };
     case 'multishotChance':  return { cur: (getMultishotChance() * 100).toFixed(1), next: (getMultishotChanceNext() * 100).toFixed(1), unit: '%' };
     case 'multishotPower':   return { cur: (getMultishotPower() * 100).toFixed(1), next: (getMultishotPowerNext() * 100).toFixed(1), unit: '%' };
@@ -784,7 +777,7 @@ function startBattle(startingWave) {
   game.shield = barrierMax;
   game.shieldMax = barrierMax;
   game.barrierCap = barrierMax; // track barrier cap for regen
-  game.timeLockLastTrigger = Date.now();
+  game.timeLockLastTrigger = 0; // tickTimeLock() will init to performance.now() on first tick
   game.enemySlowUntil = 0;
   game.enemySlowFrac = 0;
   game.lastStandUsed = false;
@@ -841,6 +834,7 @@ function endRun() {
   if (orbState.currentOrb) { orbState.currentOrb.remove(); orbState.currentOrb = null; }
   if (orbState.pillEl) { orbState.pillEl.remove(); orbState.pillEl = null; }
   if (orbState.pillExpireTimer) { clearTimeout(orbState.pillExpireTimer); orbState.pillExpireTimer = null; }
+  const endTime = Date.now();
   const maxWave = game.wave;
   const totalCash = game.cashEarnedThisRun;
   const coinsEarned = coinRewardForRun(maxWave, totalCash);
@@ -848,7 +842,7 @@ function endRun() {
   save.totalRuns += 1;
   save.totalCashEarned += totalCash;
   save.totalEnemiesKilled += game.enemiesKilledThisRun;
-  save.totalPlaytimeMs += Date.now() - game.startTime;
+  save.totalPlaytimeMs += endTime - game.startTime;
   save.totalBossesDefeated = (save.totalBossesDefeated || 0) + game.bossesDefeated;
   save.totalGemsEarned = (save.totalGemsEarned || 0) + (game.gemsEarnedThisRun || 0);
   // Tutorial: advance after first/second death
@@ -856,7 +850,7 @@ function endRun() {
   else if (save.tutorialStep === 4) save.tutorialStep = 5;
   // Tournament: submit score if this was flagged as a tournament run
   if (game.isTourneyRun && typeof tourneySubmitScore === 'function') {
-    tourneySubmitScore(maxWave, Date.now() - game.startTime);
+    tourneySubmitScore(maxWave, endTime - game.startTime);
     game.isTourneyRun = false;
   }
   const prevBest = save.bestWavePerTier[game.tier] || 0;
@@ -880,7 +874,7 @@ function endRun() {
   const stats = document.getElementById('endStats');
   const isNewBest = maxWave > prevBest;
   const tierJustUnlocked = (prevBest < 50 && maxWave >= 50);
-  const runDurationMs = Date.now() - game.startTime;
+  const runDurationMs = endTime - game.startTime;
   const runSec = Math.floor(runDurationMs / 1000);
   const runMin = Math.floor(runSec / 60);
   const runSecRem = runSec % 60;
@@ -980,10 +974,10 @@ function update(dt, rawDt) {
     if (timeSinceKill > decayMs || decayMs <= 500) {
       game.comboCount = 0;
     } else if (timeSinceKill > 500) {
-      // Linear decay starting at 0.5s, fully gone at decayMs
+      // Linear decay starting at 0.5s, reaching 0 at decayMs
       const decayProgress = (timeSinceKill - 500) / (decayMs - 500);
-      const targetCombo = Math.max(0, game.comboCount * (1 - decayProgress * 0.02));
-      game.comboCount = targetCombo;
+      if (!game._comboPeakForDecay) game._comboPeakForDecay = game.comboCount;
+      game.comboCount = Math.max(0, game._comboPeakForDecay * (1 - decayProgress));
     }
   }
 
@@ -1394,6 +1388,7 @@ function hitEnemy(e, dmg, crit) {
     game.enemiesKilledThisRun++;
     // Increment combo on every kill
     game.comboCount++;
+    game._comboPeakForDecay = 0; // reset so next decay starts from new peak
     game.comboLastKillTime = performance.now();
     const comboMul = getCurrentComboMul();
     const mul = e.type === 'boss' ? 20 * getBossBountyMul() : (e.hpMul || 1);

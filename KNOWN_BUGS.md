@@ -53,6 +53,42 @@
 
 ## Gameplay Logic Bugs
 
+### ~~Bounce system silently does nothing at rank 0~~ **FIXED v0.7.31**
+- **Fix applied**: `getBounceTargets()` used `eff` as base, returning 0 when bounceTargets rank was 0. Changed to `1 + eff` to match how `getMultishotTargets()` works. Bounce procs now correctly allow 1 bounce at rank 0.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Time Lock apex card never fires (Date.now vs performance.now mismatch)~~ **FIXED v0.7.31**
+- **Fix applied**: `startBattle()` initialized `game.timeLockLastTrigger = Date.now()` (epoch ms) but `tickTimeLock()` compared against `performance.now()` (page-relative ms). Changed init to `0` so the existing guard in `tickTimeLock` correctly sets it to `performance.now()` on first tick.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Combo decay formula barely decays, then snaps to 0~~ **FIXED v0.7.31**
+- **Fix applied**: Old formula `comboCount * (1 - decayProgress * 0.02)` only reduced combo to 98% per frame. Changed to linear decay from peak: captures `_comboPeakForDecay` at decay start, then `peak * (1 - decayProgress)` smoothly reaches 0 at window end.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Float text pool race condition (damage numbers disappear early)~~ **FIXED v0.7.31**
+- **Fix applied**: Pooled float elements were returned via `setTimeout(600ms)` but could be reused before that timeout fired. The first timeout would then hide the second float prematurely. Added a generation counter (`_floatGen`) — stale timeouts check the counter and skip the pool return if the element was reused.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Crit chance display rounds away upgrade effect~~ **FIXED v0.7.31**
+- **Fix applied**: Changed `upgradeDescriptor` critChance from `.toFixed(0)` to `.toFixed(1)` so +0.5% per rank is visible (was showing "2%" → "2%" after buying a rank).
+- **Found**: 2026-05-25 (alpha tester report FB-04)
+
+### ~~Buy multiplier ×100 desync between battle and research~~ **FIXED v0.7.31**
+- **Fix applied**: `cycleBuyMultiplier()` had order `[1, 10, 100, 'max']` but research tab only rendered `[1, 10, 'max']`. Removed ×100 from cycle to match research tab. Player can no longer get stuck at ×100 with no visible way to change it.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Home progress bar "next tier ready" threshold wrong (W100 vs W50)~~ **FIXED v0.7.31**
+- **Fix applied**: Dead `renderHomePanels()` function had `nextTierReady = bestThisTier >= 100` while actual tier unlock logic uses W50. Removed entire dead function (replaced by `renderHomePanelsVisual()`). Active renderer already uses correct W50 threshold.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~endRun() dual Date.now() causes stat drift~~ **FIXED v0.7.31**
+- **Fix applied**: Two separate `Date.now()` calls (for playtime tracking and for run duration display) could differ by several ms. Captured `const endTime = Date.now()` once at top of `endRun()` and used it for both.
+- **Found**: 2026-05-26 (code audit)
+
+### ~~Dead code: rollMultishotCount() function~~ **FIXED v0.7.31**
+- **Fix applied**: Removed unused `rollMultishotCount()` which was defined but never called. The actual multishot logic uses an inline `Math.random() < getMultishotChance()` check. The dead function would also have been wrong if called (ignores `getMultishotTargets()`).
+- **Found**: 2026-05-26 (code audit)
+
 ### monetization.js references non-existent function `scheduleCloudSync`
 - **Location**: `js/monetization.js` line ~229
 - **Impact**: After a purchase is verified by RevenueCat, the cloud sync call fails silently. Purchased entitlements may not persist to cloud save.
@@ -185,10 +221,8 @@
 - **Ref**: TESTER_FEEDBACK_LOG.md FB-03
 - **Found**: 2026-05-25 (alpha tester screenshot)
 
-### Crit chance display rounds away upgrade effect
-- **Location**: `js/game.js` line ~426 (upgradeStatDisplay critChance case)
-- **Impact**: Crit chance displays with `.toFixed(0)`, so +0.5% per rank increment is invisible (2% stays showing as "2%" after buying a rank). Players think the upgrade is broken.
-- **Fix**: Change crit chance display from `.toFixed(0)` to `.toFixed(1)`.
+### ~~Crit chance display rounds away upgrade effect~~ **FIXED v0.7.31**
+- **Fix applied**: Changed from `.toFixed(0)` to `.toFixed(1)` so +0.5% increments are visible.
 - **Ref**: TESTER_FEEDBACK_LOG.md FB-04
 - **Found**: 2026-05-25 (alpha tester report)
 

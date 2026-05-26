@@ -196,6 +196,7 @@ function flashTower() {
   setTimeout(() => base.style.background = '', 100);
 }
 
+var _floatGen = 0; // generation counter to prevent stale pool returns
 function spawnFloat(x, y, txt, cls) {
   let el = _poolGet('float');
   if (el) {
@@ -209,7 +210,9 @@ function spawnFloat(x, y, txt, cls) {
   el.style.left = x + 'px';
   el.style.top = y + 'px';
   el.style.display = '';
-  setTimeout(() => _poolReturn('float', el), 600);
+  const gen = ++_floatGen;
+  el._floatGen = gen;
+  setTimeout(() => { if (el._floatGen === gen) _poolReturn('float', el); }, 600);
 }
 
 function showWaveBanner(txt, boss) {

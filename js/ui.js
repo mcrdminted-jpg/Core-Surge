@@ -695,10 +695,10 @@ function renderHud() {
   }
 }
 
-// Cycle buy multiplier 1 → 10 → 100 → max → 1
+// Cycle buy multiplier 1 → 10 → max → 1
 function cycleBuyMultiplier() {
   const cur = save.settings.buyMultiplier || 1;
-  const order = [1, 10, 100, 'max'];
+  const order = [1, 10, 'max'];
   const idx = order.findIndex(v => v === cur);
   save.settings.buyMultiplier = order[(idx + 1) % order.length];
   persistSave();
@@ -1026,148 +1026,6 @@ function renderMenu() {
   renderHomePanelsVisual();
   setHomeView(true);
   renderSubmenu();
-}
-
-function renderHomePanels() {
-  const el = document.getElementById('homePanels');
-  if (!el) return;
-
-  const sel = save.selectedTier;
-  const bestThisTier = save.bestWavePerTier[sel] || 0;
-  const maxTier = highestUnlockedTier();
-  const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
-  const totalSlots = getUnlockedSlots();
-
-  // --- Left: Recent Progress ---
-  const progressPct = Math.min(100, (bestThisTier / 50) * 100);
-  const nextTierReady = bestThisTier >= 100 && sel < MAX_TIER;
-
-  let progressHTML = `
-    <div class="home-panel home-progress">
-      <div class="home-panel-header">
-        <span class="home-panel-title">PROGRESS</span>
-      </div>
-      <div class="home-progress-stats">
-        <div class="home-stat">
-          <div class="home-stat-value">W${bestThisTier}</div>
-          <div class="home-stat-label">Best T${sel}</div>
-        </div>
-        <div class="home-stat">
-          <div class="home-stat-value">${save.totalRuns}</div>
-          <div class="home-stat-label">Runs</div>
-        </div>
-      </div>
-      <div class="home-progress-bar-wrap">
-        <div class="home-progress-bar" style="width:${progressPct}%"></div>
-        <div class="home-progress-label">${nextTierReady ? 'T' + (sel + 1) + ' READY' : bestThisTier + '/100'}</div>
-      </div>
-    </div>`;
-
-  // --- Center: Tier Milestones ---
-  let claimableCount = 0;
-  let milestonesHTML = '';
-  const showWaves = [25, 50, 100, 200, 500, 1000, 2000];
-  for (const w of showWaves) {
-    const key = milestoneKey(sel, w);
-    const claimed = save.claimedMilestones[key];
-    const ready = milestoneReady(sel, w) && !claimed;
-    if (ready) claimableCount++;
-    const cls = claimed ? 'claimed' : ready ? 'ready' : 'locked';
-    const shortLabel = w >= 2000 ? '2K' : w >= 1000 ? '1K' : w;
-    const label = claimed ? '✓' : ready ? '!' : shortLabel;
-    milestonesHTML += `<div class="home-ms-dot ${cls}">${label}</div>`;
-  }
-
-  let tiersHTML = `
-    <div class="home-panel home-milestones">
-      <div class="home-panel-header">
-        <span class="home-panel-title">MILESTONES</span>
-        ${claimableCount > 0 ? `<span class="home-panel-badge">${claimableCount}</span>` : ''}
-      </div>
-      <div class="home-ms-row">${milestonesHTML}</div>
-    </div>`;
-
-  // --- Right: Loadout Preview ---
-  let cardsHTML = '';
-  for (let i = 0; i < Math.min(totalSlots, 6); i++) {
-    const cid = save.equippedCards[i];
-    if (cid && CARD_POOL[cid]) {
-      const card = CARD_POOL[cid];
-      const inv = save.cardInventory[cid] || { level: 1 };
-      cardsHTML += `<div class="home-card-slot filled">
-        <span class="home-card-icon">${card.icon}</span>
-        <span class="home-card-lvl">${inv.level}</span>
-      </div>`;
-    } else {
-      cardsHTML += `<div class="home-card-slot empty">+</div>`;
-    }
-  }
-
-  let loadoutHTML = `
-    <div class="home-panel home-loadout">
-      <div class="home-panel-header">
-        <span class="home-panel-title">LOADOUT</span>
-        <span class="home-panel-count">${equippedCount}/${totalSlots}</span>
-      </div>
-      <div class="home-card-row">${cardsHTML}</div>
-    </div>`;
-
-  // --- Battle Readiness: key stats for the selected tier ---
-  const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
-  const dmgBonus = rankFlatBonus('damage');
-  const hpBonus = rankFlatBonus('coreHealth');
-  const scrapAmt = formatNum(save.coins);
-  let readinessHTML = `
-    <div class="home-panel home-readiness">
-      <div class="home-panel-header">
-        <span class="home-panel-title">BATTLE READY</span>
-      </div>
-      <div class="home-readiness-stats">
-        <div class="home-stat">
-          <div class="home-stat-value" style="color:var(--danger)">+${dmgBonus.toFixed(1)}</div>
-          <div class="home-stat-label">Dmg Bonus</div>
-        </div>
-        <div class="home-stat">
-          <div class="home-stat-value" style="color:var(--good)">+${hpBonus.toFixed(0)}</div>
-          <div class="home-stat-label">HP Bonus</div>
-        </div>
-        <div class="home-stat">
-          <div class="home-stat-value" style="color:var(--gold)">${scrapAmt}</div>
-          <div class="home-stat-label">Scrap</div>
-        </div>
-        <div class="home-stat">
-          <div class="home-stat-value" style="color:var(--accent)">${totalRanks}</div>
-          <div class="home-stat-label">Total Ranks</div>
-        </div>
-      </div>
-    </div>`;
-
-  el.innerHTML = progressHTML + tiersHTML + loadoutHTML + readinessHTML;
-
-  // Wire milestone panel click to open Goals tab
-  const msPanel = el.querySelector('.home-milestones');
-  if (msPanel) {
-    msPanel.style.cursor = 'pointer';
-    msPanel.addEventListener('click', () => {
-      activeSubmenu = 'milestones';
-      setHomeView(false);
-      renderSubmenu();
-    });
-  }
-  // Wire loadout panel click to open Cards tab
-  const loPanel = el.querySelector('.home-loadout');
-  if (loPanel) {
-    loPanel.style.cursor = 'pointer';
-    loPanel.addEventListener('click', () => {
-      activeSubmenu = 'cards';
-      setHomeView(false);
-      renderSubmenu();
-    });
-  }
-
-  // --- Daily Login & Daily Objective ---
-  renderDailyLogin();
-  renderDailyObjective();
 }
 
 function renderDailyLogin() {
