@@ -1438,11 +1438,6 @@ function checkHeroUnlocks() {
     newlyPullable.push(hid);
   }
 
-  // Dev mode: give manuals if low
-  if (devMode) {
-    if ((save.trainingManuals || 0) < 100) save.trainingManuals = 999;
-  }
-
   // Show notification for each newly pullable hero
   for (let i = 0; i < newlyPullable.length; i++) {
     const def = HERO_DEFS[newlyPullable[i]];
