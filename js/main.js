@@ -585,6 +585,18 @@ window.addEventListener('load', async () => {
   document.querySelectorAll('.submenu-btn').forEach(b => {
     b.addEventListener('click', () => {
       const tab = b.dataset.tab;
+      // HOME button — return to home view
+      if (tab === 'home') {
+        if (game.running && typeof isOverlayActive === 'function' && isOverlayActive()) {
+          closeMenuOverlay();
+        }
+        activeSubmenu = 'home';
+        setHomeView(true);
+        renderMenu();
+        showScreen('menu');
+        updateSubmenuActive();
+        return;
+      }
       if (typeof featureUnlocked === 'function' && !featureUnlocked(tab)) {
         const t2 = document.createElement('div');
         t2.className = 'skin-toast';

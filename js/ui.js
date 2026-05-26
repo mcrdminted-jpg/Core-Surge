@@ -912,8 +912,12 @@ function updateGlobalNavActive() {
   // Update submenu (primary fixed bottom nav)
   document.querySelectorAll('.submenu-btn').forEach(btn => {
     const tab = btn.dataset.tab;
-    const match = onMenu && !homeViewActive && activeSubmenu === tab;
-    btn.classList.toggle('active', match);
+    if (tab === 'home') {
+      btn.classList.toggle('active', onMenu && homeViewActive);
+    } else {
+      const match = onMenu && !homeViewActive && activeSubmenu === tab;
+      btn.classList.toggle('active', match);
+    }
   });
 }
 // Alias for submenu callers
@@ -922,7 +926,7 @@ function updateSubmenuActive() { updateGlobalNavActive(); }
 // ============================================================
 // MAIN MENU
 // ============================================================
-let activeSubmenu = 'labs';
+let activeSubmenu = 'home';
 // Whether the home view (hero/tier/daily/panels) is showing vs a submenu tab
 let homeViewActive = true;
 

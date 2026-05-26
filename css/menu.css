@@ -181,10 +181,10 @@
 }
 .start-btn:active { transform: translateY(1px) scale(0.99); }
 
-/* ==================== 7-ICON SUBMENU GRID (primary bottom nav) ==================== */
+/* ==================== 8-ICON SUBMENU GRID (primary bottom nav) ==================== */
 .submenu {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 5px;
   position: fixed;
   bottom: 0;
@@ -222,6 +222,7 @@
   font-size: 18px;
   line-height: 1;
 }
+.submenu-btn[data-tab="home"]::before       { content: '🏠'; }
 .submenu-btn[data-tab="labs"]::before       { content: '🧪'; }
 .submenu-btn[data-tab="milestones"]::before { content: '🎯'; }
 .submenu-btn[data-tab="cards"]::before      { content: '🎴'; }
