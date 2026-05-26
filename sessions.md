@@ -1406,4 +1406,25 @@ pm.cmd run test pending rerun after test expectation update
 - Tutorial tooltips are disabled. Needs rebuild before live site reflects the change.
 - To re-enable: remove the `return; // DISABLED FOR TESTING` line in checkTutorial()
 
-**Blockers:** Needs Codex to rebuild and deploy for change to go live.
+**Blockers:** Needs Codex to rebuild and deploy for change to go live.## 2026-05-25 - Codex - Remove Tooltips For Tester Build
+
+**What I did:**
+- Disabled tutorial tooltips at the source by returning immediately in showTutorial() and keeping checkTutorial() disabled.
+- Disabled the battle enemy info popup for testing by short-circuiting showEnemyInfo() and _onEnemyClick().
+- Removed browser 	itle tooltips from the battle dev button and home loadout card slots.
+- Re-synced the missing Firebase public config and icon-shell files into the primary folder so the source-of-truth build and tests stayed green.
+
+**Verification:**
+- 
+pm.cmd run build passed
+- 
+pm.cmd run typecheck passed
+- 
+pm.cmd run test passed with 261 passed, 0 failed
+
+**What other agents need to know:**
+- This is a tester-only no-tooltip batch.
+- To re-enable tooltips later, restore showTutorial(), showEnemyInfo(), and _onEnemyClick() behavior in the primary folder first.
+
+**Blockers:**
+- None. Ready to push and deploy.

@@ -47,6 +47,7 @@ function featureUnlocked(feature) {
 
 // Show a tutorial tooltip anchored to a target element
 function showTutorial(targetEl, message, opts) {
+  return; // Disabled for tester builds
   dismissTutorial();
   const options = opts || {};
   const overlay = document.createElement('div');
@@ -128,6 +129,7 @@ function dismissTutorial() {
 
 // Check tutorial state and show appropriate tooltip
 function checkTutorial() {
+  return; // DISABLED FOR TESTING
   if (!save || save.tutorialStep >= 99) return;
   const step = save.tutorialStep;
 
@@ -623,7 +625,7 @@ function renderHud() {
   const hud = document.getElementById('hud');
   const inBattle = game.running;
   if (inBattle) {
-    const battleDev = save.settings.devMode ? `<button class="hud-dev-btn" id="hudBattleDevBtn" title="Dev panel">⚙</button>` : '';
+    const battleDev = save.settings.devMode ? `<button class="hud-dev-btn" id="hudBattleDevBtn">⚙</button>` : '';
     hud.innerHTML = `
       <button class="hud-end-btn" id="hudBackBtn">
         <span class="hud-end-icon">✕</span>
@@ -760,60 +762,28 @@ function showScreen(name) {
   updateGlobalNavActive();
 }
 
-// Global nav: bottom bar that switches menu tabs. If user is in battle,
-// tapping it asks to end the run first.
+// Global nav: bottom bar with 7 direct tabs matching submenu (RANKS/GOALS/LOADOUT/TOURNEY/STORE/SKINS/SETTINGS).
 function wireGlobalNav() {
   document.querySelectorAll('.global-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.nav;
 
-      // HOME / BATTLE swap: when not in battle, this button starts a new run
-      if (target === 'home') {
-        if (btn.dataset.navMode === 'battle' && !game.running) {
-          startBattle();
-          return;
-        }
-        // Mid-battle: HOME returns to menu
-        if (isOverlayActive()) closeMenuOverlay();
-        if (!game.running) {
-          setHomeView(true);
-          showScreen('menu');
-          renderMenu();
-        }
-        updateGlobalNavActive();
-        return;
-      }
-
-      // BATTLE: jump back to the active battle. If no battle running, do nothing visible
-      // (the user would start one from Begin Defense on home).
-      if (target === 'battle') {
-        if (game.running) {
-          closeMenuOverlay();
-          updateGlobalNavActive();
-        }
-        return;
-      }
-
-      // MORE: open a sheet listing Store / Goals / Tourney / Skins / Settings
-      if (target === 'more') {
-        openMoreSheet();
-        return;
-      }
-
-      // Otherwise it's a submenu target (labs/cards etc.)
       // Gate locked features
       if (!featureUnlocked(target)) {
         const t2 = document.createElement('div');
         t2.className = 'skin-toast';
-        t2.textContent = 'Keep playing to unlock this feature!';
+        t2.textContent = target === 'tournament' ? 'Reach Wave 50 on Tier 1 to unlock!' : 'Keep playing to unlock this feature!';
         document.body.appendChild(t2);
         setTimeout(() => t2.remove(), 2000);
         return;
       }
+
+      // If in battle overlay and tapping same tab, close overlay
       if (game.running && isOverlayActive() && activeSubmenu === target) {
         closeMenuOverlay();
         return;
       }
+
       activeSubmenu = target;
       if (game.running) {
         openMenuOverlay();
@@ -822,6 +792,7 @@ function wireGlobalNav() {
         renderSubmenu();
         showScreen('menu');
       }
+      updateGlobalNavActive();
     });
   });
   const rtb = document.getElementById('returnToBattleBtn');
@@ -928,40 +899,12 @@ function isOverlayActive() {
   return menu && menu.classList.contains('overlay') && menu.classList.contains('active');
 }
 
-// Highlight the current nav button based on what's showing.
+// Highlight the active bottom nav button based on the current submenu tab.
 function updateGlobalNavActive() {
   const onMenu = document.getElementById('screen-menu').classList.contains('active');
-  const inBattle = game.running && !isOverlayActive();
-
-  // Swap HOME → BATTLE when not mid-run:
-  // - No active battle → HOME becomes BATTLE (start a new run)
-  // - Active battle → HOME stays HOME (return to menu), BATTLE shows (return to fight)
-  const homeBtn = document.querySelector('.global-nav-btn[data-nav="home"]');
-  const battleBtn = document.querySelector('.global-nav-btn[data-nav="battle"]');
-  if (homeBtn) {
-    if (!game.running) {
-      homeBtn.querySelector('.global-nav-icon').textContent = '⚔';
-      homeBtn.querySelector('.global-nav-label').textContent = 'BATTLE';
-      homeBtn.dataset.navMode = 'battle';
-    } else {
-      homeBtn.querySelector('.global-nav-icon').textContent = '⌂';
-      homeBtn.querySelector('.global-nav-label').textContent = 'HOME';
-      homeBtn.dataset.navMode = 'home';
-    }
-  }
-  // BATTLE button only visible during an active run (return-to-fight)
-  if (battleBtn) {
-    battleBtn.style.display = game.running ? '' : 'none';
-  }
-
   document.querySelectorAll('.global-nav-btn').forEach(btn => {
     const nav = btn.dataset.nav;
-    let match = false;
-    if (nav === 'home')    match = onMenu && !isOverlayActive() && homeViewActive;
-    else if (nav === 'battle')  match = inBattle;
-    else if (nav === 'labs')    match = onMenu && !homeViewActive && activeSubmenu === 'labs';
-    else if (nav === 'cards')   match = onMenu && !homeViewActive && activeSubmenu === 'cards';
-    else if (nav === 'more')    match = false; // more is a sheet trigger, never "active"
+    const match = onMenu && !homeViewActive && activeSubmenu === nav;
     btn.classList.toggle('active', match);
   });
 }
@@ -1115,7 +1058,7 @@ function renderHomePanels() {
     if (cid && CARD_POOL[cid]) {
       const card = CARD_POOL[cid];
       const inv = save.cardInventory[cid] || { level: 1 };
-      cardsHTML += `<div class="home-card-slot filled" title="${card.name}">
+      cardsHTML += `<div class="home-card-slot filled">
         <span class="home-card-icon">${card.icon}</span>
         <span class="home-card-lvl">${inv.level}</span>
       </div>`;
@@ -1317,19 +1260,19 @@ function getSubmenuBadges() {
 
 function renderSubmenu() {
   const badges = getSubmenuBadges();
-  document.querySelectorAll('.submenu-btn').forEach(b => {
-    const tab = b.dataset.tab;
+  // Sync badges and lock state on bottom nav buttons
+  document.querySelectorAll('.global-nav-btn').forEach(b => {
+    const tab = b.dataset.nav;
     const unlocked = featureUnlocked(tab);
-    b.classList.toggle('active', !homeViewActive && tab === activeSubmenu && unlocked);
     b.classList.toggle('tab-locked', !unlocked);
     b.disabled = !unlocked;
-    // Update badge
-    let badge = b.querySelector('.submenu-badge');
+    // Update badge on bottom nav
+    let badge = b.querySelector('.global-nav-badge');
     const count = unlocked ? badges[tab] : null;
     if (count) {
       if (!badge) {
         badge = document.createElement('span');
-        badge.className = 'submenu-badge';
+        badge.className = 'global-nav-badge';
         b.appendChild(badge);
       }
       badge.textContent = count;
@@ -1349,6 +1292,7 @@ function renderSubmenu() {
       lockIcon.remove();
     }
   });
+  updateGlobalNavActive();
   const c = document.getElementById('submenuContent');
   // Prepend a big neon panel title matching the mockup
   const titles = {

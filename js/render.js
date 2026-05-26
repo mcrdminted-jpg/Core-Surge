@@ -222,6 +222,7 @@ function _getEnemyTraits(type) {
 }
 
 function showEnemyInfo(enemy) {
+  return; // Disabled for tester builds
   if (!game.running || enemy.dead) return;
   // Dismiss any existing popup
   dismissEnemyInfo();
@@ -277,6 +278,7 @@ function showEnemyInfo(enemy) {
 
 function _onEnemyClick(ev) {
   ev.stopPropagation();
+  return; // Disabled for tester builds
   if (!game.running) return;
   // Find the enemy object for this DOM element
   const el = ev.currentTarget;
@@ -314,4 +316,3 @@ function setupTapFocus() {
     setTimeout(() => marker.remove(), 600);
   });
 }
-
