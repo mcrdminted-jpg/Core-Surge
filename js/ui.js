@@ -1788,11 +1788,12 @@ function renderLabsTab(c) {
     const adBoostActive = typeof isAdSpeedBoostActive === 'function' && isAdSpeedBoostActive();
     const adBoostRemain = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
     const adBoostMin = Math.ceil(adBoostRemain / 60000);
+    const adBoostMaxed = adBoostRemain >= (typeof AD_SPEED_BOOST_MAX !== 'undefined' ? AD_SPEED_BOOST_MAX - 60000 : 3540000);
     html += `<div class="speed-ad-boost">
       ${adBoostActive
-        ? `<button class="speed-ad-btn active" disabled>📺 2× Speed Active · ${adBoostMin}m left</button>`
-        : `<button class="speed-ad-btn" id="adSpeedBoostBtn">📺 Watch Ad · 2× Speed for 10 min</button>`}
-      <div class="speed-ad-desc">Doubles your current speed tier. Stacks with purchased speeds!</div>
+        ? `<button class="speed-ad-btn ${adBoostMaxed ? 'active' : ''}" ${adBoostMaxed ? 'disabled' : ''} id="adSpeedBoostBtn">📺 2× Speed · ${adBoostMin}m left${adBoostMaxed ? ' (MAX)' : ' · Watch again to add +20m'}</button>`
+        : `<button class="speed-ad-btn" id="adSpeedBoostBtn">📺 Watch Ad · 2× Speed for 20 min</button>`}
+      <div class="speed-ad-desc">Doubles your current speed. +20 min per ad, stacks up to 1 hour!</div>
     </div>`;
     html += `</div>`;
   }

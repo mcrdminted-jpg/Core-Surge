@@ -50,12 +50,18 @@ function effectiveGameSpeed() {
   return boosted ? base * 2 : base;
 }
 
-// Watch-ad-for-speed: doubles speed for 10 minutes
+// Watch-ad-for-speed: doubles speed for 20 minutes, stacks up to 1 hour
+const AD_SPEED_BOOST_ADD = 20 * 60 * 1000; // +20 min per ad
+const AD_SPEED_BOOST_MAX = 60 * 60 * 1000; // 1 hour cap
+
 function claimAdSpeedBoost() {
-  // Cooldown: can only use once every 15 minutes
   const now = Date.now();
-  const boostDuration = 10 * 60 * 1000; // 10 min
-  save.adSpeedBoostUntil = now + boostDuration;
+  // If already boosted, extend from current end; otherwise start from now
+  const currentEnd = (save.adSpeedBoostUntil && save.adSpeedBoostUntil > now)
+    ? save.adSpeedBoostUntil : now;
+  const newEnd = currentEnd + AD_SPEED_BOOST_ADD;
+  // Cap at 1 hour from now
+  save.adSpeedBoostUntil = Math.min(newEnd, now + AD_SPEED_BOOST_MAX);
   persistSave();
   return true;
 }
