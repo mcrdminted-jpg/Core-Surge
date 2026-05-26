@@ -758,6 +758,9 @@ function showScreen(name) {
   menu.classList.remove('overlay');
   menu.classList.toggle('active', name === 'menu');
   document.getElementById('screen-battle').classList.toggle('active', name === 'battle');
+  // Hide bottom nav during battle — only battle upgrades should show
+  const sub = document.getElementById('submenu');
+  if (sub) sub.style.display = (name === 'battle') ? 'none' : '';
   renderHud();
   updateGlobalNavActive();
 }
@@ -879,6 +882,9 @@ function openMenuOverlay() {
   menu.classList.add('active');
   const rtb = document.getElementById('returnToBattleBtn');
   if (rtb) rtb.classList.add('visible');
+  // Show bottom nav for menu overlay navigation
+  const sub = document.getElementById('submenu');
+  if (sub) sub.style.display = '';
   setHomeView(false);
   renderSubmenu();
   updateGlobalNavActive();
@@ -891,6 +897,9 @@ function closeMenuOverlay() {
   menu.classList.remove('active');
   const rtb = document.getElementById('returnToBattleBtn');
   if (rtb) rtb.classList.remove('visible');
+  // Hide bottom nav again — back to pure battle view
+  const sub = document.getElementById('submenu');
+  if (sub) sub.style.display = 'none';
   updateGlobalNavActive();
 }
 
