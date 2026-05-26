@@ -17,7 +17,7 @@
     "mobile:open:android": "npx cap open android",
     "mobile:run:ios": "npm run mobile:sync && npx cap run ios",
     "mobile:run:android": "npm run mobile:sync && npx cap run android",
-    "deploy": "npm run build && npx firebase deploy --only hosting",
+    "deploy": "npm run build && npx wrangler deploy",
     "assets:icons": "node scripts/generate-icons.js"
   },
   "dependencies": {

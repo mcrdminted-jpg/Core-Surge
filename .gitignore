@@ -1,0 +1,8 @@
+node_modules/
+.claude/
+android/
+ios/
+*.log
+.DS_Store
+Thumbs.db
+core-surge---tower-defense-firebase-adminsdk-*.json
