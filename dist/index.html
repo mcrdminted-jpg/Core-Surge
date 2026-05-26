@@ -375,19 +375,6 @@
 <!-- BATTLE -->
 <div id="screen-battle">
   <div class="status">
-    <!-- HP row: END button + HP bar side by side -->
-    <div class="hp-row">
-      <button class="hp-end-btn" id="hpEndBtn">
-        <span class="hp-end-icon">✕</span>
-      </button>
-      <div class="hp-bar-wrap">
-        <div class="hp-bar">
-          <div class="hp-fill" id="hpFill"></div>
-          <div class="hp-text" id="hpText">100 / 100</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Compact info strip: Tier · Wave · Cash · Kills · Coins preview -->
     <div class="status-strip">
       <span class="strip-item" style="color:var(--purple)">T<b id="battleTier">1</b></span>
@@ -399,6 +386,19 @@
       <span class="strip-item" style="color:var(--danger)"><b id="waveProg">0/10</b></span>
       <span class="strip-sep">·</span>
       <span class="strip-item strip-coin" style="color:var(--gold)">⊙<b id="coinPreview">0</b></span>
+    </div>
+
+    <!-- HP row: END button + HP bar side by side -->
+    <div class="hp-row">
+      <button class="hp-end-btn" id="hpEndBtn">
+        <span class="hp-end-icon">✕</span>
+      </button>
+      <div class="hp-bar-wrap">
+        <div class="hp-bar">
+          <div class="hp-fill" id="hpFill"></div>
+          <div class="hp-text" id="hpText">100 / 100</div>
+        </div>
+      </div>
     </div>
   </div>
 
