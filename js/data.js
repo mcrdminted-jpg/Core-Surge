@@ -996,60 +996,71 @@ const HERO_CATEGORIES = {
   defense: { activeMul: 2.5, activeDuration: 8000,  activeCooldown: 90000 }
 };
 
+// Hero unlock types:
+//   { type: 'tier',   value: N }          — reach bestTier >= N
+//   { type: 'kills',  value: N }          — totalEnemiesKilled >= N
+//   { type: 'bosses', value: N }          — totalBossesDefeated >= N
+//   { type: 'runs',   value: N }          — totalRuns >= N
+//   { type: 'wave',   value: N }          — bestWave >= N (any single run)
+//   { type: 'cash',   value: N }          — totalCashEarned >= N
+//   { type: 'gems',   value: N }          — totalGemsEarned >= N
+//   { type: 'playtime', value: N }        — totalPlaytimeMs >= N (in ms)
+// Family gate (if set) is always checked ON TOP of the unlock condition.
+
 const HERO_DEFS = {
-  // === STARTER (6) — always available to unlock ===
-  ironclad:    { id: 'ironclad',    name: 'Ironclad',    icon: '⚔',  stat: 'damage',       category: 'combat',  family: null, unlockTier: 1,   order: 1 },
-  quickfire:   { id: 'quickfire',   name: 'Quickfire',   icon: '⚡',  stat: 'fireRate',     category: 'combat',  family: null, unlockTier: 5,   order: 2 },
-  bastion:     { id: 'bastion',     name: 'Bastion',     icon: '🏰',  stat: 'coreHealth',   category: 'defense', family: null, unlockTier: 10,  order: 3 },
-  profiteer:   { id: 'profiteer',   name: 'Profiteer',   icon: '💰',  stat: 'cashBonus',    category: 'economy', family: null, unlockTier: 15,  order: 4 },
-  sentinel:    { id: 'sentinel',    name: 'Sentinel',    icon: '🛡',  stat: 'armor',        category: 'defense', family: null, unlockTier: 25,  order: 5 },
-  hawkeye:     { id: 'hawkeye',     name: 'Hawkeye',     icon: '🦅',  stat: 'range',        category: 'combat',  family: null, unlockTier: 40,  order: 6 },
+  // === STARTER (6) — no family gate, tier-based for gentle onboarding ===
+  ironclad:    { id: 'ironclad',    name: 'Ironclad',    icon: '⚔',  stat: 'damage',       category: 'combat',  family: null, unlock: { type: 'tier', value: 1 },   order: 1 },
+  quickfire:   { id: 'quickfire',   name: 'Quickfire',   icon: '⚡',  stat: 'fireRate',     category: 'combat',  family: null, unlock: { type: 'tier', value: 3 },   order: 2 },
+  bastion:     { id: 'bastion',     name: 'Bastion',     icon: '🏰',  stat: 'coreHealth',   category: 'defense', family: null, unlock: { type: 'tier', value: 8 },   order: 3 },
+  profiteer:   { id: 'profiteer',   name: 'Profiteer',   icon: '💰',  stat: 'cashBonus',    category: 'economy', family: null, unlock: { type: 'tier', value: 12 },  order: 4 },
+  sentinel:    { id: 'sentinel',    name: 'Sentinel',    icon: '🛡',  stat: 'armor',        category: 'defense', family: null, unlock: { type: 'tier', value: 20 },  order: 5 },
+  hawkeye:     { id: 'hawkeye',     name: 'Hawkeye',     icon: '🦅',  stat: 'range',        category: 'combat',  family: null, unlock: { type: 'tier', value: 30 },  order: 6 },
 
-  // === CRIT SYSTEMS (2) ===
-  deadeye:     { id: 'deadeye',     name: 'Deadeye',     icon: '🎯',  stat: 'critChance',   category: 'combat',  family: 'critSystems',      unlockTier: 50,  order: 7 },
-  executioner: { id: 'executioner', name: 'Executioner', icon: '⚰',  stat: 'critPower',    category: 'combat',  family: 'critSystems',      unlockTier: 60,  order: 8 },
+  // === CRIT SYSTEMS (2) — achievement-based ===
+  deadeye:     { id: 'deadeye',     name: 'Deadeye',     icon: '🎯',  stat: 'critChance',   category: 'combat',  family: 'critSystems',      unlock: { type: 'kills', value: 5000 },    order: 7 },
+  executioner: { id: 'executioner', name: 'Executioner', icon: '⚰',  stat: 'critPower',    category: 'combat',  family: 'critSystems',      unlock: { type: 'wave', value: 75 },       order: 8 },
 
-  // === ECONOMY EXPANSION (2) ===
-  surplus:     { id: 'surplus',     name: 'Surplus',     icon: '📦',  stat: 'waveBonus',    category: 'economy', family: 'economyExpansion',  unlockTier: 70,  order: 9 },
-  headhunter:  { id: 'headhunter',  name: 'Headhunter',  icon: '💀',  stat: 'bossBounty',   category: 'economy', family: 'economyExpansion',  unlockTier: 80,  order: 10 },
+  // === ECONOMY EXPANSION (2) — achievement-based ===
+  surplus:     { id: 'surplus',     name: 'Surplus',     icon: '📦',  stat: 'waveBonus',    category: 'economy', family: 'economyExpansion',  unlock: { type: 'cash', value: 100000 },   order: 9 },
+  headhunter:  { id: 'headhunter',  name: 'Headhunter',  icon: '💀',  stat: 'bossBounty',   category: 'economy', family: 'economyExpansion',  unlock: { type: 'bosses', value: 50 },     order: 10 },
 
-  // === SUSTAIN SYSTEMS (2) ===
-  mender:      { id: 'mender',      name: 'Mender',      icon: '💚',  stat: 'regen',        category: 'defense', family: 'sustainSystems',    unlockTier: 90,  order: 11 },
-  leech:       { id: 'leech',       name: 'Leech',       icon: '🩸',  stat: 'lifesteal',    category: 'defense', family: 'sustainSystems',    unlockTier: 100, order: 12 },
+  // === SUSTAIN SYSTEMS (2) — achievement-based ===
+  mender:      { id: 'mender',      name: 'Mender',      icon: '💚',  stat: 'regen',        category: 'defense', family: 'sustainSystems',    unlock: { type: 'runs', value: 25 },       order: 11 },
+  leech:       { id: 'leech',       name: 'Leech',       icon: '🩸',  stat: 'lifesteal',    category: 'defense', family: 'sustainSystems',    unlock: { type: 'runs', value: 50 },       order: 12 },
 
-  // === FORTIFICATION (2) ===
-  thornguard:  { id: 'thornguard',  name: 'Thornguard',  icon: '🌵',  stat: 'thorns',       category: 'defense', family: 'fortification',     unlockTier: 120, order: 13 },
-  shockwave:   { id: 'shockwave',   name: 'Shockwave',   icon: '💫',  stat: 'knockback',    category: 'defense', family: 'fortification',     unlockTier: 150, order: 14 },
+  // === FORTIFICATION (2) — achievement-based ===
+  thornguard:  { id: 'thornguard',  name: 'Thornguard',  icon: '🌵',  stat: 'thorns',       category: 'defense', family: 'fortification',     unlock: { type: 'kills', value: 25000 },   order: 13 },
+  shockwave:   { id: 'shockwave',   name: 'Shockwave',   icon: '💫',  stat: 'knockback',    category: 'defense', family: 'fortification',     unlock: { type: 'wave', value: 100 },      order: 14 },
 
-  // === SCRAP MASTERY (2) ===
-  smelter:     { id: 'smelter',     name: 'Smelter',     icon: '🔥',  stat: 'coinMultiplier', category: 'economy', family: 'coinMastery',     unlockTier: 180, order: 15 },
-  prospector:  { id: 'prospector',  name: 'Prospector',  icon: '⛏',  stat: 'gemFind',       category: 'economy', family: 'coinMastery',     unlockTier: 200, order: 16 },
+  // === COIN MASTERY (2) — achievement-based ===
+  smelter:     { id: 'smelter',     name: 'Smelter',     icon: '🔥',  stat: 'coinMultiplier', category: 'economy', family: 'coinMastery',     unlock: { type: 'cash', value: 500000 },   order: 15 },
+  prospector:  { id: 'prospector',  name: 'Prospector',  icon: '⛏',  stat: 'gemFind',       category: 'economy', family: 'coinMastery',     unlock: { type: 'gems', value: 200 },      order: 16 },
 
-  // === MULTISHOT SYSTEMS (3) ===
-  scattergun:  { id: 'scattergun',  name: 'Scattergun',  icon: '🔱',  stat: 'multiChance',  category: 'combat',  family: 'multishotSystems',  unlockTier: 250, order: 17 },
-  payload:     { id: 'payload',     name: 'Payload',     icon: '💣',  stat: 'multiPower',   category: 'combat',  family: 'multishotSystems',  unlockTier: 300, order: 18 },
-  hydra:       { id: 'hydra',       name: 'Hydra',       icon: '🐉',  stat: 'multiTargets', category: 'combat',  family: 'multishotSystems',  unlockTier: 400, order: 19 },
+  // === MULTISHOT SYSTEMS (3) — mix: 1 achievement + 2 deep tier ===
+  scattergun:  { id: 'scattergun',  name: 'Scattergun',  icon: '🔱',  stat: 'multiChance',  category: 'combat',  family: 'multishotSystems',  unlock: { type: 'runs', value: 100 },      order: 17 },
+  payload:     { id: 'payload',     name: 'Payload',     icon: '💣',  stat: 'multiPower',   category: 'combat',  family: 'multishotSystems',  unlock: { type: 'tier', value: 100 },      order: 18 },
+  hydra:       { id: 'hydra',       name: 'Hydra',       icon: '🐉',  stat: 'multiTargets', category: 'combat',  family: 'multishotSystems',  unlock: { type: 'tier', value: 250 },      order: 19 },
 
-  // === BARRIER SYSTEMS (2) ===
-  aegis:       { id: 'aegis',       name: 'Aegis',       icon: '🔮',  stat: 'shieldHP',     category: 'defense', family: 'barrierSystems',    unlockTier: 450, order: 20 },
-  dynamo:      { id: 'dynamo',      name: 'Dynamo',      icon: '⚙',  stat: 'shieldRegen',  category: 'defense', family: 'barrierSystems',    unlockTier: 500, order: 21 },
+  // === BARRIER SYSTEMS (2) — mix: 1 achievement + 1 tier ===
+  aegis:       { id: 'aegis',       name: 'Aegis',       icon: '🔮',  stat: 'shieldHP',     category: 'defense', family: 'barrierSystems',    unlock: { type: 'kills', value: 100000 },  order: 20 },
+  dynamo:      { id: 'dynamo',      name: 'Dynamo',      icon: '⚙',  stat: 'shieldRegen',  category: 'defense', family: 'barrierSystems',    unlock: { type: 'tier', value: 200 },      order: 21 },
 
-  // === TACTICAL SYSTEMS (2) ===
-  railgun:     { id: 'railgun',     name: 'Railgun',     icon: '🚀',  stat: 'projSpeed',    category: 'combat',  family: 'tacticalSystems',   unlockTier: 600, order: 22 },
-  piercer:     { id: 'piercer',     name: 'Piercer',     icon: '📌',  stat: 'pierce',       category: 'combat',  family: 'tacticalSystems',   unlockTier: 700, order: 23 },
+  // === TACTICAL SYSTEMS (2) — mix ===
+  railgun:     { id: 'railgun',     name: 'Railgun',     icon: '🚀',  stat: 'projSpeed',    category: 'combat',  family: 'tacticalSystems',   unlock: { type: 'wave', value: 150 },      order: 22 },
+  piercer:     { id: 'piercer',     name: 'Piercer',     icon: '📌',  stat: 'pierce',       category: 'combat',  family: 'tacticalSystems',   unlock: { type: 'tier', value: 300 },      order: 23 },
 
-  // === BOUNCE SYSTEMS (3) ===
-  ricochet:    { id: 'ricochet',    name: 'Ricochet',    icon: '🎱',  stat: 'bounceChance', category: 'combat',  family: 'bounceSystems',     unlockTier: 800, order: 24 },
-  shrapnel:    { id: 'shrapnel',    name: 'Shrapnel',    icon: '💥',  stat: 'bouncePower',  category: 'combat',  family: 'bounceSystems',     unlockTier: 900, order: 25 },
-  cascade:     { id: 'cascade',     name: 'Cascade',     icon: '🌊',  stat: 'bounceTargets', category: 'combat', family: 'bounceSystems',     unlockTier: 1200, order: 26 },
+  // === BOUNCE SYSTEMS (3) — deep progression, tier-gated ===
+  ricochet:    { id: 'ricochet',    name: 'Ricochet',    icon: '🎱',  stat: 'bounceChance', category: 'combat',  family: 'bounceSystems',     unlock: { type: 'tier', value: 400 },      order: 24 },
+  shrapnel:    { id: 'shrapnel',    name: 'Shrapnel',    icon: '💥',  stat: 'bouncePower',  category: 'combat',  family: 'bounceSystems',     unlock: { type: 'bosses', value: 200 },    order: 25 },
+  cascade:     { id: 'cascade',     name: 'Cascade',     icon: '🌊',  stat: 'bounceTargets', category: 'combat', family: 'bounceSystems',     unlock: { type: 'tier', value: 800 },      order: 26 },
 
-  // === OVERCHARGE (2) ===
-  voltaic:     { id: 'voltaic',     name: 'Voltaic',     icon: '⚡',  stat: 'overchargeChance', category: 'combat', family: 'overcharge',     unlockTier: 1500, order: 27 },
-  tesla:       { id: 'tesla',       name: 'Tesla',       icon: '🔋',  stat: 'overchargePower',  category: 'combat', family: 'overcharge',     unlockTier: 1800, order: 28 },
+  // === OVERCHARGE (2) — deep progression ===
+  voltaic:     { id: 'voltaic',     name: 'Voltaic',     icon: '⚡',  stat: 'overchargeChance', category: 'combat', family: 'overcharge',     unlock: { type: 'tier', value: 1000 },     order: 27 },
+  tesla:       { id: 'tesla',       name: 'Tesla',       icon: '🔋',  stat: 'overchargePower',  category: 'combat', family: 'overcharge',     unlock: { type: 'tier', value: 1500 },     order: 28 },
 
-  // === COMBO SYSTEMS (2) ===
-  chainlink:   { id: 'chainlink',   name: 'Chainlink',   icon: '🔗',  stat: 'comboBonus',    category: 'combat', family: 'comboSystems',     unlockTier: 2000, order: 29 },
-  tempo:       { id: 'tempo',       name: 'Tempo',       icon: '🥁',  stat: 'comboDuration', category: 'combat', family: 'comboSystems',     unlockTier: 2500, order: 30 }
+  // === COMBO SYSTEMS (2) — deep progression ===
+  chainlink:   { id: 'chainlink',   name: 'Chainlink',   icon: '🔗',  stat: 'comboBonus',    category: 'combat', family: 'comboSystems',     unlock: { type: 'kills', value: 50000 },   order: 29 },
+  tempo:       { id: 'tempo',       name: 'Tempo',       icon: '🥁',  stat: 'comboDuration', category: 'combat', family: 'comboSystems',     unlock: { type: 'tier', value: 2000 },     order: 30 }
 };
 
 const HERO_COUNT = Object.keys(HERO_DEFS).length; // 30
@@ -1095,9 +1106,10 @@ function getHeroStatMultiplier(statId) {
     const hid = save.garrisonSlots[i];
     if (!hid) continue;
     const def = HERO_DEFS[hid];
-    if (def && def.stat === statId) {
-      const heroData = save.heroes[hid];
-      const level = heroData ? heroData.level : 1;
+    if (!def || def.stat !== statId) continue;
+    {
+      const heroData = (save.heroes && save.heroes[hid]) ? save.heroes[hid] : { level: 1 };
+      const level = heroData.level || 1;
       let mul = heroPassiveMultiplier(level);
       // Check if active ability is currently firing
       if (heroActiveState[hid] && heroActiveState[hid].activeUntil > Date.now()) {
@@ -1214,28 +1226,84 @@ function unlockHero(heroId) {
   return true;
 }
 
-// Check and grant hero unlocks based on current bestTier.
+// Evaluate whether a hero's unlock condition is met
+function isHeroUnlockMet(unlock) {
+  if (!unlock) return true;
+  switch (unlock.type) {
+    case 'tier':     return (save.bestTier || 1) >= unlock.value;
+    case 'kills':    return (save.totalEnemiesKilled || 0) >= unlock.value;
+    case 'bosses':   return (save.totalBossesDefeated || 0) >= unlock.value;
+    case 'runs':     return (save.totalRuns || 0) >= unlock.value;
+    case 'wave':     return (save.bestWave || 0) >= unlock.value;
+    case 'cash':     return (save.totalCashEarned || 0) >= unlock.value;
+    case 'gems':     return (save.totalGemsEarned || 0) >= unlock.value;
+    case 'playtime': return (save.totalPlaytimeMs || 0) >= unlock.value;
+    default:         return false;
+  }
+}
+
+// Human-readable description of an unlock condition
+function heroUnlockDescription(unlock) {
+  if (!unlock) return '';
+  var fmt = typeof formatNum === 'function' ? formatNum : function(n) { return String(n); };
+  switch (unlock.type) {
+    case 'tier':     return 'Reach Tier ' + unlock.value;
+    case 'kills':    return 'Kill ' + fmt(unlock.value) + ' enemies';
+    case 'bosses':   return 'Defeat ' + unlock.value + ' bosses';
+    case 'runs':     return 'Complete ' + unlock.value + ' runs';
+    case 'wave':     return 'Reach Wave ' + unlock.value;
+    case 'cash':     return 'Earn ' + fmt(unlock.value) + ' cash';
+    case 'gems':     return 'Earn ' + unlock.value + ' gems';
+    case 'playtime': return 'Play ' + Math.round(unlock.value / 3600000) + ' hours';
+    default:         return '???';
+  }
+}
+
+// Progress fraction (0-1) toward an unlock condition
+function heroUnlockProgress(unlock) {
+  if (!unlock) return 1;
+  var current = 0;
+  switch (unlock.type) {
+    case 'tier':     current = save.bestTier || 1; break;
+    case 'kills':    current = save.totalEnemiesKilled || 0; break;
+    case 'bosses':   current = save.totalBossesDefeated || 0; break;
+    case 'runs':     current = save.totalRuns || 0; break;
+    case 'wave':     current = save.bestWave || 0; break;
+    case 'cash':     current = save.totalCashEarned || 0; break;
+    case 'gems':     current = save.totalGemsEarned || 0; break;
+    case 'playtime': current = save.totalPlaytimeMs || 0; break;
+  }
+  return Math.min(1, current / unlock.value);
+}
+
+// Check and grant hero unlocks based on all unlock conditions.
 // Returns array of newly unlocked hero IDs (empty if none).
 function checkHeroUnlocks() {
-  const tier = save.bestTier || 1;
   const newlyUnlocked = [];
   for (const hid of Object.keys(HERO_DEFS)) {
     const def = HERO_DEFS[hid];
-    // Must meet tier requirement
-    if (tier < def.unlockTier) continue;
-    // Must own the family if one is required
-    if (def.family && !familyIsOwned(def.family)) continue;
+    // Dev mode: skip all gates — unlock everything
+    const devMode = typeof save !== 'undefined' && save.settings && save.settings.devMode;
+    if (!devMode) {
+      // Must own the family if one is required
+      if (def.family && !familyIsOwned(def.family)) continue;
+      // Must meet unlock condition
+      if (!isHeroUnlockMet(def.unlock)) continue;
+    }
     // Unlock if not already
     if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(hid) === -1) {
       unlockHero(hid);
       newlyUnlocked.push(hid);
     }
   }
+  // Dev mode: give manuals if low
+  if (typeof save !== 'undefined' && save.settings && save.settings.devMode) {
+    if ((save.trainingManuals || 0) < 100) save.trainingManuals = 999;
+  }
   // Show notification for each newly unlocked hero
   for (let i = 0; i < newlyUnlocked.length; i++) {
     const def = HERO_DEFS[newlyUnlocked[i]];
     if (def && typeof showHeroUnlockToast === 'function') {
-      // Stagger toasts so they don't overlap
       setTimeout(showHeroUnlockToast.bind(null, def), i * 1200);
     }
   }
@@ -1244,9 +1312,9 @@ function checkHeroUnlocks() {
 
 // Training manual store packs (gem cost)
 const MANUAL_STORE = [
-  { id: 'manualPack5',  name: '5 Manuals',  manuals: 5,  gemCost: 50 },
-  { id: 'manualPack20', name: '20 Manuals', manuals: 20, gemCost: 180 },
-  { id: 'manualPack50', name: '50 Manuals', manuals: 50, gemCost: 400 }
+  { id: 'manualPack5',  name: '5 Manuals',  manuals: 5,  gemCost: 40 },
+  { id: 'manualPack20', name: '20 Manuals', manuals: 20, gemCost: 140 },
+  { id: 'manualPack50', name: '50 Manuals', manuals: 50, gemCost: 300 }
 ];
 
 function buyManualPack(packId) {

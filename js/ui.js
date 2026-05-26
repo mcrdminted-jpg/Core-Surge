@@ -2525,15 +2525,22 @@ function renderHeroesTab(c) {
     const catColor = def.category === 'combat' ? 'var(--danger)' : def.category === 'economy' ? 'var(--gold)' : 'var(--good)';
 
     if (!isUnlocked) {
-      // Locked hero
-      let lockReason = 'Tier ' + def.unlockTier;
+      // Locked hero — show unlock condition + progress
+      const unlockDesc = typeof heroUnlockDescription === 'function' ? heroUnlockDescription(def.unlock) : '???';
+      const progress = typeof heroUnlockProgress === 'function' ? heroUnlockProgress(def.unlock) : 0;
+      const progressPct = Math.min(100, Math.floor(progress * 100));
+      let lockReason = unlockDesc;
       if (def.family) lockReason += ' + ' + (UNLOCK_FAMILIES[def.family] ? UNLOCK_FAMILIES[def.family].name : def.family);
+      const familyMet = !def.family || (typeof familyIsOwned === 'function' && familyIsOwned(def.family));
+      const condMet = typeof isHeroUnlockMet === 'function' && isHeroUnlockMet(def.unlock);
       html += `
         <div class="hero-card locked">
           <div class="hc-icon">?</div>
           <div class="hc-info">
             <div class="hc-name">${def.name}</div>
             <div class="hc-lock-reason">${lockReason}</div>
+            <div class="hc-progress-bar"><div class="hc-progress-fill" style="width:${progressPct}%"></div></div>
+            <div class="hc-progress-text">${condMet ? '&#10003;' : progressPct + '%'}${def.family && !familyMet ? ' &middot; Need family' : ''}</div>
           </div>
         </div>`;
     } else {
@@ -3198,6 +3205,12 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="resetAdCooldown">Reset shop ad cooldown</button>
     <button class="dev-btn" data-act="clearAllMilestones">Clear all milestone claims</button>
 
+    <div class="dev-section">Heroes</div>
+    <button class="dev-btn" data-act="unlockAllHeroes">Unlock all 30 heroes</button>
+    <button class="dev-btn" data-act="addManuals100">+ 100 training manuals</button>
+    <button class="dev-btn" data-act="maxCore">Max core level (30 slots)</button>
+    <button class="dev-btn" data-act="maxAllHeroes">Max all hero levels</button>
+
     <div class="dev-section">Cards (v0.7.9 economy)</div>
     <button class="dev-btn" data-act="addAllCardsL1">Give all cards · Lv 1</button>
     <button class="dev-btn" data-act="addAllCardsL5">Give all cards · Lv 5 (MAX)</button>
@@ -3318,6 +3331,21 @@ function devAct(act) {
     case 'clearAllMilestones':
       save.claimedMilestones = {};
       break;
+    case 'unlockAllHeroes':
+      checkHeroUnlocks(); // dev mode already bypasses all gates
+      break;
+    case 'addManuals100':
+      save.trainingManuals = (save.trainingManuals || 0) + 100;
+      break;
+    case 'maxCore':
+      save.coreLevel = CORE_UPGRADE.maxLevel;
+      break;
+    case 'maxAllHeroes':
+      for (const hid of Object.keys(HERO_DEFS)) {
+        if (!save.heroes[hid]) save.heroes[hid] = { level: 1 };
+        save.heroes[hid].level = 50; // high level for testing
+      }
+      break;
     case 'addAllCardsL1':
       for (const id of Object.keys(CARD_POOL)) {
         if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
@@ -3364,7 +3392,7 @@ function devAct(act) {
   persistSave();
   renderDevPanel();
   renderHud();
-  if (activeSubmenu === 'labs' || activeSubmenu === 'cards') renderSubmenu();
+  if (activeSubmenu === 'labs' || activeSubmenu === 'cards' || activeSubmenu === 'heroes') renderSubmenu();
 }
 
 // override startBattle to honor jump wave

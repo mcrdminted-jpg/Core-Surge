@@ -327,6 +327,7 @@ let _heroHudPanel = null;
 let _heroHudToggle = null;
 let _heroHudOpen = false;
 let _heroHudInitialized = false;
+let _heroHudLastUpdate = 0;
 
 function renderHeroActivesHud() {
   if (!_heroHudEl) _heroHudEl = document.getElementById('heroActivesHud');
@@ -350,6 +351,7 @@ function renderHeroActivesHud() {
       e.stopPropagation();
       _heroHudOpen = !_heroHudOpen;
       _heroHudEl.classList.toggle('open', _heroHudOpen);
+      _heroHudLastUpdate = 0; // force refresh on open
     });
     _heroHudInitialized = true;
   }
@@ -357,7 +359,11 @@ function renderHeroActivesHud() {
   // Only update panel content if open (performance)
   if (!_heroHudOpen || !_heroHudPanel) return;
 
+  // Rate-limit: only rebuild every 500ms instead of every frame
   const now = Date.now();
+  if (now - _heroHudLastUpdate < 500) return;
+  _heroHudLastUpdate = now;
+
   // Group by category
   const groups = { combat: [], defense: [], economy: [] };
   for (let i = 0; i < garrison.length; i++) {
@@ -398,7 +404,10 @@ function renderHeroActivesHud() {
     btn.addEventListener('pointerdown', function(e) {
       e.stopPropagation();
       const hid = this.getAttribute('data-hah');
-      if (typeof activateHeroAbility === 'function') activateHeroAbility(hid);
+      if (typeof activateHeroAbility === 'function') {
+        activateHeroAbility(hid);
+        _heroHudLastUpdate = 0; // force refresh after activation
+      }
     });
   });
 }
