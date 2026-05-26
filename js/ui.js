@@ -948,6 +948,7 @@ function setHomeView(show) {
   if (oldHero) oldHero.style.display = 'none';
   if (oldTier) oldTier.style.display = 'none';
   const els = [
+    document.getElementById('homeUpgrades'),
     document.getElementById('homeDaily'),
     document.getElementById('homePanels')
   ];
@@ -1468,6 +1469,124 @@ function renderHomePanelsVisual() {
 
   renderDailyLogin();
   renderDailyObjectiveVisual();
+  renderHomeUpgrades();
+}
+
+// =========================================================
+//  HOME UPGRADES — Offense / Defense / Economy rank cards
+//  Appears below Begin Defense on the home screen
+// =========================================================
+let activeHomeUpgradeTab = 'offense';
+
+const HOME_UPGRADE_TABS = {
+  offense:  { title: 'Offense',  icon: '⚔', color: 'var(--danger)',
+              keys: ['damage','fireRate','range','critChance','critPower','multiChance','multiPower','multiTargets','bounceChance','bouncePower','bounceTargets','comboBonus','comboDuration'] },
+  defense:  { title: 'Defense',  icon: '🛡', color: 'var(--accent)',
+              keys: ['coreHealth','armor','shieldHP','lifesteal','regen','thorns','knockback','shieldRegen'] },
+  economy:  { title: 'Economy',  icon: '💰', color: 'var(--gold)',
+              keys: ['cashBonus','waveBonus','bossBounty','coinMultiplier','gemFind'] }
+};
+
+function renderHomeUpgrades() {
+  const wrap = document.getElementById('homeUpgrades');
+  if (!wrap) return;
+
+  // Filter to only show unlocked ranks per tab
+  const tab = HOME_UPGRADE_TABS[activeHomeUpgradeTab];
+  const visibleKeys = tab.keys.filter(function(rid) {
+    var def = RANK_DEFS[rid];
+    if (!def) return false;
+    if (def.startsUnlocked) return true;
+    if (def.family && typeof familyIsOwned === 'function' && familyIsOwned(def.family)) return true;
+    return false;
+  });
+
+  let html = '';
+
+  // Tabs
+  html += '<div class="home-upg-tabs">';
+  for (var tabKey in HOME_UPGRADE_TABS) {
+    var t = HOME_UPGRADE_TABS[tabKey];
+    var active = activeHomeUpgradeTab === tabKey ? ' active' : '';
+    html += '<button class="home-upg-tab' + active + '" data-hutab="' + tabKey + '" style="--tab-color:' + t.color + '">';
+    html += '<span class="home-upg-tab-icon">' + t.icon + '</span> <span>' + t.title + '</span>';
+    html += '</button>';
+  }
+  html += '</div>';
+
+  // Grid of rank cards (3 columns, same style as battle upgrades)
+  html += '<div class="home-upg-grid">';
+
+  if (visibleKeys.length === 0) {
+    html += '<div style="grid-column:1/-1;text-align:center;padding:16px 10px;color:var(--muted);font-size:10px;">No ranks unlocked in this category yet.<br><span style="color:var(--accent)">Buy system unlocks in <b>Research</b>.</span></div>';
+  } else {
+    for (var i = 0; i < visibleKeys.length; i++) {
+      var rid = visibleKeys[i];
+      html += buildHomeRankCard(rid);
+    }
+  }
+  html += '</div>';
+
+  wrap.innerHTML = html;
+
+  // Wire tab clicks
+  wrap.querySelectorAll('.home-upg-tab[data-hutab]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tid = btn.dataset.hutab;
+      if (tid && tid !== activeHomeUpgradeTab) {
+        activeHomeUpgradeTab = tid;
+        renderHomeUpgrades();
+      }
+    });
+  });
+
+  // Wire rank buy buttons (hold-to-buy)
+  wrap.querySelectorAll('.home-upg-btn[data-rank]').forEach(function(btn) {
+    var rid = btn.dataset.rank;
+    attachHoldToBuy(btn, function() {
+      if (purchaseRank(rid)) {
+        haptic('light');
+        renderHomeUpgrades();
+        renderHud();
+      }
+    });
+  });
+}
+
+function buildHomeRankCard(rid) {
+  var def = RANK_DEFS[rid];
+  var entry = save.ranks[rid] || { level: 0 };
+  var maxed = entry.level >= def.maxRank;
+  var cost = maxed ? Infinity : rankCost(rid, entry.level);
+  var can = save.coins >= cost && !maxed;
+  var curBonus = rankFlatBonus(rid);
+  var nextBonus = (entry.level + 1) * def.flatPerRank;
+  var meta = RANK_ICON_META[rid] || { icon: '◆', color: 'var(--accent)' };
+
+  var fmt = function(v) {
+    if (Math.abs(v) < 0.01) return v.toFixed(4);
+    if (Math.abs(v) < 1) return v.toFixed(3);
+    return v.toFixed(1);
+  };
+
+  var deltaText = maxed ? 'MAXED' : '+' + fmt(curBonus) + ' → +' + fmt(nextBonus);
+  var costText = maxed ? '—' : formatNum(cost);
+  var progPct = def.maxRank >= 99999
+    ? Math.min(100, (entry.level / 500) * 100)
+    : Math.min(100, (entry.level / def.maxRank) * 100);
+
+  return '<button class="home-upg-btn' + (can ? ' affordable' : '') + '" data-rank="' + rid + '" style="--upg-color:' + meta.color + '"' + (maxed || !can ? ' disabled' : '') + '>' +
+    '<div class="home-upg-body">' +
+      '<div class="home-upg-icon" style="color:' + meta.color + ';border-color:' + meta.color + '">' + meta.icon + '</div>' +
+      '<div class="home-upg-data">' +
+        '<div class="home-upg-name">' + def.name.toUpperCase() + '</div>' +
+        '<div class="home-upg-delta" style="color:' + meta.color + '">' + deltaText + '</div>' +
+        '<div class="home-upg-level">Rank ' + entry.level + (def.maxRank < 99999 ? ' / ' + def.maxRank : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="home-upg-prog"><div class="home-upg-prog-fill" style="width:' + progPct + '%;background:' + meta.color + '"></div></div>' +
+    '<div class="home-upg-cost"><span class="cost-coin">⊙</span>' + costText + '</div>' +
+  '</button>';
 }
 
 function getSubmenuBadges() {
