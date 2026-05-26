@@ -357,12 +357,13 @@ function buildUpgradeBtn(key) {
   const iconMeta = UPGRADE_ICONS[key] || { icon: '?', color: 'var(--accent)' };
 
   // Progress bar: for capped stats, show level/max; for uncapped, show log-scale L up to 500
+  const effLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
   let progPct = 0;
   if (u.max) {
-    progPct = Math.min(100, (u.level / u.max) * 100);
+    progPct = Math.min(100, (effLvl / u.max) * 100);
   } else {
     // Uncapped: just show a fill out to level 500 (purely cosmetic feedback)
-    progPct = Math.min(100, (u.level / 500) * 100);
+    progPct = Math.min(100, (effLvl / 500) * 100);
   }
 
   btn.style.setProperty('--upg-color', iconMeta.color);
@@ -372,7 +373,7 @@ function buildUpgradeBtn(key) {
       <div class="upgrade-data">
         <div class="upgrade-name">${u.name.toUpperCase()}</div>
         <div class="upgrade-delta" data-delta>${deltaText}</div>
-        <div class="upgrade-level" data-level>Lv. ${u.level}${u.max ? ' / ' + u.max : ''}</div>
+        <div class="upgrade-level" data-level>Lv. ${typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level}${u.max ? ' / ' + u.max : ''}</div>
       </div>
     </div>
     <div class="upgrade-prog"><div class="upgrade-prog-fill" style="width:${progPct}%;background:${iconMeta.color}"></div></div>
@@ -537,14 +538,15 @@ function refreshBtn(key) {
     const levelEl = btn.querySelector('[data-level]');
     const costEl = btn.querySelector('[data-cost]');
     if (deltaEl) deltaEl.textContent = maxed ? 'MAXED' : `${desc.cur} → ${desc.next}${desc.unit}`;
-    if (levelEl) levelEl.textContent = `Lv. ${u.level}${u.max ? ' / ' + u.max : ''}`;
+    if (levelEl) levelEl.textContent = `Lv. ${typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level}${u.max ? ' / ' + u.max : ''}`;
     if (costEl) costEl.innerHTML = maxed ? '—' : `<span class="cost-cash">$</span>${formatNum(upgradeCost(u))}`;
     // Update progress bar
     const progFill = btn.querySelector('.upgrade-prog-fill');
     if (progFill) {
+      const eLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
       let pct;
-      if (u.max) pct = Math.min(100, (u.level / u.max) * 100);
-      else pct = Math.min(100, (u.level / 500) * 100);
+      if (u.max) pct = Math.min(100, (eLvl / u.max) * 100);
+      else pct = Math.min(100, (eLvl / 500) * 100);
       progFill.style.width = pct + '%';
     }
   }
@@ -718,6 +720,24 @@ function wireBattlefieldSideButtons() {
   }
   const stats = document.getElementById('bfStatsBtn');
   if (stats) stats.addEventListener('click', toggleLiveStats);
+
+  // Wire battlefield ad speed boost button
+  const adSpd = document.getElementById('bfAdSpeedBtn');
+  if (adSpd) {
+    adSpd.addEventListener('click', () => {
+      if (typeof claimAdSpeedBoost === 'function') {
+        claimAdSpeedBoost();
+        haptic('success');
+        updateBattlefieldSpeedLabel();
+        var toast = document.createElement('div');
+        toast.className = 'skin-toast';
+        toast.textContent = '⚡ 2× Speed activated! +20 min';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 2000);
+      }
+    });
+  }
+
   updateBattlefieldSpeedLabel();
 }
 

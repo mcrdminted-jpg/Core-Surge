@@ -189,6 +189,18 @@
     letter-spacing: 0.5px;
   }
 
+  .ad-speed-btn {
+    margin-top: 6px;
+    border-color: var(--gold) !important;
+    background: rgba(255,200,0,0.08) !important;
+  }
+  .ad-speed-btn .bf-side-icon { font-size: 14px; }
+  .ad-speed-btn .bf-side-value { color: var(--gold); font-size: 8px; }
+  .ad-speed-btn.boosted {
+    background: rgba(255,200,0,0.18) !important;
+    box-shadow: 0 0 8px rgba(255,200,0,0.3);
+  }
+
   .live-stats {
     background: var(--panel);
     border-bottom: 1px solid var(--accent-dim);
@@ -253,9 +265,10 @@
   .range-ring {
     position: absolute;
     border: 1px dashed var(--accent);
-    border-radius: 50%;
+    border-radius: 50% 50% 0 0;
+    border-bottom: none;
     opacity: 0.15;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -100%);
     pointer-events: none;
     z-index: 0;
     transition: width 0.3s, height 0.3s;

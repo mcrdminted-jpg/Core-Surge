@@ -49,7 +49,7 @@ function updateRangeRing() {
   game.rangeRingEl.style.left = game.towerX + 'px';
   game.rangeRingEl.style.top = game.towerY + 'px';
   game.rangeRingEl.style.width = r + 'px';
-  game.rangeRingEl.style.height = r + 'px';
+  game.rangeRingEl.style.height = (r / 2) + 'px'; // half-height for semi-circle
 }
 
 function render() {
@@ -454,13 +454,34 @@ function renderAdBoostIndicator() {
   const el = document.getElementById('adBoostIndicator');
   if (!el) return;
 
+  // Also update the battlefield ad speed button
+  const adBtn = document.getElementById('bfAdSpeedBtn');
+  const adLabel = document.getElementById('bfAdSpeedLabel');
+
   // Only show during battle
   if (!game.running) {
     el.style.display = 'none';
+    if (adBtn) adBtn.style.display = 'none';
     return;
   }
 
+  // Always show the ad button during battle
+  if (adBtn) adBtn.style.display = '';
+
   const remaining = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
+
+  // Update battlefield ad button state
+  if (adBtn && adLabel) {
+    if (remaining > 0) {
+      adBtn.classList.add('boosted');
+      const m = Math.ceil(remaining / 60000);
+      adLabel.textContent = '2× ON';
+    } else {
+      adBtn.classList.remove('boosted');
+      adLabel.textContent = '2× SPD';
+    }
+  }
+
   if (remaining <= 0) {
     el.style.display = 'none';
     el.classList.remove('expired');

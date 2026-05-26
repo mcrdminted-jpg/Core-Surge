@@ -215,7 +215,7 @@ const game = {
     waveBonus:        { name: 'Wave Bonus',       group: 'economy', level: 0, cost0: 25,   costMul: 1.13 },
     combo:            { name: 'Combo',            group: 'economy', level: 0, cost0: 40,   costMul: 1.15, max: 20 },
     bossBounty:       { name: 'Boss Bounty',      group: 'economy', level: 0, cost0: 60,   costMul: 1.16 },
-    coinBonus:        { name: 'Scrap Bonus',      group: 'economy', level: 0, cost0: 500,  costMul: 1.22, max: 50 },
+    coinBonus:        { name: 'Scrap Bonus',      group: 'economy', level: 0, cost0: 500,  costMul: 1.22 },
     // ACTION
     heal:             { name: 'Heal',             group: 'action',  level: 0, cost0: 0,    costMul: 1, isAction: true }
   },
@@ -242,7 +242,7 @@ const game = {
 };
 
 // ============================================================
-// GETTERS — v0.7.0 COMBAT SYSTEM
+// GETTERS — v0.7.0 COMBAT SYSTEM (v0.8: ranks = starting levels)
 // ============================================================
 
 // Piecewise long-stat curve. Returns a bonus FRACTION (e.g. 0.50 = +50%)
@@ -257,88 +257,116 @@ function longStatBonus(level) {
 }
 function longStatBonusNext(level) { return longStatBonus(level + 1); }
 
+// ============================================================
+// EFFECTIVE LEVEL — research rank acts as starting in-game level
+// ============================================================
+// Maps in-game upgrade keys to research rank keys.
+// Stats not in this map have no rank equivalent (rank-only or action).
+const UPGRADE_TO_RANK = {
+  damage: 'damage', attackSpeed: 'fireRate', health: 'coreHealth',
+  defense: 'armor', range: 'range', critChance: 'critChance',
+  critPower: 'critPower', multishotChance: 'multiChance',
+  multishotPower: 'multiPower', multishotTargets: 'multiTargets',
+  bounceChance: 'bounceChance', bouncePower: 'bouncePower',
+  bounceTargets: 'bounceTargets', lifesteal: 'lifesteal',
+  regen: 'regen', cashBonus: 'cashBonus', waveBonus: 'waveBonus',
+  combo: 'comboBonus', bossBounty: 'bossBounty', coinBonus: 'coinMultiplier',
+  shield: 'shieldHP'
+};
+
+// Returns the combined effective level (rank + in-run) for stat calculations.
+// Cost formulas still use game.upgrades[key].level (in-run only).
+function effectiveLevel(statKey) {
+  const rankKey = UPGRADE_TO_RANK[statKey];
+  const rankLvl = (rankKey && typeof save !== 'undefined' && save.ranks && save.ranks[rankKey])
+    ? save.ranks[rankKey].level : 0;
+  const inRunLvl = (game.upgrades[statKey]) ? game.upgrades[statKey].level : 0;
+  return rankLvl + inRunLvl;
+}
+
+// Base value from RANK_DEFS (the starting value before any level scaling).
+function rankBaseValue(rankId) {
+  var def = RANK_DEFS[rankId];
+  return def ? def.base : 0;
+}
+
 // === Damage ===
 function getDamage() {
-  const u = game.upgrades.damage;
-  const permBase = rankPermanentValue('damage'); // 5 + rank * 1
-  const run = 1 + longStatBonus(u.level);
+  const eff = effectiveLevel('damage');
+  const base = rankBaseValue('damage'); // 5
+  const run = 1 + longStatBonus(eff);
   const cardBucket = getCardBucket('damage');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.dmg * (game.bossesDefeated || 0) : 0;
-  return permBase * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
+  return base * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
 }
 function getDamageNext() {
-  const u = game.upgrades.damage;
-  const permBase = rankPermanentValue('damage');
-  const run = 1 + longStatBonus(u.level + 1);
+  const eff = effectiveLevel('damage') + 1;
+  const base = rankBaseValue('damage');
+  const run = 1 + longStatBonus(eff);
   const cardBucket = getCardBucket('damage');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.dmg * (game.bossesDefeated || 0) : 0;
-  return permBase * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
+  return base * run * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('damage');
 }
 
 // === Fire Rate === (65% of curve per audit — multiplies DPS)
 function getAttackSpeed() {
-  const u = game.upgrades.attackSpeed;
-  const permBase = rankPermanentValue('fireRate'); // 1.0 + rank * 0.02
+  const eff = effectiveLevel('attackSpeed');
+  const base = rankBaseValue('fireRate'); // 1.0
   const cardBucket = getCardBucket('attackSpeed');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.aps * (game.bossesDefeated || 0) : 0;
-  return permBase * (1 + longStatBonus(u.level) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
+  return base * (1 + longStatBonus(eff) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
 }
 function getAttackSpeedNext() {
-  const u = game.upgrades.attackSpeed;
-  const permBase = rankPermanentValue('fireRate');
+  const eff = effectiveLevel('attackSpeed') + 1;
+  const base = rankBaseValue('fireRate');
   const cardBucket = getCardBucket('attackSpeed');
   const predator = getPredatorLoopPerBoss();
   const predBonus = predator ? predator.aps * (game.bossesDefeated || 0) : 0;
-  return permBase * (1 + longStatBonus(u.level + 1) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
+  return base * (1 + longStatBonus(eff) * 0.65) * (1 + cardBucket) * (1 + predBonus) * getHeroCoreMultiplier('fireRate');
 }
 function getAttackInterval() { return 1000 / getAttackSpeed(); }
 
 // === Core Integrity (max HP) ===
 function getMaxHp() {
-  const u = game.upgrades.health;
-  const permBase = rankPermanentValue('coreHealth'); // 100 + rank * 10
-  const run = 1 + longStatBonus(u.level);
+  const eff = effectiveLevel('health');
+  const base = rankBaseValue('coreHealth'); // 100
+  const run = 1 + longStatBonus(eff);
   const cardBucket = getCardBucket('health');
-  return Math.floor(permBase * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
+  return Math.floor(base * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 function getMaxHpNext() {
-  const u = game.upgrades.health;
-  const permBase = rankPermanentValue('coreHealth');
-  const run = 1 + longStatBonus(u.level + 1);
+  const eff = effectiveLevel('health') + 1;
+  const base = rankBaseValue('coreHealth');
+  const run = 1 + longStatBonus(eff);
   const cardBucket = getCardBucket('health');
-  return Math.floor(permBase * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
+  return Math.floor(base * run * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 
-// === Armor === (0.5% per in-run level + flat from ranks, cap 75%)
+// === Armor === (0.5% per effective level, cap 75%)
 function getDefenseFraction() {
-  const u = game.upgrades.defense;
-  const rankFlat = rankFlatBonus('armor'); // rank * 0.005
-  return Math.min(0.75, (u.level * 0.005 + rankFlat + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  const eff = effectiveLevel('defense');
+  return Math.min(0.75, (eff * 0.005 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
 }
 function getDefenseFractionNext() {
-  const u = game.upgrades.defense;
-  const rankFlat = rankFlatBonus('armor');
-  return Math.min(0.75, ((u.level + 1) * 0.005 + rankFlat + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  const eff = effectiveLevel('defense') + 1;
+  return Math.min(0.75, (eff * 0.005 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
 }
 
 // === Range ===
-// In-run upgrades add 3px per level (max 100 levels = 300px).
-// Permanent ranks add flatPerRank (1.2) per rank directly (500 ranks = 600px = full screen).
-// Base range: 60px (small circle around tower, zoomed-out scale).
-function getRangeLevel() { return game.upgrades.range.level + Math.floor(rankFlatBonus('range')); }
+// Effective level combines rank + in-run. Each effective level adds 1.5px.
+// Base range: 60px. At effective level 500, range reaches ~810px (full screen).
+function getRangeLevel() { return effectiveLevel('range'); }
 function getRange() {
-  const inRunLevel = game.upgrades.range.level;
-  const permBonus = rankFlatBonus('range'); // 500 * 1.2 = 600px at max
-  const base = 60 + inRunLevel * 1.5 + permBonus;
+  const eff = effectiveLevel('range');
+  const base = 60 + eff * 1.5;
   return base * (1 + getCardBucket('range')) * getHeroCoreMultiplier('range');
 }
 function getRangeNext() {
-  const inRunLevel = game.upgrades.range.level + 1;
-  const permBonus = rankFlatBonus('range');
-  const base = 60 + inRunLevel * 1.5 + permBonus;
+  const eff = effectiveLevel('range') + 1;
+  const base = 60 + eff * 1.5;
   return base * (1 + getCardBucket('range')) * getHeroCoreMultiplier('range');
 }
 function rangeLabel(rangeVal) {
@@ -349,51 +377,55 @@ function rangeLabel(rangeVal) {
   return 'Full Screen';
 }
 
-// === Crit Chance === (1% per in-run level, rank adds flat)
+// === Crit Chance === (1% per effective level, cap 100%)
 function getCritChance() {
-  const base = game.upgrades.critChance.level * 0.01;
-  return Math.min(1.00, (base + rankFlatBonus('critChance') + getCardBucket('crit')) * getHeroCoreMultiplier('critChance'));
+  const eff = effectiveLevel('critChance');
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('crit')) * getHeroCoreMultiplier('critChance'));
 }
 function getCritChanceNext() {
-  const base = (game.upgrades.critChance.level + 1) * 0.01;
-  return Math.min(1.00, (base + rankFlatBonus('critChance') + getCardBucket('crit')) * getHeroCoreMultiplier('critChance'));
+  const eff = effectiveLevel('critChance') + 1;
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('crit')) * getHeroCoreMultiplier('critChance'));
 }
 
-// === Crit Power === (rank adds base from 2.0, in-run adds up to +1.0)
+// === Crit Power === (base 2.0, +1% per effective level, uncapped)
 function getCritPower() {
-  const permBase = rankPermanentValue('critPower'); // 2.0 + rank*0.02
-  const lvl = game.upgrades.critPower.level * 0.01;
-  return (permBase + Math.min(1.00, lvl) + getCardBucket('critPower')) * getHeroCoreMultiplier('critPower');
+  const eff = effectiveLevel('critPower');
+  const base = rankBaseValue('critPower'); // 2.0
+  return (base + eff * 0.01 + getCardBucket('critPower')) * getHeroCoreMultiplier('critPower');
 }
 function getCritPowerNext() {
-  const permBase = rankPermanentValue('critPower');
-  const lvl = (game.upgrades.critPower.level + 1) * 0.01;
-  return (permBase + Math.min(1.00, lvl) + getCardBucket('critPower')) * getHeroCoreMultiplier('critPower');
+  const eff = effectiveLevel('critPower') + 1;
+  const base = rankBaseValue('critPower');
+  return (base + eff * 0.01 + getCardBucket('critPower')) * getHeroCoreMultiplier('critPower');
 }
 
 // === Multishot === (clean 3-stat model)
-// Chance: % chance to fire ONE extra shot per target
-// Power: damage multiplier on extra shots (1.0 = full damage, lower = weaker)
-// Targets: max simultaneous targets hit per volley (1 = single, up to 6)
+// Chance: 1% per effective level, cap 100%
 function getMultishotChance() {
-  return Math.min(1.00, (game.upgrades.multishotChance.level * 0.01 + rankFlatBonus('multiChance') + getCardBucket('multiChance')) * getHeroCoreMultiplier('multiChance'));
+  const eff = effectiveLevel('multishotChance');
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('multiChance')) * getHeroCoreMultiplier('multiChance'));
 }
 function getMultishotChanceNext() {
-  return Math.min(1.00, ((game.upgrades.multishotChance.level + 1) * 0.01 + rankFlatBonus('multiChance') + getCardBucket('multiChance')) * getHeroCoreMultiplier('multiChance'));
+  const eff = effectiveLevel('multishotChance') + 1;
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('multiChance')) * getHeroCoreMultiplier('multiChance'));
 }
+// Power: 50% base + 0.5% per effective level, uncapped
 function getMultishotPower() {
-  // Starts at 50%, +0.5% per in-run level, caps at 100% at level 100; rank adds flat
-  return (0.50 + Math.min(0.50, game.upgrades.multishotPower.level * 0.005) + rankFlatBonus('multiPower') + getCardBucket('multiPower')) * getHeroCoreMultiplier('multiPower');
+  const eff = effectiveLevel('multishotPower');
+  return (0.50 + eff * 0.005 + getCardBucket('multiPower')) * getHeroCoreMultiplier('multiPower');
 }
 function getMultishotPowerNext() {
-  return (0.50 + Math.min(0.50, (game.upgrades.multishotPower.level + 1) * 0.005) + rankFlatBonus('multiPower') + getCardBucket('multiPower')) * getHeroCoreMultiplier('multiPower');
+  const eff = effectiveLevel('multishotPower') + 1;
+  return (0.50 + eff * 0.005 + getCardBucket('multiPower')) * getHeroCoreMultiplier('multiPower');
 }
+// Targets: 1 base + effective level
 function getMultishotTargets() {
-  // Base 1 + in-run level + rank level + card
-  return Math.floor((1 + game.upgrades.multishotTargets.level + rankFlatBonus('multiTargets') + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
+  const eff = effectiveLevel('multishotTargets');
+  return Math.floor((1 + eff + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
 }
 function getMultishotTargetsNext() {
-  return Math.floor((1 + (game.upgrades.multishotTargets.level + 1) + rankFlatBonus('multiTargets') + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
+  const eff = effectiveLevel('multishotTargets') + 1;
+  return Math.floor((1 + eff + Math.round(getCardBucket('multiTargetsAdd'))) * getHeroCoreMultiplier('multiTargets'));
 }
 
 // Determines how many shots fire per volley
@@ -405,69 +437,85 @@ function rollMultishotCount() {
 
 // === Bounce === (same structure as multishot)
 function getBounceChance() {
-  return Math.min(1.00, (game.upgrades.bounceChance.level * 0.01 + rankFlatBonus('bounceChance') + getCardBucket('bounceChance')) * getHeroCoreMultiplier('bounceChance'));
+  const eff = effectiveLevel('bounceChance');
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('bounceChance')) * getHeroCoreMultiplier('bounceChance'));
 }
 function getBounceChanceNext() {
-  return Math.min(1.00, ((game.upgrades.bounceChance.level + 1) * 0.01 + rankFlatBonus('bounceChance') + getCardBucket('bounceChance')) * getHeroCoreMultiplier('bounceChance'));
+  const eff = effectiveLevel('bounceChance') + 1;
+  return Math.min(1.00, (eff * 0.01 + getCardBucket('bounceChance')) * getHeroCoreMultiplier('bounceChance'));
 }
 function getBouncePower() {
-  return (0.50 + Math.min(0.50, game.upgrades.bouncePower.level * 0.005) + rankFlatBonus('bouncePower') + getCardBucket('bouncePower')) * getHeroCoreMultiplier('bouncePower');
+  const eff = effectiveLevel('bouncePower');
+  return (0.50 + eff * 0.005 + getCardBucket('bouncePower')) * getHeroCoreMultiplier('bouncePower');
 }
 function getBouncePowerNext() {
-  return (0.50 + Math.min(0.50, (game.upgrades.bouncePower.level + 1) * 0.005) + rankFlatBonus('bouncePower') + getCardBucket('bouncePower')) * getHeroCoreMultiplier('bouncePower');
+  const eff = effectiveLevel('bouncePower') + 1;
+  return (0.50 + eff * 0.005 + getCardBucket('bouncePower')) * getHeroCoreMultiplier('bouncePower');
 }
 function getBounceTargets() {
-  return Math.floor((game.upgrades.bounceTargets.level + rankFlatBonus('bounceTargets') + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
+  const eff = effectiveLevel('bounceTargets');
+  return Math.floor((eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
 }
 function getBounceTargetsNext() {
-  return Math.floor((game.upgrades.bounceTargets.level + 1 + rankFlatBonus('bounceTargets') + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
+  const eff = effectiveLevel('bounceTargets') + 1;
+  return Math.floor((eff + Math.round(getCardBucket('bounceTargetsAdd'))) * getHeroCoreMultiplier('bounceTargets'));
 }
 
-// === Lifesteal === (0.25% per level, max 100% = level 400)
+// === Lifesteal === (0.25% per effective level, cap 100%)
 function getLifestealFraction() {
-  return Math.min(1.00, (game.upgrades.lifesteal.level * 0.0025 + rankFlatBonus('lifesteal') + getCardBucket('lifesteal')) * getHeroCoreMultiplier('lifesteal'));
+  const eff = effectiveLevel('lifesteal');
+  return Math.min(1.00, (eff * 0.0025 + getCardBucket('lifesteal')) * getHeroCoreMultiplier('lifesteal'));
 }
 function getLifestealFractionNext() {
-  return Math.min(1.00, ((game.upgrades.lifesteal.level + 1) * 0.0025 + rankFlatBonus('lifesteal') + getCardBucket('lifesteal')) * getHeroCoreMultiplier('lifesteal'));
+  const eff = effectiveLevel('lifesteal') + 1;
+  return Math.min(1.00, (eff * 0.0025 + getCardBucket('lifesteal')) * getHeroCoreMultiplier('lifesteal'));
 }
 
-// === Regen === (0.05% max HP/sec per in-run level, cap 10%, rank adds flat)
+// === Regen === (0.05% max HP/sec per effective level, cap 10%)
 function getRegenPctPerSec() {
-  return Math.min(0.10, (game.upgrades.regen.level * 0.0005 + rankFlatBonus('regen') + getCardBucket('regen')) * getHeroCoreMultiplier('regen'));
+  const eff = effectiveLevel('regen');
+  return Math.min(0.10, (eff * 0.0005 + getCardBucket('regen')) * getHeroCoreMultiplier('regen'));
 }
 function getRegenPctPerSecNext() {
-  return Math.min(0.10, ((game.upgrades.regen.level + 1) * 0.0005 + rankFlatBonus('regen') + getCardBucket('regen')) * getHeroCoreMultiplier('regen'));
+  const eff = effectiveLevel('regen') + 1;
+  return Math.min(0.10, (eff * 0.0005 + getCardBucket('regen')) * getHeroCoreMultiplier('regen'));
 }
 function getRegenPerSec() {
   return game.hpMax * getRegenPctPerSec();
 }
 
 // === Economy ===
-// Ranks give flat %: cashBonus adds rank*0.02 to the multiplier
+// Cash: +5% per effective level
 function getCashMul() {
-  const u = game.upgrades.cashBonus;
+  const eff = effectiveLevel('cashBonus');
   const cardBucket = getCardBucket('cash');
-  return (1 + u.level * 0.05 + rankFlatBonus('cashBonus')) * (1 + cardBucket) * getHeroCoreMultiplier('cashBonus');
+  return (1 + eff * 0.05) * (1 + cardBucket) * getHeroCoreMultiplier('cashBonus');
 }
 function getCashMulNext() {
-  const u = game.upgrades.cashBonus;
+  const eff = effectiveLevel('cashBonus') + 1;
   const cardBucket = getCardBucket('cash');
-  return (1 + (u.level + 1) * 0.05 + rankFlatBonus('cashBonus')) * (1 + cardBucket) * getHeroCoreMultiplier('cashBonus');
+  return (1 + eff * 0.05) * (1 + cardBucket) * getHeroCoreMultiplier('cashBonus');
 }
+// Wave: +15% per effective level
 function getWaveBonusMul() {
-  return (1 + game.upgrades.waveBonus.level * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus')) * getHeroCoreMultiplier('waveBonus');
+  const eff = effectiveLevel('waveBonus');
+  return (1 + eff * 0.15) * (1 + getCardBucket('waveBonus')) * getHeroCoreMultiplier('waveBonus');
 }
 function getWaveBonusMulNext() {
-  return (1 + (game.upgrades.waveBonus.level + 1) * 0.15 + rankFlatBonus('waveBonus')) * (1 + getCardBucket('waveBonus')) * getHeroCoreMultiplier('waveBonus');
+  const eff = effectiveLevel('waveBonus') + 1;
+  return (1 + eff * 0.15) * (1 + getCardBucket('waveBonus')) * getHeroCoreMultiplier('waveBonus');
 }
+// Combo: +7.5% per effective level
 function getComboMaxMul() {
-  return (1 + game.upgrades.combo.level * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax')) * getHeroCoreMultiplier('comboBonus');
+  const eff = effectiveLevel('combo');
+  return (1 + eff * 0.075) * (1 + getCardBucket('comboMax')) * getHeroCoreMultiplier('comboBonus');
 }
 function getComboMaxMulNext() {
-  return (1 + (game.upgrades.combo.level + 1) * 0.075 + rankFlatBonus('comboBonus')) * (1 + getCardBucket('comboMax')) * getHeroCoreMultiplier('comboBonus');
+  const eff = effectiveLevel('combo') + 1;
+  return (1 + eff * 0.075) * (1 + getCardBucket('comboMax')) * getHeroCoreMultiplier('comboBonus');
 }
 function getCurrentComboMul() {
-  if (game.upgrades.combo.level === 0) return 1;
+  if (effectiveLevel('combo') === 0) return 1;
   const max = getComboMaxMul();
   const progress = Math.min(1, game.comboCount / 20);
   return 1 + (max - 1) * progress;
@@ -476,59 +524,62 @@ function getCurrentComboMul() {
 function getComboDecayMs() {
   return (5000 + rankFlatBonus('comboDuration') + getCardBucket('comboDecay')) * getHeroCoreMultiplier('comboDuration');
 }
+// Boss bounty: +25% per effective level
 function getBossBountyMul() {
-  return (1 + game.upgrades.bossBounty.level * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty')) * getHeroCoreMultiplier('bossBounty');
+  const eff = effectiveLevel('bossBounty');
+  return (1 + eff * 0.25) * (1 + getCardBucket('bossBounty')) * getHeroCoreMultiplier('bossBounty');
 }
 function getBossBountyMulNext() {
-  return (1 + (game.upgrades.bossBounty.level + 1) * 0.25 + rankFlatBonus('bossBounty')) * (1 + getCardBucket('bossBounty')) * getHeroCoreMultiplier('bossBounty');
+  const eff = effectiveLevel('bossBounty') + 1;
+  return (1 + eff * 0.25) * (1 + getCardBucket('bossBounty')) * getHeroCoreMultiplier('bossBounty');
 }
 // Boss damage bonus from cards (applied to projectiles hitting bosses)
 function getBossDamageBonus() {
   return getCardBucket('bossDmg');
 }
 
-// === Coin Bonus === (end-run coin multiplier, max 1.5× at L50)
-// Levels 1-50 give linear +0.01 per level (1.00 at L0, 1.50 at L50).
+// === Coin Bonus === (end-run coin multiplier, uncapped)
+// +1% per effective level, no cap — scales infinitely.
 function getCoinBonusMul() {
-  return 1 + Math.min(0.5, game.upgrades.coinBonus.level * 0.01);
+  const eff = effectiveLevel('coinBonus');
+  return 1 + eff * 0.01;
 }
 function getCoinBonusMulNext() {
-  return 1 + Math.min(0.5, (game.upgrades.coinBonus.level + 1) * 0.01);
+  const eff = effectiveLevel('coinBonus') + 1;
+  return 1 + eff * 0.01;
 }
 
-// === Thorns === (reflect % of melee damage back to attacker)
+// === Thorns === (reflect % of melee damage back to attacker, rank-only)
 function getThornsFraction() { return rankFlatBonus('thorns') * getHeroCoreMultiplier('thorns'); }
 
-// === Knockback === (chance to push melee attacker back)
+// === Knockback === (chance to push melee attacker back, rank-only)
 function getKnockbackChance() { return rankFlatBonus('knockback') * getHeroCoreMultiplier('knockback'); }
 
 // === Barrier / Permanent Shield ===
-// Shield max = permanent rank bonus + in-run shield upgrade (8 HP per level)
+// Shield max = 8 HP per effective level
 function getBarrierShieldMax() {
-  const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
-  const inRunBonus = game.upgrades.shield ? game.upgrades.shield.level * 8 : 0;
-  return Math.floor((rankBonus + inRunBonus) * getHeroCoreMultiplier('shieldHP'));
+  const eff = effectiveLevel('shield');
+  return Math.floor(eff * 8 * getHeroCoreMultiplier('shieldHP'));
 }
 function getBarrierShieldMaxNext() {
-  const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
-  const inRunBonus = game.upgrades.shield ? (game.upgrades.shield.level + 1) * 8 : 0;
-  return Math.floor((rankBonus + inRunBonus) * getHeroCoreMultiplier('shieldHP'));
+  const eff = effectiveLevel('shield') + 1;
+  return Math.floor(eff * 8 * getHeroCoreMultiplier('shieldHP'));
 }
 function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen') * getHeroCoreMultiplier('shieldRegen'); }
 
-// === Coin Multiplier === (permanent end-run multiplier from ranks)
+// === Coin Multiplier === (permanent end-run multiplier from ranks, rank-only)
 function getCoinMultiplierBonus() { return rankFlatBonus('coinMultiplier') * getHeroCoreMultiplier('coinMultiplier'); }
 
-// === Gem Find === (chance for non-boss kills to drop a gem)
+// === Gem Find === (chance for non-boss kills to drop a gem, rank-only)
 function getGemFindChance() { return rankFlatBonus('gemFind') * getHeroCoreMultiplier('gemFind'); }
 
-// === Projectile Speed === (multiplier on base 900 speed)
+// === Projectile Speed === (multiplier on base 900 speed, rank-only)
 function getProjSpeedMul() { return (1 + rankFlatBonus('projSpeed')) * getHeroCoreMultiplier('projSpeed'); }
 
-// === Pierce === (chance for projectile to pass through and hit another enemy)
+// === Pierce === (chance for projectile to pass through and hit another enemy, rank-only)
 function getPierceChance() { return rankFlatBonus('pierce') * getHeroCoreMultiplier('pierce'); }
 
-// === Overcharge === (chance for a shot to deal bonus damage)
+// === Overcharge === (chance for a shot to deal bonus damage, rank-only)
 function getOverchargeChance() { return rankFlatBonus('overchargeChance') * getHeroCoreMultiplier('overchargeChance'); }
 function getOverchargePower() { return (1 + rankFlatBonus('overchargePower')) * getHeroCoreMultiplier('overchargePower'); }
 
