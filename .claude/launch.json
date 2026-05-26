@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "core-surge",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "."],
-      "port": 3000
+      "name": "game",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve.js"],
+      "port": 4173
     }
   ]
 }

@@ -2,51 +2,33 @@
 // skins.js — Core Surge skin equip/apply/persist.
 // Owned by: UI/skin AI. No combat math. Pure DOM + save glue.
 //
-// Saves skin IDs on `save.equippedCoreSkin` and `save.equippedBgSkin`,
-// then applies them as data-attributes on #tower and #battlefield.
-// The CSS (css/skins.css) does the actual visual work.
+// Saves skin ID on `save.equippedCoreSkin`, then applies it as a
+// data-attribute on #tower. The CSS (css/skins.css) does the visual work.
 //
-// Defaults: if save has no equipped skin, the game uses its original
-// CSS-drawn tower/background (no data-attr applied). This means the
-// skin system is purely additive — you can delete this file and the
-// game still runs.
+// Sentinel is the default core skin and is always auto-equipped.
+// Background skins removed — will be rebuilt with new assets.
 // ============================================================
 
 // Valid IDs (must match entries in css/skins.css and the Skins tab data arrays)
 const CORE_SKIN_IDS = ['sentinel', 'industrial', 'verdant', 'aegis', 'frost', 'royal'];
-const BG_SKIN_IDS   = ['cyber_grid', 'industrial', 'organic', 'steel'];
 
 function applyEquippedSkins() {
   const tower = document.getElementById('tower');
-  const bf = document.getElementById('battlefield');
-  if (!tower || !bf) return;
+  if (!tower) return;
 
+  // Sentinel is always the fallback — auto-equip if nothing set
   const core = (typeof save !== 'undefined' && save.equippedCoreSkin) || 'sentinel';
-  const bg   = (typeof save !== 'undefined' && save.equippedBgSkin)   || 'cyber_grid';
 
   if (core && CORE_SKIN_IDS.includes(core)) {
     tower.setAttribute('data-core-skin', core);
   } else {
-    tower.removeAttribute('data-core-skin');
-  }
-
-  if (bg && BG_SKIN_IDS.includes(bg)) {
-    bf.setAttribute('data-bg-skin', bg);
-  } else {
-    bf.removeAttribute('data-bg-skin');
+    tower.setAttribute('data-core-skin', 'sentinel');
   }
 }
 
 function equipCoreSkin(id) {
   if (!CORE_SKIN_IDS.includes(id)) return;
   save.equippedCoreSkin = id;
-  if (typeof persistSave === 'function') persistSave();
-  applyEquippedSkins();
-}
-
-function equipBgSkin(id) {
-  if (!BG_SKIN_IDS.includes(id)) return;
-  save.equippedBgSkin = id;
   if (typeof persistSave === 'function') persistSave();
   applyEquippedSkins();
 }

@@ -6,7 +6,6 @@
 
    Hooks (stable, per README):
      #tower[data-core-skin="X"]       — swap Core art
-     #battlefield[data-bg-skin="X"]   — swap battlefield backdrop
      .skin-tile[data-kind][data-skin] — preview tiles in the Skins tab
 
    All skins default to the existing CSS look when no data-attr is set,
@@ -29,13 +28,13 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 120px;
-  height: 120px;
+  width: 60px;
+  height: 60px;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
   /* Subtle idle pulse so the core doesn't feel dead */
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   pointer-events: none;
   z-index: 2;
 }
@@ -57,38 +56,8 @@
 #tower[data-core-skin="royal"]      { --core-glow: #ff5fd0; }
 
 /* ------------------------------------------------------------
-   BACKGROUND SKINS — applied to #battlefield
+   BACKGROUND SKINS — removed (will be rebuilt with new assets)
    ------------------------------------------------------------ */
-#battlefield[data-bg-skin]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  /* Darken so enemies + tower read clearly over the busy art */
-  filter: brightness(0.72) saturate(0.95);
-  z-index: 0;
-  pointer-events: none;
-}
-/* Lift gameplay elements above the ::before backdrop. Only bump z-index —
-   DO NOT change their position property (tower/range ring/enemies rely on
-   position:absolute for placement). Pseudo-elements get z-index 0, real
-   children get z-index: auto which stacks above pseudo-elements naturally,
-   but we set it explicitly to be safe. */
-#battlefield[data-bg-skin] > .tower,
-#battlefield[data-bg-skin] > .range-ring,
-#battlefield[data-bg-skin] > .enemy,
-#battlefield[data-bg-skin] > .projectile,
-#battlefield[data-bg-skin] > .floater,
-#battlefield[data-bg-skin] > .gem-orb {
-  z-index: 1;
-}
-
-#battlefield[data-bg-skin="cyber_grid"]::before { background-image: url("../assets/backgrounds/bg_01_cyber_grid.png"); }
-#battlefield[data-bg-skin="industrial"]::before { background-image: url("../assets/backgrounds/bg_02_industrial.png"); }
-#battlefield[data-bg-skin="organic"]::before    { background-image: url("../assets/backgrounds/bg_03_organic.png"); }
-#battlefield[data-bg-skin="steel"]::before      { background-image: url("../assets/backgrounds/bg_04_steel.png"); }
 
 /* ------------------------------------------------------------
    SKIN TILE PREVIEWS — Skins tab in the menu
@@ -120,14 +89,7 @@
 .skin-tile[data-kind="core"][data-skin="frost"]      .skin-preview::after { background-image: url("../assets/cores/core_05_frost.png"); }
 .skin-tile[data-kind="core"][data-skin="royal"]      .skin-preview::after { background-image: url("../assets/cores/core_06_royal.png"); }
 
-.skin-tile[data-kind="bg"] .skin-preview {
-  background-size: cover !important;
-  background-position: center !important;
-}
-.skin-tile[data-kind="bg"][data-skin="cyber_grid"] .skin-preview { background-image: url("../assets/backgrounds/bg_01_cyber_grid.png") !important; }
-.skin-tile[data-kind="bg"][data-skin="industrial"] .skin-preview { background-image: url("../assets/backgrounds/bg_02_industrial.png") !important; }
-.skin-tile[data-kind="bg"][data-skin="organic"]    .skin-preview { background-image: url("../assets/backgrounds/bg_03_organic.png") !important; }
-.skin-tile[data-kind="bg"][data-skin="steel"]      .skin-preview { background-image: url("../assets/backgrounds/bg_04_steel.png") !important; }
+/* Background skin tile previews removed — will be rebuilt with new assets */
 
 /* ============================================================
    ENEMY SPRITES (v0.7.17)
@@ -157,24 +119,24 @@
 .enemy.elite     .enemy-sprite { background-image: url("../assets/enemies/enemy_11_elite_ember.png"); }
 .enemy.boss      .enemy-sprite { background-image: url("../assets/enemies/enemy_12_boss_void.png"); }
 
-/* Enemy hit-boxes sized to sprite */
-.enemy.normal    { width: 28px !important; height: 28px !important; }
-.enemy.fast      { width: 26px !important; height: 26px !important; }
-.enemy.tank      { width: 38px !important; height: 38px !important; }
-.enemy.shooter   { width: 30px !important; height: 30px !important; }
-.enemy.augmenter { width: 34px !important; height: 34px !important; }
-.enemy.elite     { width: 36px !important; height: 36px !important; }
-.enemy.boss      { width: 72px !important; height: 72px !important; }
+/* Enemy hit-boxes sized to sprite (zoomed out 50%) */
+.enemy.normal    { width: 14px !important; height: 14px !important; }
+.enemy.fast      { width: 13px !important; height: 13px !important; }
+.enemy.tank      { width: 19px !important; height: 19px !important; }
+.enemy.shooter   { width: 15px !important; height: 15px !important; }
+.enemy.augmenter { width: 17px !important; height: 17px !important; }
+.enemy.elite     { width: 18px !important; height: 18px !important; }
+.enemy.boss      { width: 36px !important; height: 36px !important; }
 .enemy.boss .enemy-sprite {
   filter: drop-shadow(0 0 12px rgba(180,90,255,0.5)) drop-shadow(0 4px 6px rgba(0,0,0,0.7));
   animation: boss-pulse-sprite 1.4s infinite ease-in-out;
 }
 
-/* HP bar adjustments — stays flat, not rotated */
-.enemy-hp { bottom: -8px !important; width: 26px !important; position: absolute; left: 50%; transform: translateX(-50%); }
-.enemy.tank .enemy-hp { width: 32px !important; }
-.enemy.elite .enemy-hp { width: 32px !important; }
-.enemy.boss .enemy-hp { bottom: -12px !important; width: 60px !important; height: 4px !important; }
+/* HP bar adjustments — stays flat, not rotated (zoomed out 50%) */
+.enemy-hp { bottom: -4px !important; width: 13px !important; position: absolute; left: 50%; transform: translateX(-50%); }
+.enemy.tank .enemy-hp { width: 16px !important; }
+.enemy.elite .enemy-hp { width: 16px !important; }
+.enemy.boss .enemy-hp { bottom: -6px !important; width: 30px !important; height: 2px !important; }
 
 /* Boss pulse — uses standalone `scale` so it won't override the
    inline transform (rotate) that render.js sets on .enemy-sprite. */
@@ -196,21 +158,21 @@
   background-position: center !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  width: 18px !important; height: 18px !important;
+  width: 9px !important; height: 9px !important;
   background-image: url("../assets/vfx/proj_spear_cyan.png");
-  filter: drop-shadow(0 0 4px rgba(0,220,255,0.5));
+  filter: drop-shadow(0 0 2px rgba(0,220,255,0.5));
 }
 .projectile.crit {
   background-image: url("../assets/vfx/proj_star_gold.png");
-  width: 22px !important; height: 22px !important;
-  filter: drop-shadow(0 0 6px rgba(255,204,0,0.6));
+  width: 11px !important; height: 11px !important;
+  filter: drop-shadow(0 0 3px rgba(255,204,0,0.6));
 }
 .projectile.bounce {
   background-image: url("../assets/vfx/proj_plasma_violet.png");
-  filter: drop-shadow(0 0 5px rgba(170,80,255,0.5));
+  filter: drop-shadow(0 0 3px rgba(170,80,255,0.5));
 }
 .projectile.enemy {
   background-image: url("../assets/vfx/missile_bullet_fire.png");
-  width: 14px !important; height: 14px !important;
-  filter: drop-shadow(0 0 4px rgba(255,100,50,0.5));
+  width: 7px !important; height: 7px !important;
+  filter: drop-shadow(0 0 2px rgba(255,100,50,0.5));
 }

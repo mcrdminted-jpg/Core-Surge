@@ -121,9 +121,11 @@ const defaultSave = {
   monthlyVaultActive: false,
   storeEntitlements: {},
 
-  // Skins (v0.7.14+): defaults to real art so the game never shows placeholder CSS.
+  // Speed unlocks: x1/x2/x3 free, x5 and x10 purchasable with scrap.
+  unlockedSpeeds: [],
+
+  // Skins (v0.7.14+): Sentinel is the permanent default core skin.
   equippedCoreSkin: 'sentinel',
-  equippedBgSkin: 'cyber_grid',
 
   // v0.7.25: Tutorial / progressive unlock
   // 0 = fresh, show "start battle" prompt
@@ -200,8 +202,8 @@ function hydrateSaveState(loaded) {
   nextSave.coreLevel = Math.max(1, parseInt(source.coreLevel, 10) || 1);
   nextSave.trainingManuals = Math.max(0, parseInt(source.trainingManuals, 10) || 0);
   nextSave.heroesUnlocked = Array.isArray(source.heroesUnlocked) ? source.heroesUnlocked : [];
+  nextSave.unlockedSpeeds = Array.isArray(source.unlockedSpeeds) ? source.unlockedSpeeds : [];
   nextSave.equippedCoreSkin = source.equippedCoreSkin || 'sentinel';
-  nextSave.equippedBgSkin = source.equippedBgSkin || 'cyber_grid';
   // v0.7.25: auto-complete tutorial for existing players who already have runs
   if (source.tutorialStep === undefined && (source.totalRuns || 0) > 0) {
     nextSave.tutorialStep = 99;

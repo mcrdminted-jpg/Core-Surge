@@ -216,9 +216,9 @@ async function runTests() {
   console.log('â”€â”€ Game Constants â”€â”€');
 
   assert(ctx.MAX_TIER === 99999, `MAX_TIER = 99999 (got ${ctx.MAX_TIER})`);
-  assert(ctx.MILESTONE_WAVES.length === 9, `9 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
+  assert(ctx.MILESTONE_WAVES.length === 17, `17 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
   assert(ctx.MILESTONE_WAVES[0] === 25, `First milestone = wave 25`);
-  assert(ctx.MILESTONE_WAVES[8] === 10000, `Last milestone = wave 10000`);
+  assert(ctx.MILESTONE_WAVES[ctx.MILESTONE_WAVES.length - 1] === 2000, `Last milestone = wave 2000`);
 
   // â”€â”€ 11. Unlock families â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Unlock Families â”€â”€');

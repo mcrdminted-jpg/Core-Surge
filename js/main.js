@@ -547,6 +547,8 @@ window.addEventListener('load', async () => {
   updateSplash(10);
   registerAppShell();
   loadSave();
+  // Grant any hero unlocks the player qualifies for (tier + family checks)
+  if (typeof checkHeroUnlocks === 'function') checkHeroUnlocks();
   updateSplash(30);
   if (typeof ensureUsername === 'function') ensureUsername();
   if (typeof bootCloudSession === 'function') {

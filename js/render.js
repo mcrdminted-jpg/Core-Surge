@@ -127,8 +127,8 @@ function render() {
   const hpPct = Math.max(0, game.hp / game.hpMax * 100);
   document.getElementById('hpFill').style.width = hpPct + '%';
   document.getElementById('hpText').textContent = `${Math.max(0, Math.floor(game.hp))} / ${Math.floor(game.hpMax)}`;
-  document.getElementById('battleTier').textContent = game.tier;
-  document.getElementById('waveNum').textContent = game.wave + (game.bossWave ? ' BOSS' : '');
+  document.getElementById('battleTier').textContent = 'T' + game.tier;
+  document.getElementById('waveNum').textContent = 'W' + game.wave + (game.bossWave ? ' BOSS' : '');
   document.getElementById('cashDisp').textContent = formatNum(game.cash);
   document.getElementById('waveProg').textContent = `${game.enemiesKilledInWave}/${game.enemiesPerWave}`;
 
@@ -160,7 +160,7 @@ function render() {
   const hudCashEl = document.getElementById('hudCashValue');
   if (hudCashEl) hudCashEl.textContent = formatNum(game.cash);
   const hudWaveLabel = document.getElementById('hudWaveLabel');
-  if (hudWaveLabel) hudWaveLabel.textContent = 'W' + game.wave;
+  if (hudWaveLabel) hudWaveLabel.textContent = 'T' + game.tier + ' W' + game.wave;
   const hudKillCount = document.getElementById('hudKillCount');
   if (hudKillCount) hudKillCount.textContent = game.enemiesKilledThisRun + ' kills';
   const coinPreview = document.getElementById('coinPreview');
@@ -175,6 +175,7 @@ function render() {
   if (document.getElementById('liveStats').classList.contains('open')) renderLiveStats();
   updateRangeRing();
   updateOrbSystem();
+  renderHeroActivesHud();
 }
 
 function flashTower() {
@@ -281,14 +282,14 @@ function showEnemyInfo(enemy) {
   // Position near the enemy, offset above
   const bfRect = game.bf.getBoundingClientRect();
   let px = enemy.x;
-  let py = enemy.y - 40; // above the enemy
+  let py = enemy.y - 20; // above the enemy (zoomed out)
   // Clamp to battlefield bounds
   game.bf.appendChild(popup);
   const pw = popup.offsetWidth;
   const ph = popup.offsetHeight;
   if (px + pw / 2 > bfRect.width - 8) px = bfRect.width - pw / 2 - 8;
   if (px - pw / 2 < 8) px = pw / 2 + 8;
-  if (py - ph < 8) py = enemy.y + 30; // flip below if too high
+  if (py - ph < 8) py = enemy.y + 15; // flip below if too high
   popup.style.left = px + 'px';
   popup.style.top = py + 'px';
   popup.style.transform = 'translate(-50%, -100%)';
@@ -311,6 +312,93 @@ function _onEnemyClick(ev) {
       return;
     }
   }
+}
+
+// ============================================================
+// FOCUS TAP
+// ============================================================
+// ============================================================
+// HERO ACTIVES HUD — side popup during battle, tap hero icon to activate
+// ============================================================
+let _heroHudEl = null;
+let _heroHudPanel = null;
+let _heroHudToggle = null;
+let _heroHudOpen = false;
+let _heroHudInitialized = false;
+
+function renderHeroActivesHud() {
+  if (!_heroHudEl) _heroHudEl = document.getElementById('heroActivesHud');
+  if (!_heroHudEl) return;
+  if (!_heroHudPanel) _heroHudPanel = document.getElementById('heroHudPanel');
+  if (!_heroHudToggle) _heroHudToggle = document.getElementById('heroHudToggle');
+
+  // Hide entire HUD if not in battle or no heroes garrisoned
+  const garrison = save.garrisonSlots || [];
+  if (!game.running || typeof HERO_DEFS === 'undefined' || garrison.length === 0) {
+    _heroHudEl.style.display = 'none';
+    _heroHudOpen = false;
+    _heroHudEl.classList.remove('open');
+    return;
+  }
+  _heroHudEl.style.display = '';
+
+  // Wire toggle once
+  if (!_heroHudInitialized && _heroHudToggle) {
+    _heroHudToggle.addEventListener('pointerdown', function(e) {
+      e.stopPropagation();
+      _heroHudOpen = !_heroHudOpen;
+      _heroHudEl.classList.toggle('open', _heroHudOpen);
+    });
+    _heroHudInitialized = true;
+  }
+
+  // Only update panel content if open (performance)
+  if (!_heroHudOpen || !_heroHudPanel) return;
+
+  const now = Date.now();
+  // Group by category
+  const groups = { combat: [], defense: [], economy: [] };
+  for (let i = 0; i < garrison.length; i++) {
+    const hid = garrison[i];
+    if (!hid || !HERO_DEFS[hid]) continue;
+    const def = HERO_DEFS[hid];
+    groups[def.category].push(hid);
+  }
+
+  let html = '';
+  const catLabels = { combat: '&#9876; OFFENSE', defense: '&#128737; DEFENSE', economy: '&#128176; ECONOMY' };
+  const catColors = { combat: 'var(--danger)', defense: 'var(--good)', economy: 'var(--gold)' };
+  for (const cat of ['combat', 'defense', 'economy']) {
+    if (groups[cat].length === 0) continue;
+    html += `<div class="hah-group"><div class="hah-group-label" style="color:${catColors[cat]}">${catLabels[cat]}</div>`;
+    for (let i = 0; i < groups[cat].length; i++) {
+      const hid = groups[cat][i];
+      const def = HERO_DEFS[hid];
+      const state = (typeof heroActiveState !== 'undefined') ? heroActiveState[hid] : null;
+      const isActive = state && now < state.activeUntil;
+      const onCooldown = state && now < state.cooldownUntil && !isActive;
+      const cdSec = onCooldown ? Math.ceil((state.cooldownUntil - now) / 1000) : 0;
+      const cls = isActive ? 'hah-hero active' : onCooldown ? 'hah-hero cd' : 'hah-hero ready';
+      html += `<button class="${cls}" data-hah="${hid}">` +
+        `<span class="hah-icon">${def.icon}</span>` +
+        `<span class="hah-name">${def.name}</span>` +
+        (isActive ? '<span class="hah-status" style="color:var(--good)">ACTIVE</span>' : '') +
+        (onCooldown ? `<span class="hah-status">${cdSec}s</span>` : '') +
+        (!isActive && !onCooldown ? '<span class="hah-status" style="color:var(--cyan2)">READY</span>' : '') +
+        `</button>`;
+    }
+    html += '</div>';
+  }
+  _heroHudPanel.innerHTML = html;
+
+  // Wire activate clicks
+  _heroHudPanel.querySelectorAll('[data-hah]').forEach(function(btn) {
+    btn.addEventListener('pointerdown', function(e) {
+      e.stopPropagation();
+      const hid = this.getAttribute('data-hah');
+      if (typeof activateHeroAbility === 'function') activateHeroAbility(hid);
+    });
+  });
 }
 
 // ============================================================

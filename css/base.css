@@ -508,6 +508,15 @@
   .milestone-reward { color: var(--muted); font-size: 9px; margin-top: 2px; }
   .milestone-reward b { color: var(--gold); }
   .milestone-reward b.gem { color: var(--purple); }
+  .milestone-reward b.manual { color: #22d3ee; }
+  .ms-diff {
+    display: inline-block; font-size: 8px; font-weight: 900;
+    letter-spacing: 0.5px; padding: 1px 5px; border-radius: 3px;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .ms-late { background: rgba(168,85,247,0.25); color: #c084fc; }
+  .ms-endgame { background: rgba(239,68,68,0.25); color: #f87171; }
+  .ms-ultra { background: linear-gradient(90deg, rgba(255,200,0,0.3), rgba(255,100,0,0.3)); color: #fbbf24; }
   .milestone-btn {
     background: var(--good); border: 1px solid var(--good);
     color: var(--bg); padding: 6px 12px; border-radius: 4px;
@@ -558,6 +567,10 @@
     color: var(--purple);
     background: rgba(170,68,255,0.10);
     border-color: var(--purple);
+  }
+  .goal-tier-tab.locked {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
   .goal-tier-badge {
     position: absolute; top: -5px; right: -5px;

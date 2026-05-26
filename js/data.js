@@ -14,7 +14,15 @@ const SAVE_KEY = 'tower_save_v8';
 // fresh start is intentional.
 const DEAD_SAVE_KEYS = ['tower_save_v7', 'tower_save_v6', 'tower_save_v5', 'tower_save_v4', 'tower_save_v3', 'tower_save_v2'];
 const MAX_TIER = 99999; // Tiers are now unlimited (was 100)
-const MILESTONE_WAVES = [25, 50, 100, 200, 500, 1000, 2500, 5000, 10000];
+// Milestones: early ones every 25 waves, then 50s, then 100s, caps at W2000 (~2hrs at x10).
+// Deep runs are the endgame grind — rewards escalate sharply past W500.
+const MILESTONE_WAVES = [
+  25, 50, 75, 100,           // early: learning the ropes
+  150, 200, 250, 300,        // mid: getting strong
+  400, 500,                  // late: serious investment
+  600, 750, 1000,            // endgame: god-tier players
+  1250, 1500, 1750, 2000     // ultra: 2-hour marathon at x10
+];
 
 // ============================================================
 // CARD POOL (v0.7.6 placeholders — real 25-card pool in v0.8)
@@ -1206,9 +1214,11 @@ function unlockHero(heroId) {
   return true;
 }
 
-// Check and grant hero unlocks based on current bestTier
+// Check and grant hero unlocks based on current bestTier.
+// Returns array of newly unlocked hero IDs (empty if none).
 function checkHeroUnlocks() {
   const tier = save.bestTier || 1;
+  const newlyUnlocked = [];
   for (const hid of Object.keys(HERO_DEFS)) {
     const def = HERO_DEFS[hid];
     // Must meet tier requirement
@@ -1218,8 +1228,18 @@ function checkHeroUnlocks() {
     // Unlock if not already
     if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(hid) === -1) {
       unlockHero(hid);
+      newlyUnlocked.push(hid);
     }
   }
+  // Show notification for each newly unlocked hero
+  for (let i = 0; i < newlyUnlocked.length; i++) {
+    const def = HERO_DEFS[newlyUnlocked[i]];
+    if (def && typeof showHeroUnlockToast === 'function') {
+      // Stagger toasts so they don't overlap
+      setTimeout(showHeroUnlockToast.bind(null, def), i * 1200);
+    }
+  }
+  return newlyUnlocked;
 }
 
 // Training manual store packs (gem cost)

@@ -17,7 +17,52 @@ function labNextValue(lab) { return 0; }
 function offlineCapMinutes() { return 10; }     // 10 min offline cap
 function offlineRateFraction() { return 0.05; } // 5% of active rate offline
 function defenseFraction() { return 0; }        // armor now comes from ranks
-function maxUnlockedSpeed() { return 3; }       // all 3 speeds unlocked at launch
+// Speed tiers: x1 free, x2/x3/x5/x10 require purchase (coins OR gems).
+const SPEED_TIERS = [1, 2, 3, 5, 10];
+const SPEED_UNLOCK_COST = {
+  2:  { coins: 5000,    gems: 25  },   // early unlock
+  3:  { coins: 50000,   gems: 100 },   // mid unlock
+  5:  { coins: 500000,  gems: 500 },   // late unlock
+  10: { coins: 5000000, gems: 1500 }   // endgame unlock
+};
+function maxUnlockedSpeed() {
+  let max = 1; // only x1 is free
+  if (typeof save !== 'undefined' && save.unlockedSpeeds) {
+    for (const s of SPEED_TIERS) {
+      if (s === 1 || save.unlockedSpeeds.includes(s)) max = s;
+    }
+  }
+  return max;
+}
+function nextSpeedTier(cur) {
+  const max = maxUnlockedSpeed();
+  const available = SPEED_TIERS.filter(s => s <= max);
+  const idx = available.indexOf(cur);
+  if (idx < 0 || idx >= available.length - 1) return available[0];
+  return available[idx + 1];
+}
+function purchaseSpeedTier(tier, useGems) {
+  const cost = SPEED_UNLOCK_COST[tier];
+  if (!cost) return false;
+  if (save.unlockedSpeeds && save.unlockedSpeeds.includes(tier)) return false;
+  // Must unlock in order: need the tier below first
+  const tierIdx = SPEED_TIERS.indexOf(tier);
+  if (tierIdx > 1) { // tier at index 1 is x2, needs x1 (free)
+    const prevTier = SPEED_TIERS[tierIdx - 1];
+    if (prevTier > 1 && (!save.unlockedSpeeds || !save.unlockedSpeeds.includes(prevTier))) return false;
+  }
+  if (useGems) {
+    if (save.gems < cost.gems) return false;
+    save.gems -= cost.gems;
+  } else {
+    if (save.coins < cost.coins) return false;
+    save.coins -= cost.coins;
+  }
+  if (!save.unlockedSpeeds) save.unlockedSpeeds = [];
+  save.unlockedSpeeds.push(tier);
+  if (typeof persistSave === 'function') persistSave();
+  return true;
+}
 
 // ============================================================
 // TIER + MILESTONE
@@ -35,11 +80,38 @@ function highestUnlockedTier() {
 function tierMultiplier_deprecated(tier) { return Math.pow(1.5, tier - 1); }
 
 function milestoneReward(tier, wave) {
-  // v0.7.28: scaled up to feel meaningful in a 3.75M-scrap economy.
-  // T1W25=62, T1W100=250, T5W100=4000, T10W100=128K, T18W10000=massive
-  const baseCoins = Math.floor(wave * 2.5 * Math.pow(2.0, tier - 1));
-  const gems = wave >= 100 ? Math.max(1, Math.floor((wave / 50) * Math.pow(1.3, tier - 1))) : 0;
-  return { coins: baseCoins, gems };
+  // Multi-currency rewards that escalate sharply at deep waves.
+  // Tier multiplier: each tier roughly doubles rewards.
+  const tierMul = Math.pow(2.0, tier - 1);
+
+  // --- SCRAP: base scales with wave, accelerates past W500 ---
+  let baseCoins;
+  if (wave <= 100)       baseCoins = wave * 3;
+  else if (wave <= 500)  baseCoins = 300 + (wave - 100) * 8;
+  else if (wave <= 1000) baseCoins = 3500 + (wave - 500) * 25;
+  else                   baseCoins = 16000 + (wave - 1000) * 60;
+  const coins = Math.floor(baseCoins * tierMul);
+
+  // --- GEMS: start at W50, ramp up significantly at deep waves ---
+  let gems = 0;
+  if (wave >= 50 && wave < 200)       gems = Math.floor(1 + (wave / 100));
+  else if (wave >= 200 && wave < 500) gems = Math.floor(3 + (wave / 50));
+  else if (wave >= 500 && wave < 1000) gems = Math.floor(15 + (wave / 25));
+  else if (wave >= 1000)              gems = Math.floor(50 + (wave / 10));
+  gems = Math.floor(gems * Math.pow(1.25, tier - 1));
+
+  // --- TRAINING MANUALS: start at W100, big rewards at deep waves ---
+  let manuals = 0;
+  if (wave >= 100 && wave < 300)       manuals = 1;
+  else if (wave >= 300 && wave < 500)  manuals = 2;
+  else if (wave >= 500 && wave < 750)  manuals = 3;
+  else if (wave >= 750 && wave < 1000) manuals = 5;
+  else if (wave >= 1000 && wave < 1500) manuals = 8;
+  else if (wave >= 1500)               manuals = 12;
+  // Tier bonus: +1 manual per 3 tiers
+  manuals += Math.floor((tier - 1) / 3);
+
+  return { coins, gems, manuals };
 }
 function milestoneKey(tier, wave) { return `T${tier}W${wave}`; }
 function milestoneReady(tier, wave) {
@@ -52,6 +124,7 @@ function claimMilestone(tier, wave) {
   const r = milestoneReward(tier, wave);
   save.coins += r.coins;
   save.gems += r.gems;
+  save.trainingManuals = (save.trainingManuals || 0) + (r.manuals || 0);
   save.claimedMilestones[key] = true;
   persistSave();
   renderHud();
@@ -218,25 +291,25 @@ function getDefenseFractionNext() {
 // === Range ===
 // In-run upgrades add 3px per level (max 100 levels = 300px).
 // Permanent ranks add flatPerRank (1.2) per rank directly (500 ranks = 600px = full screen).
-// Base range: 120px (small circle around tower).
+// Base range: 60px (small circle around tower, zoomed-out scale).
 function getRangeLevel() { return game.upgrades.range.level + Math.floor(rankFlatBonus('range')); }
 function getRange() {
   const inRunLevel = game.upgrades.range.level;
   const permBonus = rankFlatBonus('range'); // 500 * 1.2 = 600px at max
-  const base = 120 + inRunLevel * 3 + permBonus;
+  const base = 60 + inRunLevel * 1.5 + permBonus;
   return base * (1 + getCardBucket('range')) * getHeroCoreMultiplier('range');
 }
 function getRangeNext() {
   const inRunLevel = game.upgrades.range.level + 1;
   const permBonus = rankFlatBonus('range');
-  const base = 120 + inRunLevel * 3 + permBonus;
+  const base = 60 + inRunLevel * 1.5 + permBonus;
   return base * (1 + getCardBucket('range'));
 }
 function rangeLabel(rangeVal) {
-  if (rangeVal < 200)  return 'Short';
-  if (rangeVal < 350)  return 'Medium';
-  if (rangeVal < 500)  return 'Long';
-  if (rangeVal < 650)  return 'Very Long';
+  if (rangeVal < 100)  return 'Short';
+  if (rangeVal < 175)  return 'Medium';
+  if (rangeVal < 250)  return 'Long';
+  if (rangeVal < 325)  return 'Very Long';
   return 'Full Screen';
 }
 
@@ -858,8 +931,8 @@ function update(dt, rawDt) {
   // - While in melee range, each enemy attacks every meleeInterval ms.
   // - Shooter enemies stay at shooter range and fire projectiles.
   const baseSpeed = enemySpeedForWave(game.wave);
-  const MELEE_RANGE = 42;       // normal enemies stop this close (px)
-  const BOSS_MELEE_RANGE = 52;  // bosses are bigger, stop sooner
+  const MELEE_RANGE = 21;       // normal enemies stop this close (px) — zoomed out
+  const BOSS_MELEE_RANGE = 26;  // bosses are bigger, stop sooner — zoomed out
   const MELEE_INTERVAL = 900;   // ms between melee attacks (baseline)
   // Per-type damage-per-hit scaling — enemies now hit repeatedly so each hit
   // is lower than the old one-shot contact damage. This preserves overall
@@ -873,7 +946,7 @@ function update(dt, rawDt) {
     const dist = Math.hypot(dx, dy);
     // --- Shooter behavior ---
     if (e.type === 'shooter') {
-      const SHOOTER_IDEAL = 180;
+      const SHOOTER_IDEAL = 90;
       if (dist > SHOOTER_IDEAL) {
         // Close in until we reach our firing range
         const buffMul = e.auraBuffed ? 1.3 : 1;
@@ -903,7 +976,7 @@ function update(dt, rawDt) {
         const alive = applyDamageToTower(reduced);
         flashTower();
         if (save.settings.showFloatingDamage) {
-          spawnFloat(game.towerX, game.towerY - 30, '-' + Math.floor(reduced), 'tower-dmg');
+          spawnFloat(game.towerX, game.towerY - 15, '-' + Math.floor(reduced), 'tower-dmg');
         }
         // Thorns: reflect fraction of incoming damage back to attacker
         const thornsFrac = getThornsFraction();
@@ -911,14 +984,14 @@ function update(dt, rawDt) {
           const thornsDmg = baseDmg * thornsFrac;
           e.hp -= thornsDmg;
           if (save.settings.showFloatingDamage) {
-            spawnFloat(e.x, e.y - 12, Math.floor(thornsDmg), 'crit');
+            spawnFloat(e.x, e.y - 6, Math.floor(thornsDmg), 'crit');
           }
           if (e.hp <= 0) { e.dead = true; game.enemiesKilledInWave++; game.enemiesKilledThisRun++; }
         }
         // Knockback: chance to push attacker back to interrupt melee
         const kbChance = getKnockbackChance();
         if (kbChance > 0 && !e.dead && Math.random() < kbChance) {
-          const kbDist = 60;
+          const kbDist = 30;
           const kbDx = e.x - game.towerX;
           const kbDy = e.y - game.towerY;
           const kbLen = Math.hypot(kbDx, kbDy) || 1;
@@ -942,7 +1015,7 @@ function update(dt, rawDt) {
   // Augmenter aura: each augmenter buffs nearby enemies.
   // Effect: buffed enemies move 30% faster and deal 30% more damage.
   // Recalc each frame because enemies move.
-  const AUG_RADIUS = 120;
+  const AUG_RADIUS = 60;
   const augmenters = game.enemies.filter(e => !e.dead && e.type === 'augmenter');
   for (const e of game.enemies) {
     if (e.dead || e.type === 'augmenter') continue;
@@ -959,7 +1032,7 @@ function update(dt, rawDt) {
     const dx = game.towerX - ep.x;
     const dy = game.towerY - ep.y;
     const dist = Math.hypot(dx, dy);
-    if (dist < 12) {
+    if (dist < 6) {
       ep.dead = true;
       const baseDmg = damageToTowerForWave(game.wave) * 0.5;
       const reduced = baseDmg * (1 - getDefenseFraction());
@@ -967,17 +1040,17 @@ function update(dt, rawDt) {
       const alive = applyDamageToTower(reduced);
       flashTower();
       if (save.settings.showFloatingDamage) {
-        spawnFloat(game.towerX, game.towerY - 30, '-' + Math.floor(reduced), 'tower-dmg');
+        spawnFloat(game.towerX, game.towerY - 15, '-' + Math.floor(reduced), 'tower-dmg');
       }
       // Thorns on enemy projectiles: find nearest shooter and reflect
       const thornsFrac2 = getThornsFraction();
       if (thornsFrac2 > 0) {
-        const shooter = pickClosestEnemy(game.towerX, game.towerY, null, 250);
+        const shooter = pickClosestEnemy(game.towerX, game.towerY, null, 125);
         if (shooter && !shooter.dead) {
           const thornsDmg = baseDmg * thornsFrac2;
           shooter.hp -= thornsDmg;
           if (save.settings.showFloatingDamage) {
-            spawnFloat(shooter.x, shooter.y - 12, Math.floor(thornsDmg), 'crit');
+            spawnFloat(shooter.x, shooter.y - 6, Math.floor(thornsDmg), 'crit');
           }
           if (shooter.hp <= 0) { shooter.dead = true; game.enemiesKilledInWave++; game.enemiesKilledThisRun++; }
         }
@@ -1029,7 +1102,7 @@ function update(dt, rawDt) {
       hitEnemy(p.target, p.damage, p.crit);
       p.alreadyHit.add(p.target);
       if (p.bouncesLeft > 0) {
-        const next = pickClosestEnemy(p.target.x, p.target.y, p.alreadyHit, 250);
+        const next = pickClosestEnemy(p.target.x, p.target.y, p.alreadyHit, 125);
         if (next) {
           p.target = next;
           p.bouncesLeft--;
@@ -1107,7 +1180,7 @@ function applyDamageToTower(amount) {
       game.hp = 1;
       game.shield = Math.floor(game.hpMax * frac);
       game.shieldMax = Math.max(game.shieldMax, game.shield);
-      spawnFloat(game.towerX, game.towerY - 40, 'LAST STAND!', 'heal');
+      spawnFloat(game.towerX, game.towerY - 20, 'LAST STAND!', 'heal');
       return true;
     }
   }
@@ -1177,7 +1250,7 @@ function fireAt(target, dmgMul) {
   const st = getStormThreadData();
   if (st && game.shotCount % st.interval === 0) {
     const arcDmg = baseDmg * st.dmg;
-    const nearby = pickNearbyEnemies(target, 2, 160);
+    const nearby = pickNearbyEnemies(target, 2, 80);
     for (const extra of nearby) {
       game.projectiles.push({
         x: game.towerX, y: game.towerY,
@@ -1209,7 +1282,7 @@ function spawnEnemyProjectile(enemy) {
 function hitEnemy(e, dmg, crit) {
   e.hp -= dmg;
   if (save.settings.showFloatingDamage) {
-    spawnFloat(e.x, e.y - 12, Math.floor(dmg), crit ? 'crit' : 'dmg');
+    spawnFloat(e.x, e.y - 6, Math.floor(dmg), crit ? 'crit' : 'dmg');
   }
   if (e.hp <= 0) {
     e.dead = true;
@@ -1225,7 +1298,7 @@ function hitEnemy(e, dmg, crit) {
     game.cashEarnedThisRun += reward;
     if (save.settings.showFloatingCash) {
       const comboLabel = (comboMul > 1.01) ? ` ×${comboMul.toFixed(2)}` : '';
-      spawnFloat(e.x, e.y + 8, '+$' + formatNum(reward) + comboLabel, 'cash');
+      spawnFloat(e.x, e.y + 4, '+$' + formatNum(reward) + comboLabel, 'cash');
     }
     if (e.type === 'boss') {
       game.bossesDefeated++;
@@ -1238,7 +1311,7 @@ function hitEnemy(e, dmg, crit) {
       const heal = Math.max(1, Math.floor(dmg * ls));
       const actual = applyHealToTower(heal);
       if (actual > 0 && save.settings.showFloatingHeals) {
-        spawnFloat(game.towerX + (Math.random() * 20 - 10), game.towerY - 12, '+' + actual, 'lifesteal');
+        spawnFloat(game.towerX + (Math.random() * 10 - 5), game.towerY - 6, '+' + actual, 'lifesteal');
       }
     }
     if (game.enemiesKilledInWave >= game.enemiesPerWave) advanceWave();
@@ -1266,7 +1339,7 @@ function spawnEnemy() {
   const sx = game.towerX + Math.sin(angle) * spawnDist;
   const sy = game.towerY - Math.cos(angle) * spawnDist;
   const x = Math.max(10, Math.min(w - 10, sx));
-  const y = Math.max(-20, Math.min(game.towerY - 80, sy));
+  const y = Math.max(-10, Math.min(game.towerY - 40, sy));
   const r = Math.random();
   let type = 'normal';
   // Tier gates enemy variety. Higher tier = more variety available.
@@ -1291,7 +1364,7 @@ function spawnBoss() {
   const w = game.bfRect.width;
   const t = ENEMY_TYPES.boss;
   game.enemies.push({
-    x: w / 2, y: -30,
+    x: w / 2, y: -15,
     type: 'boss',
     hp: enemyHpForWave(game.wave) * t.hpMul,
     hpMax: enemyHpForWave(game.wave) * t.hpMul,
