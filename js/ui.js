@@ -486,6 +486,13 @@ function buyInRun(key) {
     }
   }
   if (bought === 0) return false;
+  // Track daily upgrade purchases for daily objective
+  var today = Math.floor(Date.now() / 86400000);
+  if (!save._dailyUpgradeDay || save._dailyUpgradeDay !== today) {
+    save._dailyUpgradeDay = today;
+    save._dailyUpgradeCount = 0;
+  }
+  save._dailyUpgradeCount = (save._dailyUpgradeCount || 0) + bought;
   if (key === 'range') updateRangeRing();
   refreshBtn(key);
   return true;
@@ -624,25 +631,17 @@ function toggleLiveStats() {
 function renderHud() {
   const hud = document.getElementById('hud');
   const inBattle = game.running;
+  // Wire the static END button in the battle status bar (once)
+  var hpEndBtn = document.getElementById('hpEndBtn');
+  if (hpEndBtn && !hpEndBtn._wired) {
+    hpEndBtn._wired = true;
+    hpEndBtn.addEventListener('click', function() { if (typeof endRunConfirm === 'function') endRunConfirm(); });
+  }
   if (inBattle) {
-    const battleDev = save.settings.devMode ? `<button class="hud-dev-btn" id="hudBattleDevBtn">⚙</button>` : '';
-    hud.innerHTML = `
-      <button class="hud-end-btn" id="hudBackBtn">
-        <span class="hud-end-icon">✕</span>
-        <span class="hud-end-label">END</span>
-      </button>
-      <div class="hud-battle-info" id="hudBattleInfo">
-        <span class="hud-bi-item">T${game.tier}</span>
-        <span class="hud-bi-sep">·</span>
-        <span class="hud-bi-item" id="hudWaveLabel">W${game.wave}</span>
-        <span class="hud-bi-sep">·</span>
-        <span class="hud-bi-item" id="hudKillCount">${game.enemiesKilledThisRun} kills</span>
-      </div>
-      ${battleDev}
-    `;
-    const back = document.getElementById('hudBackBtn');
-    if (back) back.addEventListener('click', endRunConfirm);
-    const bDev = document.getElementById('hudBattleDevBtn');
+    // HUD is minimal during battle — info lives in the status strip
+    var battleDev = save.settings.devMode ? '<button class="hud-dev-btn" id="hudBattleDevBtn">⚙</button>' : '';
+    hud.innerHTML = battleDev;
+    var bDev = document.getElementById('hudBattleDevBtn');
     if (bDev) bDev.addEventListener('click', openDevPanel);
   } else {
     const devBtn = save.settings.devMode ? `<button class="hud-dev-pill" id="hudDevBtn">⚙</button>` : '';
@@ -1224,7 +1223,7 @@ function renderDailyObjective() {
     { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
     { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
     { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
-    { task: 'Buy 3 Upgrades', check: () => Object.values(save.ranks).reduce((s, r) => s + r.level, 0), target: 3, reward: { coins: 500, gems: 5 } }
+    { task: 'Buy 3 Upgrades', check: function() { var today = Math.floor(Date.now() / 86400000); return (save._dailyUpgradeDay === today) ? (save._dailyUpgradeCount || 0) : 0; }, target: 3, reward: { coins: 500, gems: 5 } }
   ];
 
   const dayIndex = Math.floor(Date.now() / 86400000) % objectives.length;
@@ -1257,7 +1256,7 @@ function renderDailyObjectiveVisual() {
     { task: 'Complete 2 Runs', check: () => save.totalRuns, target: 2, reward: { coins: 500, gems: 5 } },
     { task: 'Defeat 500 Enemies', check: () => save.totalEnemiesKilled, target: 500, reward: { coins: 1000, gems: 10 } },
     { task: 'Reach Wave 25', check: () => save.bestWave, target: 25, reward: { coins: 750, gems: 5 } },
-    { task: 'Buy 3 Upgrades', check: () => Object.values(save.ranks).reduce((s, r) => s + r.level, 0), target: 3, reward: { coins: 500, gems: 5 } }
+    { task: 'Buy 3 Upgrades', check: function() { var today = Math.floor(Date.now() / 86400000); return (save._dailyUpgradeDay === today) ? (save._dailyUpgradeCount || 0) : 0; }, target: 3, reward: { coins: 500, gems: 5 } }
   ];
 
   const dayIndex = Math.floor(Date.now() / 86400000) % objectives.length;
