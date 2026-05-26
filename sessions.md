@@ -1501,3 +1501,28 @@ pm.cmd run test passed with 261 passed, 0 failed
 
 **Blockers:**
 - None in repo verification. Live visual confirmation still needs a deployed or otherwise browser-allowed preview target.
+
+## 2026-05-26 - Codex - Full Card Art Pack Wiring
+
+**What I did:**
+- Replaced the temporary SVG icon-art fallback with full illustrated card panels cut from the previously generated art sheets.
+- Added `assets/cards/full/*.png` for the 25 card pool entries and pointed each inventory card skin to its real panel art in `css/menu.css`.
+- Kept the cards responsive. The art is raster, but it is still layout-responsive because the card body uses CSS background scaling rather than fixed pixel placement.
+- Reduced the dark overlay on the card body and header so the artwork actually reads instead of looking like a blank block.
+
+**Files changed:**
+- assets/cards/full/*
+- css/menu.css
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `264 passed, 0 failed`
+
+**What other agents need to know:**
+- The user explicitly wanted full art packs, not just frame polish or vector glyphs.
+- The earlier vector pass was a mismatch with user expectation. The correct lane is full illustrated card panels plus responsive CSS presentation.
+- Live deploy still needs the isolated push lane because the working repo is dirty and behind/ahead relative to `origin/main`.
+
+**Blockers:**
+- None in source verification. Only the isolated git replay/push step remains for live deployment.
