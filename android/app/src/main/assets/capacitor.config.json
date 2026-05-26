@@ -1,0 +1,21 @@
+{
+	"appId": "com.mcrdminted.coresurge",
+	"appName": "Core Surge",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchAutoHide": true,
+			"launchShowDuration": 1200,
+			"backgroundColor": "#08101c",
+			"showSpinner": false
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#08101c"
+		}
+	}
+}

@@ -131,6 +131,31 @@ function render() {
   document.getElementById('waveNum').textContent = game.wave + (game.bossWave ? ' BOSS' : '');
   document.getElementById('cashDisp').textContent = formatNum(game.cash);
   document.getElementById('waveProg').textContent = `${game.enemiesKilledInWave}/${game.enemiesPerWave}`;
+
+  // Shield bar
+  const shieldWrap = document.getElementById('shieldBarWrap');
+  if (shieldWrap) {
+    const shieldMax = game.shieldMax || 0;
+    const shieldCur = Math.max(0, game.shield || 0);
+    if (shieldMax > 0) {
+      shieldWrap.style.display = '';
+      document.getElementById('shieldFill').style.width = (shieldCur / shieldMax * 100) + '%';
+      document.getElementById('shieldText').textContent = `${Math.floor(shieldCur)} / ${Math.floor(shieldMax)}`;
+    } else {
+      shieldWrap.style.display = 'none';
+    }
+  }
+
+  // Battle info bar (bottom, between battlefield and upgrades)
+  const binfoTier = document.getElementById('binfoTier');
+  if (binfoTier) binfoTier.textContent = game.tier;
+  const binfoWave = document.getElementById('binfoWave');
+  if (binfoWave) binfoWave.textContent = game.wave;
+  const binfoCash = document.getElementById('binfoCash');
+  if (binfoCash) binfoCash.textContent = formatNum(game.cash);
+  const binfoKills = document.getElementById('binfoKills');
+  if (binfoKills) binfoKills.textContent = `${game.enemiesKilledInWave} / ${game.enemiesPerWave}`;
+
   // HUD resource cards (new for v0.7.7)
   const hudCoinsEl = document.getElementById('hudCoinsValue');
   if (hudCoinsEl) hudCoinsEl.textContent = formatNum(save.coins);

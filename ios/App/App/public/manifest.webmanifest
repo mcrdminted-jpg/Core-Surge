@@ -1,0 +1,24 @@
+{
+  "name": "Core Surge",
+  "short_name": "Core Surge",
+  "description": "Fast mobile-first endless tower defense with installable web app support.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08101c",
+  "theme_color": "#08101c",
+  "categories": [
+    "games",
+    "strategy",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "assets/app/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1469,19 +1469,19 @@ function renderHomeUpgrades() {
 
   let html = '';
 
-  // Tabs
-  html += '<div class="home-upg-tabs">';
+  // Tabs — reuse the battle upgrade tab classes for consistent look
+  html += '<div class="upgrade-tabs">';
   for (var tabKey in HOME_UPGRADE_TABS) {
     var t = HOME_UPGRADE_TABS[tabKey];
     var active = activeHomeUpgradeTab === tabKey ? ' active' : '';
-    html += '<button class="home-upg-tab' + active + '" data-hutab="' + tabKey + '" style="--tab-color:' + t.color + '">';
-    html += '<span class="home-upg-tab-icon">' + t.icon + '</span> <span>' + t.title + '</span>';
+    html += '<button class="upgrade-tab' + active + '" data-hutab="' + tabKey + '" style="--tab-color:' + t.color + '">';
+    html += '<span class="upgrade-tab-icon">' + t.icon + '</span> <span>' + t.title + '</span>';
     html += '</button>';
   }
   html += '</div>';
 
-  // Grid of rank cards (3 columns, same style as battle upgrades)
-  html += '<div class="home-upg-grid">';
+  // Grid — reuse battle upgrade grid classes
+  html += '<div class="upgrade-grid">';
 
   if (visibleKeys.length === 0) {
     html += '<div style="grid-column:1/-1;text-align:center;padding:16px 10px;color:var(--muted);font-size:10px;">No ranks unlocked in this category yet.<br><span style="color:var(--accent)">Buy system unlocks in <b>Research</b>.</span></div>';
@@ -1493,10 +1493,13 @@ function renderHomeUpgrades() {
   }
   html += '</div>';
 
+  // UPGRADES header label
+  html += '<div class="home-upg-section-label">UPGRADES</div>';
+
   wrap.innerHTML = html;
 
   // Wire tab clicks
-  wrap.querySelectorAll('.home-upg-tab[data-hutab]').forEach(function(btn) {
+  wrap.querySelectorAll('.upgrade-tab[data-hutab]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var tid = btn.dataset.hutab;
       if (tid && tid !== activeHomeUpgradeTab) {
@@ -1507,7 +1510,7 @@ function renderHomeUpgrades() {
   });
 
   // Wire rank buy buttons (hold-to-buy)
-  wrap.querySelectorAll('.home-upg-btn[data-rank]').forEach(function(btn) {
+  wrap.querySelectorAll('.upgrade-btn[data-rank]').forEach(function(btn) {
     var rid = btn.dataset.rank;
     attachHoldToBuy(btn, function() {
       if (purchaseRank(rid)) {
@@ -1535,23 +1538,25 @@ function buildHomeRankCard(rid) {
     return v.toFixed(1);
   };
 
-  var deltaText = maxed ? 'MAXED' : '+' + fmt(curBonus) + ' → +' + fmt(nextBonus);
+  var deltaText = maxed ? 'MAXED' : fmt(curBonus) + ' → ' + fmt(nextBonus);
   var costText = maxed ? '—' : formatNum(cost);
   var progPct = def.maxRank >= 99999
     ? Math.min(100, (entry.level / 500) * 100)
     : Math.min(100, (entry.level / def.maxRank) * 100);
+  var levelText = 'Lv. ' + entry.level + (def.maxRank < 99999 ? ' / ' + def.maxRank : '');
 
-  return '<button class="home-upg-btn' + (can ? ' affordable' : '') + '" data-rank="' + rid + '" style="--upg-color:' + meta.color + '"' + (maxed || !can ? ' disabled' : '') + '>' +
-    '<div class="home-upg-body">' +
-      '<div class="home-upg-icon" style="color:' + meta.color + ';border-color:' + meta.color + '">' + meta.icon + '</div>' +
-      '<div class="home-upg-data">' +
-        '<div class="home-upg-name">' + def.name.toUpperCase() + '</div>' +
-        '<div class="home-upg-delta" style="color:' + meta.color + '">' + deltaText + '</div>' +
-        '<div class="home-upg-level">Rank ' + entry.level + (def.maxRank < 99999 ? ' / ' + def.maxRank : '') + '</div>' +
+  // Reuse the exact same classes as in-battle upgrade cards
+  return '<button class="upgrade-btn' + (can ? '' : '') + '" data-rank="' + rid + '" style="--upg-color:' + meta.color + '"' + (maxed || !can ? ' disabled' : '') + '>' +
+    '<div class="upgrade-body">' +
+      '<div class="upgrade-icon" style="color:' + meta.color + ';border-color:' + meta.color + '">' + meta.icon + '</div>' +
+      '<div class="upgrade-data">' +
+        '<div class="upgrade-name">' + def.name.toUpperCase() + '</div>' +
+        '<div class="upgrade-delta" style="color:' + meta.color + '">' + deltaText + '</div>' +
+        '<div class="upgrade-level">' + levelText + '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="home-upg-prog"><div class="home-upg-prog-fill" style="width:' + progPct + '%;background:' + meta.color + '"></div></div>' +
-    '<div class="home-upg-cost"><span class="cost-coin">⊙</span>' + costText + '</div>' +
+    '<div class="upgrade-prog"><div class="upgrade-prog-fill" style="width:' + progPct + '%;background:' + meta.color + '"></div></div>' +
+    '<div class="upgrade-cost"><span class="cost-coin">⊙</span>' + costText + '</div>' +
   '</button>';
 }
 
@@ -1614,7 +1619,7 @@ function renderSubmenu() {
   const c = document.getElementById('submenuContent');
   // Prepend a big neon panel title matching the mockup
   const titles = {
-    labs:       { t: 'RESEARCH',   s: 'PERMANENT UPGRADES' },
+    labs:       { t: 'RESEARCH',   s: 'SPEND SCRAP · UPGRADE YOUR CORE · GET FURTHER' },
     milestones: { t: 'GOALS',      s: 'EARN REWARDS · GET STRONGER' },
     cards:      { t: 'LOADOUT',    s: 'CARDS' },
     shop:       { t: 'STORE',      s: 'GEMS · SCRAP · BOOSTERS' },
@@ -1649,13 +1654,13 @@ let activeLabTab = 'combat';
 // are visible under each sub-tab.
 const RANK_CATEGORY = {
   // Combat
-  damage: 'combat', fireRate: 'combat',
+  damage: 'combat', fireRate: 'combat', range: 'combat',
   critChance: 'combat', critPower: 'combat',
   multiChance: 'combat', multiPower: 'combat', multiTargets: 'combat',
   bounceChance: 'combat', bouncePower: 'combat', bounceTargets: 'combat',
   comboBonus: 'combat', comboDuration: 'combat',
   // Defense
-  coreHealth: 'defense', armor: 'defense', range: 'defense',
+  coreHealth: 'defense', armor: 'defense',
   lifesteal: 'defense', regen: 'defense',
   thorns: 'defense', knockback: 'defense',
   shieldHP: 'defense', shieldRegen: 'defense',
@@ -1770,7 +1775,7 @@ function renderLabsTab(c) {
 
   // Section label
   const stMeta = RESEARCH_SUBTABS.find(s => s.id === activeResearchTab);
-  html += `<div class="mockup-rank-section">⚙ <b>${stMeta ? stMeta.label : 'Ranks'}</b> · ${visibleRankIds.length} rank${visibleRankIds.length === 1 ? '' : 's'} · scrap-bought · permanent</div>`;
+  html += `<div class="mockup-rank-section">⚙ <b>${stMeta ? stMeta.label : 'Research'}</b> · ${visibleRankIds.length} rank${visibleRankIds.length === 1 ? '' : 's'} · spend scrap to upgrade your core</div>`;
 
   if (visibleRankIds.length === 0) {
     html += `<div class="lab-section-header" style="opacity:0.55;border-style:dashed;text-align:center;padding:20px 10px;">No ranks in this category yet.<br><span style="color:var(--muted);font-weight:normal;font-size:10px;">Unlock a family above to reveal more.</span></div>`;

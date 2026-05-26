@@ -489,15 +489,14 @@ const TAGLINES = [
 // ============================================================
 
 // Progression bands by highest tier unlocked (save.bestTier)
-const TOURNEY_BANDS = [
-  { id: 1, name: 'Band 1', minTier: 1,  maxTier: 2 },
-  { id: 2, name: 'Band 2', minTier: 3,  maxTier: 5 },
-  { id: 3, name: 'Band 3', minTier: 6,  maxTier: 8 },
-  { id: 4, name: 'Band 4', minTier: 9,  maxTier: 11 },
-  { id: 5, name: 'Band 5', minTier: 12, maxTier: 14 },
-  { id: 6, name: 'Band 6', minTier: 15, maxTier: 17 },
-  { id: 7, name: 'Band 7', minTier: 18, maxTier: 999 }
-];
+// 20 bands of 5 tiers each covering T1-100
+const TOURNEY_BANDS = (function() {
+  var bands = [];
+  for (var i = 0; i < 20; i++) {
+    bands.push({ id: i + 1, name: 'Band ' + (i + 1), minTier: i * 5 + 1, maxTier: (i + 1) * 5 });
+  }
+  return bands;
+})();
 
 const TOURNEY_LEAGUES = ['copper', 'bronze', 'silver', 'gold', 'platinum'];
 const TOURNEY_LEAGUE_DISPLAY = {
@@ -509,16 +508,26 @@ const TOURNEY_LEAGUE_DISPLAY = {
 };
 
 // Base reward table [band_id][league] = { coins, gems }
-// Copied from the spec's "Standard Tournament base rewards" tables.
-const TOURNEY_REWARDS_BASE = {
-  1: { copper: { coins: 150,  gems: 5  }, bronze: { coins: 180,  gems: 6  }, silver: { coins: 220,  gems: 7  }, gold: { coins: 270,  gems: 8  }, platinum: { coins: 330,  gems: 10 } },
-  2: { copper: { coins: 300,  gems: 8  }, bronze: { coins: 360,  gems: 9  }, silver: { coins: 430,  gems: 11 }, gold: { coins: 520,  gems: 13 }, platinum: { coins: 630,  gems: 16 } },
-  3: { copper: { coins: 600,  gems: 12 }, bronze: { coins: 720,  gems: 14 }, silver: { coins: 860,  gems: 17 }, gold: { coins: 1040, gems: 20 }, platinum: { coins: 1260, gems: 24 } },
-  4: { copper: { coins: 1100, gems: 18 }, bronze: { coins: 1320, gems: 21 }, silver: { coins: 1580, gems: 25 }, gold: { coins: 1900, gems: 30 }, platinum: { coins: 2280, gems: 36 } },
-  5: { copper: { coins: 1800, gems: 24 }, bronze: { coins: 2160, gems: 28 }, silver: { coins: 2580, gems: 33 }, gold: { coins: 3100, gems: 39 }, platinum: { coins: 3720, gems: 46 } },
-  6: { copper: { coins: 2800, gems: 32 }, bronze: { coins: 3360, gems: 37 }, silver: { coins: 4020, gems: 43 }, gold: { coins: 4820, gems: 50 }, platinum: { coins: 5780, gems: 58 } },
-  7: { copper: { coins: 4200, gems: 40 }, bronze: { coins: 5040, gems: 46 }, silver: { coins: 6040, gems: 53 }, gold: { coins: 7240, gems: 61 }, platinum: { coins: 8680, gems: 70 } }
-};
+// Generated for 20 bands — rewards scale ~1.35x per band, league multiplier on top
+const TOURNEY_REWARDS_BASE = (function() {
+  var table = {};
+  var baseCoinPerBand = 150;   // band 1 copper coins
+  var baseGemPerBand  = 5;     // band 1 copper gems
+  var leagueMul = { copper: 1.0, bronze: 1.2, silver: 1.45, gold: 1.8, platinum: 2.2 };
+  var leagues = ['copper', 'bronze', 'silver', 'gold', 'platinum'];
+  for (var b = 1; b <= 20; b++) {
+    table[b] = {};
+    var coinBase = Math.round(baseCoinPerBand * Math.pow(1.35, b - 1));
+    var gemBase  = Math.round(baseGemPerBand  * Math.pow(1.25, b - 1));
+    for (var l = 0; l < leagues.length; l++) {
+      table[b][leagues[l]] = {
+        coins: Math.round(coinBase * leagueMul[leagues[l]]),
+        gems:  Math.round(gemBase  * leagueMul[leagues[l]])
+      };
+    }
+  }
+  return table;
+})();
 
 // Placement multipliers — based on final rank in 250-player bracket
 const TOURNEY_PLACEMENT_MULTS = [
@@ -583,12 +592,11 @@ function tourneyRewardForPlacement(bandId, league, rank) {
 // Used to generate synthetic competitor scores.
 // [minWave, maxWave] — avg player ceiling for that band/league
 function tourneyExpectedWaveRange(bandId, league) {
-  // Base scales with band, league tilts toward top of band range
-  const bandBaseWave = { 1: 18, 2: 45, 3: 85, 4: 150, 5: 250, 6: 400, 7: 650 };
-  const leagueMul = { copper: 0.55, bronze: 0.75, silver: 1.00, gold: 1.30, platinum: 1.70 };
-  const base = bandBaseWave[bandId] || 18;
-  const mul = leagueMul[league] || 1;
-  const center = base * mul;
+  // Formula: base wave grows ~1.28x per band (18 → ~19,000 at band 20)
+  var baseWave = Math.round(18 * Math.pow(1.28, bandId - 1));
+  var leagueMul = { copper: 0.55, bronze: 0.75, silver: 1.00, gold: 1.30, platinum: 1.70 };
+  var mul = leagueMul[league] || 1;
+  var center = baseWave * mul;
   return [Math.floor(center * 0.65), Math.floor(center * 1.35)];
 }
 

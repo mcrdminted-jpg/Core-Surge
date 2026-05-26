@@ -1,0 +1,279 @@
+/* ==========================================================================
+   mockup-overlay.css — v0.7.22 "Mockup Overlays"
+   ==========================================================================
+   Paints the ChatGPT-generated UI mockup PNGs as backgrounds on specific
+   panels, and positions real HTML (buttons, labels) precisely into the
+   painted slots so the art provides the frame and we provide the data.
+
+   Proof-of-concept: Research panel only. If the user likes this, the same
+   pattern extends to Loadout / Goals / Store / Settings / Skins / Tournament.
+
+   ---------------------------------------------------------------------------
+   TECH:
+   - Each panel has a fixed aspect-ratio box (from the crop dimensions).
+   - Background is the mockup PNG at 100% contain.
+   - Children are position:absolute at percentage coordinates matching the
+     painted slots. No double-borders, no double-glow — the art is the art.
+   - The click targets are invisible rectangles sitting on the painted
+     controls. Only the text label / value / lock icon is rendered over
+     the painted frame.
+
+   RESEARCH OVERLAY
+   - Source: assets/mockups/research_hdr.png (941 x 520, aspect 0.553)
+   - Slots measured in percent of cropped header:
+       Title text pill: top 5%, left 19%, w 62%, h 17%
+       Sub-tab 1 (Combat):  top 30%, left 3.7%,  w 20.2%, h 15%
+       Sub-tab 2 (Defense): top 30%, left 25.0%, w 22.8%, h 15%
+       Sub-tab 3 (Economy): top 30%, left 48.9%, w 22.8%, h 15%
+       Sub-tab 4 (Utility): top 30%, left 72.8%, w 23.4%, h 15%
+       Family cards: top 50%, h 48%, 4 columns each w ~20.7% with ~4% gap
+         Card 1: left  3.7%
+         Card 2: left 26.0%
+         Card 3: left 48.4%
+         Card 4: left 70.7%
+   ========================================================================== */
+
+.mockup-bg-research {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 941 / 520;
+  /* background-image: url('../assets/mockups/research_hdr.png'); */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center top;
+  margin: 4px 0 12px 0;
+  background: linear-gradient(180deg, rgba(8, 20, 50, 0.9) 0%, rgba(5, 12, 30, 0.8) 100%);
+  border: 2px solid rgba(80, 200, 255, 0.35);
+  border-radius: 14px;
+  box-shadow: inset 0 0 30px rgba(80, 180, 255, 0.1), 0 0 20px rgba(80, 180, 255, 0.15);
+}
+
+/* --- TITLE: "RESEARCH" text inside the painted pill --- */
+.mockup-bg-research .mor-title {
+  position: absolute;
+  top: 7%;
+  left: 22%;
+  width: 56%;
+  height: 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5f2ff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(13px, 4vw, 20px);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #3fb6ff 0%, #b27bff 50%, #ff6abf 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(80, 180, 255, 0.5)) drop-shadow(0 0 6px rgba(178, 120, 255, 0.3));
+}
+
+/* --- SUB-TAB click targets (invisible, over painted frames) --- */
+.mockup-bg-research .mor-subtabs {
+  position: absolute;
+  top: 29%;
+  left: 2%;
+  right: 2%;
+  height: 17%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1%;
+}
+.mockup-bg-research .mor-subtab {
+  background: rgba(20, 50, 100, 0.4);
+  border: 1.5px solid rgba(80, 160, 255, 0.2);
+  border-radius: 8px;
+  color: #9ec3e8;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The icon is painted — we just need a label below it */
+  flex-direction: column;
+  gap: 1px;
+  transition: all 0.2s ease;
+}
+.mockup-bg-research .mor-subtab:hover:not(.active) {
+  background: rgba(30, 70, 130, 0.6);
+  border-color: rgba(100, 180, 255, 0.4);
+}
+.mockup-bg-research .mor-subtab-label {
+  position: absolute;
+  top: -13px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  opacity: 0;   /* Hidden by default — painted icons carry meaning */
+  transition: opacity 0.15s ease;
+}
+.mockup-bg-research .mor-subtab.active {
+  background: linear-gradient(135deg, rgba(80, 200, 255, 0.25) 0%, rgba(100, 180, 255, 0.15) 100%);
+  border-color: rgba(150, 220, 255, 0.6);
+  box-shadow: 0 0 12px rgba(100, 200, 255, 0.4), inset 0 0 8px rgba(100, 200, 255, 0.15);
+}
+.mockup-bg-research .mor-subtab.active .mor-subtab-label {
+  color: #6ff0ff;
+  opacity: 1;   /* Show label above the active tab */
+  text-shadow: 0 0 8px rgba(100, 220, 255, 0.8);
+  font-weight: 800;
+}
+.mockup-bg-research .mor-subtab:active {
+  background: rgba(100, 220, 255, 0.15);
+}
+
+/* --- FAMILY CARDS (4 slots) --- */
+.mockup-bg-research .mor-families {
+  position: absolute;
+  top: 50%;
+  left: 1.5%;
+  right: 1.5%;
+  bottom: 1%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 2%;
+}
+.mockup-bg-research .mor-fam {
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 60, 120, 0.8) 0%, rgba(10, 40, 80, 0.6) 100%);
+  border: 1.5px solid rgba(80, 180, 255, 0.4);
+  border-radius: 12px;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: #cfe3f5;
+  text-align: center;
+  /* children: badge label + buy pill at bottom */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 6%;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 15px rgba(80, 180, 255, 0.2), inset 0 0 12px rgba(100, 200, 255, 0.05);
+  overflow: hidden;
+}
+.mockup-bg-research .mor-fam:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(30, 100, 180, 0.95) 0%, rgba(20, 70, 140, 0.8) 100%);
+  border-color: rgba(150, 220, 255, 0.7);
+  box-shadow: 0 0 25px rgba(100, 200, 255, 0.5), inset 0 0 16px rgba(150, 220, 255, 0.15);
+  transform: translateY(-2px);
+}
+.mockup-bg-research .mor-fam:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background: rgba(10, 25, 50, 0.3);
+  border-color: rgba(60, 100, 150, 0.2);
+}
+.mockup-bg-research .mor-fam-empty {
+  cursor: default;
+  pointer-events: none;
+}
+.mockup-bg-research .mor-fam-locked {
+  background: linear-gradient(135deg, rgba(10, 25, 50, 0.5) 0%, rgba(5, 15, 35, 0.4) 100%);
+  border-style: dashed;
+  border-color: rgba(80, 150, 200, 0.15);
+  box-shadow: none;
+}
+.mockup-bg-research .mor-fam-locked .mor-fam-name {
+  font-size: clamp(14px, 4vw, 22px);
+  opacity: 0.35;
+  color: #8ab4d4;
+  text-shadow: none;
+}
+.mockup-bg-research .mor-fam-locked .mor-fam-cost {
+  font-size: clamp(7px, 1.6vw, 9px);
+  color: #6a8da8;
+  opacity: 0.45;
+  letter-spacing: 1.5px;
+  text-shadow: none;
+}
+.mockup-bg-research .mor-fam-name {
+  position: absolute;
+  top: 40%;
+  left: 6%;
+  right: 6%;
+  text-align: center;
+  font-size: clamp(9px, 2.5vw, 14px);
+  letter-spacing: 1px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #ffffff;
+  text-transform: uppercase;
+  pointer-events: none;
+  text-shadow: 0 0 12px rgba(80, 180, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+.mockup-bg-research .mor-fam-cost {
+  position: absolute;
+  bottom: 8%;
+  left: 6%;
+  right: 6%;
+  text-align: center;
+  font-size: clamp(8px, 2vw, 12px);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffeb99;
+  pointer-events: none;
+  line-height: 1.2;
+  text-shadow: 0 0 8px rgba(255, 215, 100, 0.6), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.mockup-bg-research .mor-fam.owned .mor-fam-cost {
+  color: #6fe89a;
+  text-shadow: 0 0 6px rgba(100, 220, 140, 0.4);
+}
+.mockup-bg-research .mor-fam.owned .mor-fam-name {
+  color: #9ef5bd;
+  text-shadow: 0 0 8px rgba(100, 220, 140, 0.3);
+}
+.mockup-bg-research .mor-fam.cant-afford .mor-fam-cost {
+  color: #8a9aaa;
+  text-shadow: 0 0 4px rgba(100, 150, 180, 0.2);
+}
+.mockup-bg-research .mor-fam:not(:disabled):active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* --- Section label before the flowing rank rows below --- */
+.mockup-rank-section {
+  margin-top: 6px;
+  padding: 8px 10px;
+  color: #9ec3e8;
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.85;
+  border-top: 1px solid rgba(100, 160, 220, 0.15);
+}
+.mockup-rank-section b {
+  color: #6ff0ff;
+  font-weight: 800;
+}
+
+/* --- Narrow-phone tweaks so text does not clip --- */
+@media (max-width: 360px) {
+  .mockup-bg-research .mor-title { letter-spacing: 3px; font-size: 14px; }
+  .mockup-bg-research .mor-fam-name { font-size: 10px; }
+  .mockup-bg-research .mor-fam-cost { font-size: 9px; }
+  .mockup-bg-research .mor-subtab-label { font-size: 7px; }
+}
+
+/* --- Tall-screen tweaks so overlay doesn't dominate --- */
+@media (min-aspect-ratio: 1/2) {
+  .mockup-bg-research {
+    max-height: 42vh;
+    aspect-ratio: auto;
+    height: 42vh;
+  }
+}

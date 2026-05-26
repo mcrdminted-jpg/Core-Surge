@@ -401,6 +401,11 @@
           <div class="hp-fill" id="hpFill"></div>
           <div class="hp-text" id="hpText">100 / 100</div>
         </div>
+        <!-- Shield bar below HP -->
+        <div class="shield-bar" id="shieldBarWrap" style="display:none">
+          <div class="shield-fill" id="shieldFill"></div>
+          <div class="shield-text" id="shieldText">0 / 0</div>
+        </div>
       </div>
     </div>
   </div>
@@ -431,13 +436,21 @@
     </div>
   </div>
 
+  <!-- Battle info bar: TIER · WAVE · CASH · KILLS -->
+  <div class="battle-info-bar" id="battleInfoBar">
+    <span class="binfo-pill binfo-tier"><span class="binfo-icon">⊕</span> TIER <b id="binfoTier">1</b></span>
+    <span class="binfo-pill binfo-wave"><span class="binfo-icon">⊕</span> WAVE <b id="binfoWave">1</b></span>
+    <span class="binfo-pill binfo-cash"><span class="binfo-icon">$</span> CASH <b id="binfoCash">0</b></span>
+    <span class="binfo-pill binfo-kills"><span class="binfo-icon">☠</span> KILLS <b id="binfoKills">0/10</b></span>
+  </div>
+
   <div class="upgrades-wrap" id="upgradesWrap"></div>
 </div>
 
 <!-- PRIMARY BOTTOM NAV (7-tab submenu, always visible) -->
 <div class="submenu" id="submenu">
   <button class="submenu-btn home-btn active" data-tab="home">Home</button>
-  <button class="submenu-btn" data-tab="labs">Ranks</button>
+  <button class="submenu-btn" data-tab="labs">Research</button>
   <button class="submenu-btn" data-tab="milestones">Goals</button>
   <button class="submenu-btn" data-tab="cards">Loadout</button>
   <button class="submenu-btn" data-tab="tournament">Tourney</button>

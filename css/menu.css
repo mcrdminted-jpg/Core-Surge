@@ -1774,6 +1774,16 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   max-width: 100%;
   box-sizing: border-box;
 }
+.home-upg-section-label {
+  text-align: center;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 6px 0 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
 .home-upg-tabs {
   display: flex;
   gap: 3px;

@@ -67,6 +67,37 @@
     letter-spacing: 0.5px;
   }
 
+  /* Shield bar — below HP bar */
+  .shield-bar {
+    position: relative;
+    height: 14px;
+    background: rgba(0, 180, 255, 0.1);
+    border: 1px solid rgba(0, 180, 255, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 3px;
+    clip-path: polygon(
+      4px 0, calc(100% - 4px) 0, 100% 50%,
+      calc(100% - 4px) 100%, 4px 100%, 0 50%
+    );
+  }
+  .shield-fill {
+    position: absolute; inset: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #00aaff, #44ccff, #66ddff);
+    transition: width 0.15s;
+    box-shadow: inset 0 0 8px rgba(0,200,255,0.4);
+  }
+  .shield-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: bold;
+    color: white;
+    text-shadow: 0 0 3px rgba(0,0,0,0.8);
+    z-index: 2;
+    letter-spacing: 0.4px;
+  }
+
   /* Compact info strip — one line under HP bar */
   .status-strip {
     display: flex;
@@ -345,6 +376,45 @@
   }
 
   /* In-run upgrades — compact tabbed panel */
+  /* Battle info bar — TIER · WAVE · CASH · KILLS between battlefield and upgrades */
+  .battle-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: linear-gradient(180deg, rgba(8,12,20,0.95), rgba(12,18,30,0.95));
+    border-top: 1px solid var(--accent-dim);
+    border-bottom: 1px solid var(--accent-dim);
+    flex-shrink: 0;
+  }
+  .binfo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .binfo-pill b {
+    color: var(--text);
+    font-size: 11px;
+  }
+  .binfo-icon {
+    font-size: 10px;
+    opacity: 0.7;
+  }
+  .binfo-tier { color: var(--purple); }
+  .binfo-tier b { color: var(--purple); }
+  .binfo-wave { color: var(--accent); }
+  .binfo-wave b { color: var(--accent); }
+  .binfo-cash { color: var(--good); }
+  .binfo-cash b { color: var(--good); }
+  .binfo-kills { color: var(--danger); }
+  .binfo-kills b { color: var(--danger); }
+
   .upgrades-wrap {
     background: var(--bg-2);
     border-top: 1px solid var(--accent-dim);
@@ -465,6 +535,12 @@
   }
   .upgrade-btn.affordable {
     box-shadow: 0 0 calc(var(--glow-on) * 5px) var(--upg-color, var(--accent));
+    animation: upg-pulse 1.5s ease-in-out infinite;
+    border-color: var(--upg-color, var(--accent));
+  }
+  @keyframes upg-pulse {
+    0%, 100% { box-shadow: 0 0 4px var(--upg-color, var(--accent)); }
+    50% { box-shadow: 0 0 12px var(--upg-color, var(--accent)), 0 0 20px color-mix(in srgb, var(--upg-color, var(--accent)) 40%, transparent); }
   }
 
   .upgrade-body {
