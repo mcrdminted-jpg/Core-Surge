@@ -187,9 +187,9 @@ function checkTutorial() {
 // ============================================================
 let activeUpgradeTab = 'offense';
 const UPGRADE_TABS = {
-  offense: { title: 'Offense', icon: '🚀', color: 'var(--danger)', keys: ['damage','attackSpeed','critChance','critPower','multishotChance','multishotPower','multishotTargets','bounceChance','bouncePower','bounceTargets'] },
-  defense: { title: 'Armor',   icon: '🛡', color: 'var(--accent)', keys: ['health','defense','range','lifesteal','regen'] },
-  economy: { title: 'Economy', icon: '💰', color: 'var(--gold)', keys: ['cashBonus','waveBonus','combo','bossBounty','coinBonus'] }
+  offense: { title: 'Offense', icon: '🚀', color: 'var(--danger)', keys: ['damage','attackSpeed','range','critChance','critPower','multishotChance','multishotPower','multishotTargets','bounceChance','bouncePower','bounceTargets'] },
+  defense: { title: 'Defense', icon: '🛡', color: 'var(--accent)', keys: ['health','defense','shield','lifesteal','regen'] },
+  economy: { title: 'Economy', icon: '💰', color: 'var(--gold)', keys: ['cashBonus','waveBonus','coinBonus','combo','bossBounty'] }
 };
 
 // Each in-run upgrade maps to an unlock family. If the family isn't
@@ -201,6 +201,7 @@ const UPGRADE_UNLOCK_FAMILY = {
   attackSpeed:      null,
   health:           null,
   defense:          null,
+  shield:           null,
   range:            null,
   cashBonus:        null,
   heal:             null,
@@ -208,8 +209,8 @@ const UPGRADE_UNLOCK_FAMILY = {
   // Gated by critSystems
   critChance:       'critSystems',
   critPower:        'critSystems',
-  // Gated by economyExpansion
-  waveBonus:        'economyExpansion',
+  // Wave bonus is starter; boss bounty gated by economyExpansion
+  waveBonus:        null,
   bossBounty:       'economyExpansion',
   // Gated by sustainSystems
   lifesteal:        'sustainSystems',
@@ -246,6 +247,7 @@ const UPGRADE_ICONS = {
   bounceTargets:    { icon: '⋰⋱',  color: 'var(--purple)' },
   health:           { icon: '♥',  color: 'var(--danger)' },
   defense:          { icon: '🛡', color: 'var(--accent)' },
+  shield:           { icon: '⬡',  color: 'var(--purple)' },
   range:            { icon: '◎',  color: 'var(--accent)' },
   lifesteal:        { icon: '☖',  color: 'var(--good)' },
   regen:            { icon: '✚',  color: 'var(--good)' },
@@ -483,6 +485,13 @@ function buyInRun(key) {
       const diff = newMax - game.hpMax;
       game.hpMax = newMax;
       game.hp += diff;
+    }
+    if (key === 'shield') {
+      const newCap = getBarrierShieldMax();
+      const diff = newCap - (game.barrierCap || 0);
+      game.barrierCap = newCap;
+      game.shieldMax = Math.max(game.shieldMax, newCap);
+      game.shield = Math.min(newCap, game.shield + diff);
     }
   }
   if (bought === 0) return false;

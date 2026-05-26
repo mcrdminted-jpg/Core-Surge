@@ -92,10 +92,12 @@ const game = {
     bounceChance:     { name: 'Bounce Chance',    group: 'offense', level: 0, cost0: 25,   costMul: 1.14, max: 100 },
     bouncePower:      { name: 'Bounce Power',     group: 'offense', level: 0, cost0: 35,   costMul: 1.15, max: 100 },
     bounceTargets:    { name: 'Bounce Targets',   group: 'offense', level: 0, cost0: 800,  costMul: 3.5,  max: 5 },
+    // OFFENSE - range
+    range:            { name: 'Range',            group: 'offense', level: 0, cost0: 14,   costMul: 1.11, max: 100 },
     // DEFENSE
     health:           { name: 'Core Integrity',   group: 'defense', level: 0, cost0: 10,   costMul: 1.09, max: 5000 },
     defense:          { name: 'Armor',             group: 'defense', level: 0, cost0: 18,   costMul: 1.12, max: 180 },
-    range:            { name: 'Range',            group: 'defense', level: 0, cost0: 14,   costMul: 1.11, max: 100 },
+    shield:           { name: 'Shield',           group: 'defense', level: 0, cost0: 25,   costMul: 1.10, max: 5000 },
     lifesteal:        { name: 'Lifesteal',        group: 'defense', level: 0, cost0: 100,  costMul: 1.15, max: 400 },
     regen:            { name: 'Regen',            group: 'defense', level: 0, cost0: 60,   costMul: 1.14, max: 200 },
     // ECONOMY
@@ -391,7 +393,17 @@ function getThornsFraction() { return rankFlatBonus('thorns'); }
 function getKnockbackChance() { return rankFlatBonus('knockback'); }
 
 // === Barrier / Permanent Shield ===
-function getBarrierShieldMax() { return Math.floor(rankFlatBonus('shieldHP')); }
+// Shield max = permanent rank bonus + in-run shield upgrade (8 HP per level)
+function getBarrierShieldMax() {
+  const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
+  const inRunBonus = game.upgrades.shield ? game.upgrades.shield.level * 8 : 0;
+  return rankBonus + inRunBonus;
+}
+function getBarrierShieldMaxNext() {
+  const rankBonus = Math.floor(rankFlatBonus('shieldHP'));
+  const inRunBonus = game.upgrades.shield ? (game.upgrades.shield.level + 1) * 8 : 0;
+  return rankBonus + inRunBonus;
+}
 function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen'); }
 
 // === Coin Multiplier === (permanent end-run multiplier from ranks)
@@ -425,6 +437,7 @@ function upgradeDescriptor(key) {
     case 'attackSpeed':      return { cur: getAttackSpeed().toFixed(2), next: getAttackSpeedNext().toFixed(2), unit: '/s' };
     case 'health':           return { cur: formatStat(getMaxHp()), next: formatStat(getMaxHpNext()), unit: ' HP' };
     case 'defense':          return { cur: (getDefenseFraction() * 100).toFixed(1), next: (getDefenseFractionNext() * 100).toFixed(1), unit: '%' };
+    case 'shield':           return { cur: getBarrierShieldMax(), next: getBarrierShieldMaxNext(), unit: ' HP' };
     case 'range': {
       return { cur: Math.round(getRange()), next: Math.round(getRangeNext()), unit: ' range' };
     }
