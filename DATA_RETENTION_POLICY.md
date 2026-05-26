@@ -15,7 +15,7 @@ This document describes what user data is stored by Core Surge: Endless Tower De
 
 | Data Item | Storage Key | Description |
 |-----------|-------------|-------------|
-| Game Save File | `tower_save_v8` | Complete local game state: tower loadout, card inventory, card levels, currencies (coins, gems), wave progress, rank progression, unlocked slots, settings preferences, tournament history |
+| Game Save File | `tower_save_v8` | Complete local game state: tower loadout, card inventory, card levels, currencies (Scrap, gems), wave progress, rank progression, unlocked slots, settings preferences, tournament history |
 | Firebase Configuration | Runtime only | Firebase project credentials for cloud connectivity (not persisted as user data) |
 | RevenueCat Keys | Runtime only | Purchase verification tokens (managed by RevenueCat SDK) |
 

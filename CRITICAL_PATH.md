@@ -1,6 +1,36 @@
 # Core Surge Critical Path to Launch
 
-**Week 6 Launch Gate: June 14, 2026**
+**Week 6 Launch Gate: June 14, 2026 (AT RISK - see status update below)**
+
+## Status Update (2026-05-25)
+
+### Resolved Since Initial Plan
+- Build pipeline EXISTS (scripts/build.js, 181KB minified bundle in dist/)
+- All compliance/legal docs WRITTEN (Privacy, ToS, COPPA, GDPR, Loot Box, Data Retention)
+- App store prep docs COMPLETE (descriptions, screenshots, review notes, 60 tasks done)
+- Service worker FUNCTIONAL (v0.7.25)
+- Save migration system IMPLEMENTED (v0.7.26)
+- DOM pooling for render performance IMPLEMENTED (v0.7.26)
+- Tutorial system IMPLEMENTED (v0.7.25)
+- 14 new research stats WIRED into gameplay (v0.7.24)
+
+### NEW Blocker: Balance Overcorrection
+- v0.7.25 raised costMul but left maxRank at 400 = ranks mathematically unreachable
+- Players reach 12.5% completion by T10 vs 75% target
+- MUST implement BALANCE_RECOMMENDATION.md before any playtesting
+- Fix estimate: 1-2 hours Claude Code work
+
+### Unchanged Blockers
+- Firebase web credentials still empty (blocks ALL cloud/auth/leaderboard/analytics)
+- No CI/CD (.github/workflows/ missing)
+- Codex at 0/100 tasks (has not started)
+- No analytics or crash reporting instrumented
+- No ads integrated
+- IARC rating not obtained
+
+### Risk Assessment
+- June 14 launch gate is HIGH RISK given Codex has zero progress
+- Recommend reassessing to June 28 if Codex doesn't start by May 28
 
 ## Critical Dependencies (Must Complete Before Production)
 

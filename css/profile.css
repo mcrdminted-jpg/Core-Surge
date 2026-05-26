@@ -149,40 +149,6 @@
   margin-top: 4px;
 }
 
-.cloud-checklist {
-  margin: 10px 0 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.cloud-check-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.cloud-check-row + .cloud-check-row {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.cloud-check-row.ok .cloud-check-state {
-  color: var(--good);
-}
-
-.cloud-check-row.todo .cloud-check-state {
-  color: #ffcf5f;
-}
-
-.cloud-check-state {
-  font-weight: 800;
-  letter-spacing: 0.7px;
-}
-
 .cloud-status-badge {
   border-radius: 999px;
   padding: 6px 10px;
@@ -246,11 +212,6 @@
   border-color: var(--danger);
   background: rgba(255, 67, 108, 0.12);
   color: #ff8ca8;
-}
-
-.cloud-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .cloud-auth-modal {

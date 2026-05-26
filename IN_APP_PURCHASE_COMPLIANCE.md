@@ -35,11 +35,11 @@ Gems are consumed through card pulls (20 gems each), slot unlocks, and other in-
 
 **Status: COMPLIANT**
 
-- `starter_pack` (250 gems + 2500 coins + 1 card, $0.99) -- one-time purchase
+- `starter_pack` (250 gems + 2500 Scrap + 1 card, $0.99) -- one-time purchase
 
 The starter pack uses RevenueCat's `$rc_lifetime` package type. The `productOwnershipLedgerKey()` function prevents duplicate grants. The `restoreStorePurchases()` function calls `plugin.restorePurchases()` and `grantRestoredPermanentProducts()` to restore the starter pack on new devices.
 
-Note: The starter pack grants consumable rewards (gems, coins) as a one-time bonus plus a permanent card unlock. The one-time nature is enforced by the receipt ledger and RevenueCat entitlement tracking.
+Note: The starter pack grants consumable rewards (gems, Scrap) as a one-time bonus plus a permanent card unlock. The one-time nature is enforced by the receipt ledger and RevenueCat entitlement tracking.
 
 ### 3.1.2 Subscriptions
 

@@ -19,7 +19,7 @@ This Privacy Policy describes how Andrew Evans Anglin ("Developer," "we," "us," 
 
 ### 1.2 Information Collected Automatically
 
-- **Play Statistics:** Waves completed, damage dealt, coins earned, gems earned, cards collected, tournament results, and other gameplay metrics.
+- **Play Statistics:** Waves completed, damage dealt, Scrap earned, gems earned, cards collected, tournament results, and other gameplay metrics.
 - **Device Identifier:** A device-level identifier used for analytics and crash reporting purposes.
 - **Usage Data:** How you interact with the Game, including session duration, features used, and in-app purchase activity.
 - **Crash and Performance Data:** Technical information about crashes, errors, and performance metrics collected via Firebase Crashlytics.

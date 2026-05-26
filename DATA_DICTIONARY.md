@@ -11,7 +11,7 @@
 
 | Key | Type | Valid Range/Values | Description | Example |
 |-----|------|-------------------|-------------|---------|
-| `coins` | number | 0 - Infinity | Permanent meta-currency earned from runs, spent on ranks and unlock families | `4500` |
+| `coins` | number | 0 - Infinity | Permanent meta-currency (Scrap) earned from runs, spent on ranks and unlock families | `4500` |
 | `gems` | number | 0 - Infinity | Premium currency used for card pulls, slot unlocks, and store purchases | `120` |
 | `totalRuns` | number | 0 - Infinity | Lifetime count of battle runs started | `87` |
 | `bestTier` | number | 1 - 18 | Highest tier the player has ever reached (determines tournament band) | `5` |
@@ -19,7 +19,7 @@
 | `bestWavePerTier` | object | `{ [tierNum]: waveNum }` | Best wave reached per tier. Keys are tier numbers as strings, values are wave numbers | `{ "1": 85, "2": 42, "3": 12 }` |
 | `claimedMilestones` | object | `{ [milestoneKey]: true }` | Which milestone rewards have been claimed (keys are composite IDs) | `{ "1_25": true, "1_50": true }` |
 | `selectedTier` | number | 1 - bestTier | Currently selected tier for next battle run | `3` |
-| `totalCashEarned` | number | 0 - Infinity | Lifetime in-run cash earned (not coins; tracks battle economy) | `125000` |
+| `totalCashEarned` | number | 0 - Infinity | Lifetime in-run cash earned (not Scrap; tracks battle economy) | `125000` |
 | `totalEnemiesKilled` | number | 0 - Infinity | Lifetime enemy kill count | `9842` |
 | `totalPlaytimeMs` | number | 0 - Infinity | Total time spent in battles in milliseconds | `3600000` |
 | `username` | string or null | 3-16 chars: `[a-zA-Z0-9_-]` or null | Player display name for leaderboards; null until first set | `"ProTower42"` |
@@ -86,12 +86,12 @@ Valid card IDs: `heavyCaliber`, `overclock`, `fortressPlating`, `sightline`, `ha
 
 | Key | Type | Valid Range/Values | Description | Example |
 |-----|------|-------------------|-------------|---------|
-| `critSystems` | boolean | true/false | Whether Crit Systems family has been purchased (cost: 2500 coins) | `true` |
-| `economyExpansion` | boolean | true/false | Whether Economy Expansion family has been purchased (cost: 5000 coins) | `false` |
-| `sustainSystems` | boolean | true/false | Whether Sustain Systems family has been purchased (cost: 10000 coins) | `false` |
-| `multishotSystems` | boolean | true/false | Whether Multishot Systems family has been purchased (cost: 25000 coins) | `false` |
-| `bounceSystems` | boolean | true/false | Whether Bounce Systems family has been purchased (cost: 50000 coins) | `false` |
-| `comboSystems` | boolean | true/false | Whether Combo Systems family has been purchased (cost: 100000 coins) | `false` |
+| `critSystems` | boolean | true/false | Whether Crit Systems family has been purchased (cost: 2500 Scrap) | `true` |
+| `economyExpansion` | boolean | true/false | Whether Economy Expansion family has been purchased (cost: 5000 Scrap) | `false` |
+| `sustainSystems` | boolean | true/false | Whether Sustain Systems family has been purchased (cost: 10000 Scrap) | `false` |
+| `multishotSystems` | boolean | true/false | Whether Multishot Systems family has been purchased (cost: 25000 Scrap) | `false` |
+| `bounceSystems` | boolean | true/false | Whether Bounce Systems family has been purchased (cost: 50000 Scrap) | `false` |
+| `comboSystems` | boolean | true/false | Whether Combo Systems family has been purchased (cost: 100000 Scrap) | `false` |
 
 ---
 

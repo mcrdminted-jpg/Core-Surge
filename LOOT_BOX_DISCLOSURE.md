@@ -26,7 +26,7 @@ Gems can be earned through gameplay (tournament rewards, milestone bonuses) or p
 
 | Product | Price | Gems |
 |---------|-------|------|
-| Starter Pack (one-time) | $0.99 | 250 Gems + 2,500 Coins + 1 Card |
+| Starter Pack (one-time) | $0.99 | 250 Gems + 2,500 Scrap + 1 Card |
 | Gem Pack Small | $2.99 | 750 Gems |
 | Gem Pack Medium | $9.99 | 2,800 Gems |
 | Monthly Vault (subscription) | $9.99/mo | 500 Gems/month + Premium Rewards |

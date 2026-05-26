@@ -24,7 +24,7 @@
 - **Is there violence?** Yes - Mild
 - **Description:** Fantasy/sci-fi tower combat. A single tower shoots projectiles at waves of abstract/stylized enemies. Enemies disappear or dissolve when defeated (no blood, no gore, no dismemberment). Combat is mechanical and non-graphic. No violence against realistic human characters.
 - **Player vs. player violence?** No (tournament is score-based, not direct PvP combat)
-- **Reward for violence?** Yes (defeating enemies earns coins and progression, but this is standard tower defense gameplay)
+- **Reward for violence?** Yes (defeating enemies earns Scrap and progression, but this is standard tower defense gameplay)
 
 ### Fear / Horror
 

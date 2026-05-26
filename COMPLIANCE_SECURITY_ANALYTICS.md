@@ -13,7 +13,7 @@ Core Surge v0.7.23 has 0% analytics integration, 50% privacy/security foundation
 - **Regulatory drivers:** GDPR (EU users), CCPA (CA users), COPPA (potential child users)
 - **What must be included:**
   1. **Data collection:**
-     - What: username, play stats (waves, damage dealt, coins earned), device ID, Firebase Auth UID
+     - What: username, play stats (waves, damage dealt, Scrap earned), device ID, Firebase Auth UID
      - Why: game progression tracking, tournament matchmaking, analytics
      - How long: retain for 2 years post-account deletion (GDPR compliance)
   2. **Third-party services:**
@@ -156,7 +156,7 @@ Core Surge v0.7.23 has 0% analytics integration, 50% privacy/security foundation
   1. **Session events:**
      - `app_open`: user opens game (uid, deviceId, version)
      - `session_start`: battle begins (tier, run_id, is_offline)
-     - `session_end`: user quits (tier, duration_ms, waves_reached, coins_earned)
+     - `session_end`: user quits (tier, duration_ms, waves_reached, scrap_earned)
   2. **Monetization events:**
      - `gem_purchase`: user buys gems (amount, iad_product_id, currency, price_usd)
      - `card_pull`: user pulls card (tier, card_id, pull_type: single/bundle)
@@ -165,7 +165,7 @@ Core Surge v0.7.23 has 0% analytics integration, 50% privacy/security foundation
      - Track: total revenue (sum of gem_purchase), ARPPU (avg revenue per paying user)
   3. **Engagement events:**
      - `card_equip`: user changes deck (cards_equipped)
-     - `rank_purchase`: user buys a rank (rank_id, cost_coins)
+     - `rank_purchase`: user buys a rank (rank_id, cost_scrap)
      - `tournament_join`: user enters tournament (band, league)
      - `milestone_claimed`: user claims milestone reward (milestone_name)
   4. **Churn signals:**

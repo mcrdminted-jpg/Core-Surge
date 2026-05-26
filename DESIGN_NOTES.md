@@ -28,7 +28,7 @@ Based on reference mockup analysis. These notes capture the visual direction for
 
 ## Top HUD (Persistent)
 
-- Currency display: coins + gems
+- Currency display: Scrap + gems
 - Wave/best stats
 - Runs counter
 

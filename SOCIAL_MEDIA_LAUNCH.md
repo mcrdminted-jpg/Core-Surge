@@ -31,7 +31,7 @@ Think you can survive longer? Prove it in tournaments. Climb leagues, earn rewar
 **Body:**
 Hey everyone! I am a solo indie dev and I just launched Core Surge, a tower defense game focused on a single upgradeable tower.
 
-What makes it different: you defend one central tower against waves of 12 enemy types across 18 difficulty tiers. Each run is 2-10 minutes. Between runs, you invest coins in permanent upgrades, unlock ability families, and equip collectible cards for passive bonuses.
+What makes it different: you defend one central tower against waves of 12 enemy types across 18 difficulty tiers. Each run is 2-10 minutes. Between runs, you invest Scrap in permanent upgrades, unlock ability families, and equip collectible cards for passive bonuses.
 
 Quick summary of what is in the game:
 - 18 difficulty tiers
@@ -54,7 +54,7 @@ Happy to answer any questions!
 **Body:**
 Made an idle/active tower defense game. The hook: one tower, permanent upgrades between runs, 18 tiers of exponentially scaling difficulty.
 
-Progression systems: coin-based rank upgrades with geometric cost scaling, 6 unlock families (crit, economy, sustain, multishot, bounce, combo), 25 collectible cards with level-up-by-duplicates, tournament leagues.
+Progression systems: Scrap-based rank upgrades with geometric cost scaling, 6 unlock families (crit, economy, sustain, multishot, bounce, combo), 25 collectible cards with level-up-by-duplicates, tournament leagues.
 
 Runs are quick (2-10 min), meta progression is the real game. Free on iOS, Android, and web. No energy timers. No pay-to-win. Card odds disclosed.
 

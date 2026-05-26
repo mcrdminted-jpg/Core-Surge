@@ -46,7 +46,7 @@
 
 #### Wave System
 - **Waves 1-10:** Linear enemy scaling, 10 enemies/wave
-- **Waves 25, 50, 100, 200, 500, 1000, 2500, 5000, 10000:** Milestone checkpoints with coin/gem rewards
+- **Waves 25, 50, 100, 200, 500, 1000, 2500, 5000, 10000:** Milestone checkpoints with Scrap/gem rewards
 - **Boss Waves:** Every 25 waves, 3x HP, 5x bounty
 - **Tier Scaling:** Exponential health multiplier per tier
 
@@ -373,7 +373,7 @@
 #### First Launch Experience
 **What Exists:**
 - Auto-assigned username ("Player_XXXX" on first boot)
-- Default save initialization (starter coins, all stats at 0)
+- Default save initialization (starter Scrap, all stats at 0)
 - Main menu loads immediately with tier selector visible
 - Settings available from start (theme, speed, devMode)
 

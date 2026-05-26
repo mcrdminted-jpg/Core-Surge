@@ -15,7 +15,6 @@ const JS_ORDER = [
   'js/tournament.js',
   'js/render.js',
   'js/ui.js',
-  'js/firebase-public-config.js',
   'js/cloud.js',
   'js/monetization.js',
   'js/main.js',
@@ -99,13 +98,21 @@ async function buildServiceWorker() {
 const CORE_SURGE_ASSETS=[
   './',
   './index.html',
+  './404.html',
   './manifest.webmanifest',
   './css/core-surge.min.css',
   './js/core-surge.min.js',
   './assets/app/icon.svg',
-  './assets/app/icon-180.png',
-  './assets/app/icon-192.png',
-  './assets/app/icon-512.png'
+  './assets/cores/core_01_sentinel.png',
+  './assets/cores/core_02_industrial.png',
+  './assets/cores/core_03_verdant.png',
+  './assets/cores/core_04_aegis.png',
+  './assets/cores/core_05_frost.png',
+  './assets/cores/core_06_royal.png',
+  './assets/backgrounds/bg_01_cyber_grid.png',
+  './assets/backgrounds/bg_02_industrial.png',
+  './assets/backgrounds/bg_03_organic.png',
+  './assets/backgrounds/bg_04_steel.png'
 ];
 
 self.addEventListener('install',(e)=>{
@@ -156,6 +163,7 @@ self.addEventListener('fetch',(e)=>{
 
 async function copyStatic() {
   await fs.cp(path.join(root, 'manifest.webmanifest'), path.join(dist, 'manifest.webmanifest'));
+  await fs.cp(path.join(root, '404.html'), path.join(dist, '404.html'));
   await fs.cp(path.join(root, 'assets'), path.join(dist, 'assets'), {
     recursive: true,
     filter: (src) => !src.includes('mockups'),

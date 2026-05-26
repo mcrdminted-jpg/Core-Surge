@@ -19,9 +19,9 @@
 
 ### Rewarded Video Ads
 
-- **Trigger:** Offered after battle ends with a prompt: "Watch ad for 2x coins"
+- **Trigger:** Offered after battle ends with a prompt: "Watch ad for 2x Scrap"
 - **Behavior:** Completely optional and player-initiated (player taps a button to watch)
-- **Reward:** 2x coin multiplier on battle earnings, OR bonus card pull, OR small gem bonus (varies by promotion)
+- **Reward:** 2x Scrap multiplier on battle earnings, OR bonus card pull, OR small gem bonus (varies by promotion)
 - **Placement:** Post-battle results screen only
 - **Never shown:** During gameplay, during card pulls, during tutorials
 

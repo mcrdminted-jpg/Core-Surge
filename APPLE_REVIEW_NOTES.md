@@ -21,8 +21,8 @@ Core Surge is an idle/active tower defense game where the player defends a singl
 1. Launch the app. You will see the Home screen with a "Battle" button.
 2. Tap "Battle" to start a run. Enemies spawn from the edges and move toward your tower.
 3. The tower auto-attacks. Use in-run cash (earned from kills) to buy temporary upgrades during battle.
-4. The run ends when your Core HP reaches 0. You earn coins based on waves survived.
-5. From the Home screen, tap the "Research" tab to spend coins on permanent upgrades.
+4. The run ends when your Core HP reaches 0. You earn Scrap based on waves survived.
+5. From the Home screen, tap the "Research" tab to spend Scrap on permanent upgrades.
 
 ### Card System
 1. Tap the "Cards" tab to view your card collection.

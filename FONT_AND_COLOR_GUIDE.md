@@ -21,7 +21,7 @@ All themes define the same 14 variable slots. The active theme is set via `data-
 | `--accent-dim` | Muted accent (borders) | `#0088aa` | `#3e5877` | `#aa6611` | `#3a8848` | `#684799` | `#707070` |
 | `--accent-deep` | Deep accent (backgrounds) | `#003355` | `#22303f` | `#3a2208` | `#1e3b26` | `#332255` | `#2a2a2a` |
 | `--danger` | Error/damage/HP loss | `#ff3366` | `#d66272` | `#dd5544` | `#cc6a5a` | `#d66288` | `#c0c0c0` |
-| `--gold` | Coins/premium/highlight | `#ffcc00` | `#d4b66a` | `#ffdd66` | `#d4b866` | `#e0b8e8` | `#f0f0f0` |
+| `--gold` | Scrap/premium/highlight | `#ffcc00` | `#d4b66a` | `#ffdd66` | `#d4b866` | `#e0b8e8` | `#f0f0f0` |
 | `--good` | Health/positive/success | `#44ff88` | `#7dc48a` | `#99cc66` | `#88dd99` | `#8cc4b8` | `#a0a0a0` |
 | `--purple` | Gems/prime rarity | `#aa44ff` | `#9b88b8` | `#cc7744` | `#8cb890` | `#c488ff` | `#909090` |
 | `--cyan2` | Secondary cyan/info | `#66ddff` | `#7eb3c9` | `#ffbb66` | `#7ec987` | `#a0a0f0` | `#b0b0b0` |
@@ -54,7 +54,7 @@ All themes define the same 14 variable slots. The active theme is set via `data-
 | `#888` / `#ccc` / `#666` / `#444` / `#222` | Ad overlay neutrals | base.css |
 | `#8ab4d8` | Standard card border | menu.css |
 | `#b58bff` | Prime card border | menu.css |
-| `#664400` | Coin icon dark text | base.css |
+| `#664400` | Scrap icon dark text | base.css |
 | `#113311` / `#226622` | Cash icon dark | base.css |
 
 ### Home Panel Specific (menu.css)
@@ -190,7 +190,7 @@ All themes define the same 14 variable slots. The active theme is set via `data-
 | `12px` | Large cards, rank rows, shop packs, skin tiles |
 | `14px` | Featured panels, tier picker, menu preview |
 | `18px` | More-sheet panel top corners |
-| `20px` | Coin banner pill |
+| `20px` | Scrap banner pill |
 | `50%` | Circles (tower, enemies, range ring, gems icon) |
 | `999px` | Full-round pills (install banner buttons, cloud badge) |
 
@@ -239,7 +239,7 @@ All themes define the same 14 variable slots. The active theme is set via `data-
 | Gradient | Usage |
 |----------|-------|
 | `radial-gradient(ellipse at 50% 72%, var(--panel), var(--bg))` | Battlefield |
-| `radial-gradient(circle, #ffdd66, #cc9900)` | Coin icon |
+| `radial-gradient(circle, #ffdd66, #cc9900)` | Scrap icon |
 | `radial-gradient(circle, #88dd88, #226622)` | Cash icon |
 | `radial-gradient(circle at 35% 30%, #c999ff, #6633cc, #331a66)` | Gem orb |
 | `radial-gradient(circle at 50% 50%, var(--accent), var(--accent-dim), var(--accent-deep))` | Tower base |
@@ -266,7 +266,7 @@ All themes define the same 14 variable slots. The active theme is set via `data-
 | `pullPop` | 0.4s ease-out | Card pull animation |
 | `pulse-border` | 1s infinite | Card slot selecting |
 | `pulse` | 0.25s | Generic pulse feedback |
-| `coin-pulse` | 0.3s | Coin earn feedback |
+| `coin-pulse` | 0.3s | Scrap earn feedback |
 | `orb-bob` | 2.2s ease-in-out infinite | Gem orb floating |
 | `sheet-fade` | 0.2s ease-out | More-sheet backdrop |
 | `sheet-slide` | 0.25s cubic-bezier | More-sheet entrance |

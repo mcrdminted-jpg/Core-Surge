@@ -164,8 +164,11 @@
 .enemy.shooter   { width: 30px !important; height: 30px !important; }
 .enemy.augmenter { width: 34px !important; height: 34px !important; }
 .enemy.elite     { width: 36px !important; height: 36px !important; }
-.enemy.boss      { width: 72px !important; height: 72px !important; animation: boss-pulse-sprite 1.4s infinite ease-in-out; }
-.enemy.boss .enemy-sprite { filter: drop-shadow(0 0 12px rgba(180,90,255,0.5)) drop-shadow(0 4px 6px rgba(0,0,0,0.7)); }
+.enemy.boss      { width: 72px !important; height: 72px !important; }
+.enemy.boss .enemy-sprite {
+  filter: drop-shadow(0 0 12px rgba(180,90,255,0.5)) drop-shadow(0 4px 6px rgba(0,0,0,0.7));
+  animation: boss-pulse-sprite 1.4s infinite ease-in-out;
+}
 
 /* HP bar adjustments — stays flat, not rotated */
 .enemy-hp { bottom: -8px !important; width: 26px !important; position: absolute; left: 50%; transform: translateX(-50%); }
@@ -173,9 +176,11 @@
 .enemy.elite .enemy-hp { width: 32px !important; }
 .enemy.boss .enemy-hp { bottom: -12px !important; width: 60px !important; height: 4px !important; }
 
+/* Boss pulse — uses standalone `scale` so it won't override the
+   inline transform (rotate) that render.js sets on .enemy-sprite. */
 @keyframes boss-pulse-sprite {
-  0%,100% { transform: translate(-50%, -50%) scale(1); }
-  50%     { transform: translate(-50%, -50%) scale(1.06); }
+  0%,100% { scale: 1; }
+  50%     { scale: 1.06; }
 }
 
 .enemy.buffed .enemy-sprite {

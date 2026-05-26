@@ -24,7 +24,7 @@
 | 1.8 | "BEGIN DEFENSE" button starts battle | | |
 | 1.9 | Daily objective panel displays current goal | | |
 | 1.10 | Home panels show real data (progress, milestones, loadout) | | |
-| 1.11 | HUD shows Coins / Gems / Best / Runs with correct values | | |
+| 1.11 | HUD shows Scrap / Gems / Best / Runs with correct values | | |
 | 1.12 | Gems "+" shortcut navigates to Store | | |
 | 1.13 | Submenu 7-icon grid renders all buttons | | |
 | 1.14 | Tapping submenu button switches content area | | |
@@ -54,8 +54,8 @@
 | 2.18 | Defense upgrades: Core HP, Armor, Range, Lifesteal, Regen | | |
 | 2.19 | Economy upgrades: Cash Bonus, Wave Bonus, Combo, Boss Bounty | | |
 | 2.20 | Heal button restores HP (costs cash) | | |
-| 2.21 | "END RUN NOW" pill shows coin reward preview | | |
-| 2.22 | Tapping end run pill ends the run and awards coins | | |
+| 2.21 | "END RUN NOW" pill shows Scrap reward preview | | |
+| 2.22 | Tapping end run pill ends the run and awards Scrap | | |
 | 2.23 | Boss spawns every N waves with boss banner | | |
 | 2.24 | Gems drop on boss kills | | |
 | 2.25 | Projectile sprites correct (cyan spear normal, gold star crit) | | |
@@ -63,16 +63,16 @@
 | 2.27 | Range ring displays around tower | | |
 | 2.28 | Multishot fires multiple projectiles simultaneously | | |
 | 2.29 | Bounce shots chain between enemies | | |
-| 2.30 | Coin pickup VFX appears | | |
+| 2.30 | Scrap pickup VFX appears | | |
 
 ## 3. Death / End-Run Screen
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
 | 3.1 | "Core Lost" title displays on death | | |
-| 3.2 | End stats show waves survived, kills, coins earned | | |
+| 3.2 | End stats show waves survived, kills, Scrap earned | | |
 | 3.3 | Username displays on end card | | |
-| 3.4 | Coins credited to balance | | |
+| 3.4 | Scrap credited to balance | | |
 | 3.5 | "Back to Menu" button returns to home | | |
 | 3.6 | Voluntary end-run shows same card with correct rewards | | |
 
@@ -89,7 +89,7 @@
 | 4.7 | Locked families show "Coming Soon" or lock indicator | | |
 | 4.8 | Buying a family unlock reveals its ranks | | |
 | 4.9 | Rank rows show current level and upgrade cost | | |
-| 4.10 | Buying a rank increases level and deducts coins | | |
+| 4.10 | Buying a rank increases level and deducts Scrap | | |
 | 4.11 | Rank icon hex-tiles colored by category | | |
 | 4.12 | Max rank reached shows "MAX" indicator | | |
 
@@ -193,7 +193,7 @@
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
 | 12.1 | Game state persists across page refresh | | |
-| 12.2 | Coins, gems, ranks all retained | | |
+| 12.2 | Scrap, gems, ranks all retained | | |
 | 12.3 | Equipped skins retained | | |
 | 12.4 | Card collection retained | | |
 | 12.5 | Username retained | | |

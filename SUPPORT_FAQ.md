@@ -9,7 +9,7 @@
 ## Getting Started
 
 **Q: How do I play Core Surge?**
-Tap "Battle" on the home screen to start a run. Your tower automatically attacks enemies as they approach. Use coins earned from kills to buy temporary in-run upgrades. Survive as many waves as possible. When your Core HP reaches 0, the run ends and you earn coins based on performance. Spend coins between runs on permanent upgrades in the Research tab.
+Tap "Battle" on the home screen to start a run. Your tower automatically attacks enemies as they approach. Use Scrap earned from kills to buy temporary in-run upgrades. Survive as many waves as possible. When your Core HP reaches 0, the run ends and you earn Scrap based on performance. Spend Scrap between runs on permanent upgrades in the Research tab.
 
 **Q: Do I need an internet connection to play?**
 No. Core Surge works fully offline for basic gameplay. Internet is required for cloud saves, tournament leaderboards, and in-app purchases.
@@ -79,7 +79,7 @@ Tournaments run on timed windows. Your best wave reached during the tournament p
 18 tiers (matching game tiers T1-T18), each with 5 leagues.
 
 **Q: What are the tournament rewards?**
-Gems and bonus coins based on your final placement within your league.
+Gems and bonus Scrap based on your final placement within your league.
 
 ---
 

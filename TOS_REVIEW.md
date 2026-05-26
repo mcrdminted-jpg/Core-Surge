@@ -14,7 +14,7 @@
 
 | Product ID | Title | Price | Type | Rewards |
 |-----------|-------|-------|------|---------|
-| `starter_pack` | Starter Pack | $0.99 | One-time (lifetime) | 250 gems, 2500 coins, 1 card (Heavy Caliber) |
+| `starter_pack` | Starter Pack | $0.99 | One-time (lifetime) | 250 gems, 2500 Scrap, 1 card (Heavy Caliber) |
 | `gem_pack_small` | Gem Pack Small | $2.99 | Consumable | 750 gems |
 | `gem_pack_medium` | Gem Pack Medium | $9.99 | Consumable | 2800 gems |
 | `monthly_vault` | Monthly Vault | $9.99/mo | Subscription (monthly) | 500 gems/month + monthly pass access |
