@@ -2310,6 +2310,7 @@ function renderCardsTab(c) {
         save.equippedCards[idx] = null;
         cardSelectingSlot = -1;
         persistSave();
+        saveCurrentToPreset(save.activePreset || 0); // auto-save
         renderCardsTab(c);
       } else {
         cardSelectingSlot = (cardSelectingSlot === idx) ? -1 : idx;
@@ -2349,6 +2350,7 @@ function renderCardsTab(c) {
         }
       }
       persistSave();
+      saveCurrentToPreset(save.activePreset || 0); // auto-save to active preset
       renderCardsTab(c);
     });
     tileEl.addEventListener('pointercancel', () => clearTimeout(pressTimer));
@@ -2424,6 +2426,45 @@ function showCardDetail(cardId) {
 // LOADOUT TAB — wraps Cards and Heroes with sub-tab switcher
 // ============================================================
 function renderLoadoutTab(c) {
+  // Preset selector bar (1, 2, 3) — auto-saves, tap name to rename
+  const ap = save.activePreset || 0;
+  const presetBar = document.createElement('div');
+  presetBar.className = 'loadout-preset-bar';
+  var presetBtnsHtml = '';
+  for (var pi = 0; pi < 3; pi++) {
+    var pActive = pi === ap ? ' active' : '';
+    var preset = save.loadoutPresets && save.loadoutPresets[pi];
+    var pName = (preset && preset.name) ? preset.name : 'Loadout ' + (pi+1);
+    presetBtnsHtml += '<button class="loadout-preset-btn' + pActive + '" data-pidx="' + pi + '">' +
+      '<span class="lp-num">' + (pi+1) + '</span>' +
+      '<span class="lp-label" data-rename="' + pi + '">' + pName + '</span>' +
+    '</button>';
+  }
+  presetBar.innerHTML = '<div class="loadout-preset-btns">' + presetBtnsHtml + '</div>';
+  c.appendChild(presetBar);
+
+  // Wire preset buttons — switch loadout; tap label on active preset = rename
+  presetBar.querySelectorAll('.loadout-preset-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var pidx = parseInt(btn.dataset.pidx, 10);
+      // Tap label on active preset → rename
+      if (e.target.hasAttribute('data-rename') && pidx === (save.activePreset || 0)) {
+        var rIdx = parseInt(e.target.dataset.rename, 10);
+        var curName = (save.loadoutPresets[rIdx] && save.loadoutPresets[rIdx].name) || 'Loadout ' + (rIdx+1);
+        var newName = prompt('Rename loadout:', curName);
+        if (newName && newName.trim()) {
+          if (!save.loadoutPresets[rIdx]) save.loadoutPresets[rIdx] = { equippedCards: null, garrisonSlots: null };
+          save.loadoutPresets[rIdx].name = newName.trim().substring(0, 20);
+          persistSave();
+          renderSubmenu();
+        }
+        return;
+      }
+      if (pidx === (save.activePreset || 0)) return;
+      switchPreset(pidx);
+    });
+  });
+
   // Sub-tab bar
   const tabBar = document.createElement('div');
   tabBar.className = 'loadout-subtab-bar';
@@ -2588,6 +2629,7 @@ function renderHeroesTab(c) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       ungarrisonHero(this.getAttribute('data-ungarrison'));
+      saveCurrentToPreset(save.activePreset || 0); // auto-save
       renderSubmenu();
     });
   });
@@ -2600,7 +2642,10 @@ function renderHeroesTab(c) {
   c.querySelectorAll('[data-garrison]').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (garrisonHero(this.getAttribute('data-garrison'))) renderSubmenu();
+      if (garrisonHero(this.getAttribute('data-garrison'))) {
+        saveCurrentToPreset(save.activePreset || 0); // auto-save
+        renderSubmenu();
+      }
     });
   });
   c.querySelectorAll('[data-buypack]').forEach(function(btn) {
@@ -2619,12 +2664,12 @@ function renderShopTab(c) {
   const available = remaining === 0;
   const hrLeft = Math.ceil(remaining / (60 * 60 * 1000));
 
-  // Direct unlock list — only cards not yet owned
-  const unownedStandard = Object.values(CARD_POOL).filter(c => c.tier === 'standard' && !save.cardInventory[c.id]);
-  const unownedPrime = Object.values(CARD_POOL).filter(c => c.tier === 'prime' && !save.cardInventory[c.id]);
-
   const singlePullDisabled = save.gems < CARD_PRICING.pullSingle;
   const bundleDisabled = save.gems < CARD_PRICING.pullBundle;
+  const heroPullPool = typeof getHeroPullPool === 'function' ? getHeroPullPool() : [];
+  const heroSingleDisabled = save.gems < HERO_PULL_PRICING.pullSingle || heroPullPool.length === 0;
+  const heroBundleDisabled = save.gems < HERO_PULL_PRICING.pullBundle || heroPullPool.length === 0;
+  const heroPoolNote = heroPullPool.length === 0 ? 'All heroes unlocked!' : heroPullPool.length + ' hero' + (heroPullPool.length !== 1 ? 'es' : '') + ' available';
 
   c.innerHTML = `
     <div class="shop-section-title">Free Gems</div>
@@ -2654,36 +2699,20 @@ function renderShopTab(c) {
       </button>
     </div>
 
-    ${unownedStandard.length > 0 || unownedPrime.length > 0 ? `
-      <div class="shop-section-title">Direct Unlock</div>
-      <div class="shop-section-sub">Buy a specific new card you don't own yet</div>
-      <div class="direct-unlock-list">
-        ${unownedPrime.map(card => {
-          const disabled = save.gems < CARD_PRICING.unlockPrime;
-          return `
-          <button class="direct-unlock-btn prime" data-unlock="${card.id}" data-card="${card.id}" ${disabled ? 'disabled' : ''}>
-            <span class="du-icon">${card.icon}</span>
-            <span class="du-info">
-              <span class="du-name" style="color:var(--purple)">${card.name}</span>
-              <span class="du-tier">PRIME</span>
-            </span>
-            <span class="du-cost">${CARD_PRICING.unlockPrime} 💎</span>
-          </button>`;
-        }).join('')}
-        ${unownedStandard.map(card => {
-          const disabled = save.gems < CARD_PRICING.unlockStandard;
-          return `
-          <button class="direct-unlock-btn standard" data-unlock="${card.id}" data-card="${card.id}" ${disabled ? 'disabled' : ''}>
-            <span class="du-icon">${card.icon}</span>
-            <span class="du-info">
-              <span class="du-name">${card.name}</span>
-              <span class="du-tier">STANDARD</span>
-            </span>
-            <span class="du-cost">${CARD_PRICING.unlockStandard} 💎</span>
-          </button>`;
-        }).join('')}
-      </div>
-    ` : ''}
+    <div class="shop-section-title">Hero Pulls</div>
+    <div class="shop-section-sub">${heroPoolNote}</div>
+    <div class="card-pack-grid">
+      <button class="card-pack-btn hero-pull" id="heroPullSingleBtn" ${heroSingleDisabled ? 'disabled' : ''}>
+        <div class="pack-title">Single Pull</div>
+        <div class="pack-desc">1 random hero</div>
+        <div class="pack-cost">${HERO_PULL_PRICING.pullSingle} 💎</div>
+      </button>
+      <button class="card-pack-btn bundle hero-pull" id="heroPullBundleBtn" ${heroBundleDisabled ? 'disabled' : ''}>
+        <div class="pack-title">5-Pull Bundle</div>
+        <div class="pack-desc">5 random heroes · save 25💎</div>
+        <div class="pack-cost">${HERO_PULL_PRICING.pullBundle} 💎</div>
+      </button>
+    </div>
 
     <div class="shop-section-title">Mobile Store</div>
     <div class="shop-section-sub">${purchasePlatformLabel()} · ${monetizationStatusText()}</div>
@@ -2789,18 +2818,43 @@ function renderShopTab(c) {
     });
   }
 
-  // Direct unlock buttons
-  c.querySelectorAll('.direct-unlock-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.unlock;
-      const result = performDirectUnlock(id);
+  // Hero single pull
+  const heroPullBtn = document.getElementById('heroPullSingleBtn');
+  if (heroPullBtn) {
+    let heroPullCooldown = false;
+    heroPullBtn.addEventListener('click', () => {
+      if (heroPullCooldown) return;
+      const result = performHeroPull();
       if (result) {
-        showPullReveal([result]);
+        heroPullCooldown = true;
+        heroPullBtn.disabled = true;
+        if (typeof showHeroUnlockToast === 'function') showHeroUnlockToast(result.hero);
         renderHud();
         renderSubmenu();
+        setTimeout(() => { heroPullCooldown = false; }, 800);
       }
     });
-  });
+  }
+
+  // Hero bundle pull
+  const heroBundleBtn = document.getElementById('heroPullBundleBtn');
+  if (heroBundleBtn) {
+    let heroBundleCooldown = false;
+    heroBundleBtn.addEventListener('click', () => {
+      if (heroBundleCooldown) return;
+      const results = performHeroBundle();
+      if (results) {
+        heroBundleCooldown = true;
+        heroBundleBtn.disabled = true;
+        results.forEach(function(r, i) {
+          if (typeof showHeroUnlockToast === 'function') setTimeout(function() { showHeroUnlockToast(r.hero); }, i * 600);
+        });
+        renderHud();
+        renderSubmenu();
+        setTimeout(() => { heroBundleCooldown = false; }, 800);
+      }
+    });
+  }
 
   c.querySelectorAll('.mobile-store-btn').forEach(btn => {
     btn.addEventListener('click', async () => {

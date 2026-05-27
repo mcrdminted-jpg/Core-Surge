@@ -1642,3 +1642,26 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - The reference image was sliced into deployable section art under `assets/home-art/` for the home screen surfaces.
 - This batch is specifically the “not placeholders, full art like the reference” lane for the main page.
 
+## 2026-05-26 - Codex - Roll Back Broken Home Overlay
+
+**What I did:**
+- Removed the baked-text home overlay approach after it caused doubled labels and broken layout on the live home screen.
+- Restored the home UI source to the last stable control-deck state.
+- Kept only a text-free skyline backdrop as safe hero art.
+
+**Files changed:**
+- `css/menu.css`
+- `js/ui.js`
+- `index.html`
+- `package.json`
+- `assets/home-art/hero_city.png`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- Do not use reference slices that contain baked text inside dynamic home containers.
+- For Progress, Milestones, and Loadout, only art-direct the containers and frames, never the changing content regions.
+
