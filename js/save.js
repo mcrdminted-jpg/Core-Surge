@@ -114,9 +114,9 @@ const defaultSave = {
   // Loadout presets (v0.7.36) — 3 quick-switch loadout slots
   activePreset: 0,         // 0, 1, or 2
   loadoutPresets: [
-    { equippedCards: null, garrisonSlots: null },   // slot 1 — null means "use current"
-    { equippedCards: null, garrisonSlots: null },   // slot 2
-    { equippedCards: null, garrisonSlots: null }    // slot 3
+    { name: null, equippedCards: null, garrisonSlots: null },   // slot 1 — null means "use current"
+    { name: null, equippedCards: null, garrisonSlots: null },   // slot 2
+    { name: null, equippedCards: null, garrisonSlots: null }    // slot 3
   ],
 
   lastSaveTime: Date.now(),

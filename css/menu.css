@@ -2896,6 +2896,115 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 ackgrounds/bg_03_organic.png"); }
 body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../assets/backgrounds/bg_04_steel.png"); }
 
+/* ==================== LOADOUT PRESETS (v0.7.36) ==================== */
+.loadout-preset-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 8px;
+}
+.loadout-preset-btns {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+.loadout-preset-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18,28,48,0.7);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.loadout-preset-btn.active {
+  border-color: var(--accent);
+  background: rgba(0,180,255,0.1);
+}
+.lp-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--muted);
+}
+.loadout-preset-btn.active .lp-num {
+  background: var(--accent);
+  color: #001524;
+}
+.lp-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  cursor: text;
+}
+.loadout-preset-btn.active .lp-label {
+  color: var(--text);
+  text-decoration: underline dotted rgba(255,255,255,0.25);
+  text-underline-offset: 3px;
+}
+
+/* Home page preset quick-switch */
+.preset-quick-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.preset-quick-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(18,28,48,0.6);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.preset-quick-btn.active {
+  border-color: var(--accent);
+  background: rgba(0,180,255,0.12);
+}
+.preset-quick-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--muted);
+}
+.preset-quick-btn.active .preset-quick-num {
+  background: var(--accent);
+  color: #001524;
+}
+.preset-quick-label {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.preset-quick-btn.active .preset-quick-label {
+  color: var(--text);
+}
+
+/* Hero pull button accent */
+.card-pack-btn.hero-pull {
+  border-color: rgba(20,180,160,0.4);
+}
+.card-pack-btn.hero-pull:not(:disabled):hover {
+  border-color: rgba(20,180,160,0.7);
+}
+
 /* ==================== LOADOUT SUB-TABS (v0.8) ==================== */
 .loadout-subtab-bar {
   display: flex;

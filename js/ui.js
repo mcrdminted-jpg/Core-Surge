@@ -2087,6 +2087,62 @@ function showHeroUnlockToast(heroDef) {
   setTimeout(function() { toast.remove(); }, 3500);
 }
 
+// ============================================================
+// LOADOUT PRESETS — save/load/switch between 3 loadout slots
+// ============================================================
+function saveCurrentToPreset(idx) {
+  if (!save.loadoutPresets) save.loadoutPresets = [{},{},{}];
+  var existing = save.loadoutPresets[idx] || {};
+  save.loadoutPresets[idx] = {
+    name: existing.name || null,
+    equippedCards: save.equippedCards.slice(),
+    garrisonSlots: (save.garrisonSlots || []).slice()
+  };
+  save.activePreset = idx;
+  persistSave();
+}
+
+function loadPreset(idx) {
+  if (!save.loadoutPresets || !save.loadoutPresets[idx]) return false;
+  var preset = save.loadoutPresets[idx];
+  if (!preset.equippedCards) return false;
+  var cards = preset.equippedCards.map(function(cid) {
+    return (cid && save.cardInventory[cid]) ? cid : null;
+  });
+  while (cards.length < save.unlockedSlots) cards.push(null);
+  cards.length = save.unlockedSlots;
+  save.equippedCards = cards;
+  if (Array.isArray(preset.garrisonSlots)) {
+    var unlocked = save.heroesUnlocked || [];
+    save.garrisonSlots = preset.garrisonSlots.filter(function(hid) {
+      return unlocked.includes(hid);
+    });
+  }
+  save.activePreset = idx;
+  persistSave();
+  return true;
+}
+
+function switchPreset(idx) {
+  saveCurrentToPreset(save.activePreset || 0);
+  if (!loadPreset(idx)) {
+    save.activePreset = idx;
+    persistSave();
+  }
+  if (typeof renderHud === 'function') renderHud();
+  if (typeof renderSubmenu === 'function') renderSubmenu();
+}
+
+function isPresetEmpty(idx) {
+  if (!save.loadoutPresets || !save.loadoutPresets[idx]) return true;
+  return !save.loadoutPresets[idx].equippedCards;
+}
+
+function presetCardCount(idx) {
+  if (isPresetEmpty(idx)) return 0;
+  return save.loadoutPresets[idx].equippedCards.filter(function(c) { return c !== null; }).length;
+}
+
 // Loadout sub-tab state: 'cards' or 'heroes'
 let loadoutSubTab = 'cards';
 
