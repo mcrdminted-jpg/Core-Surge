@@ -269,49 +269,6 @@ const UPGRADE_ICONS = {
   coinBonus:        { icon: '⊙',  color: 'var(--gold)' }
 };
 
-// Calculate batch buy info for current multiplier setting
-function batchUpgradeInfo(key) {
-  const u = game.upgrades[key];
-  const mul = save.settings.buyMultiplier || 1;
-  const maxed = u.max !== undefined && u.level >= u.max;
-  if (maxed) return { count: 0, totalCost: 0, canAfford: false, maxed: true };
-
-  const remaining = (u.max !== undefined) ? (u.max - u.level) : 10000;
-
-  if (mul === 'max') {
-    let totalCost = 0, count = 0;
-    for (let i = 0; i < remaining && i < 10000; i++) {
-      const c = Math.floor(u.cost0 * Math.pow(u.costMul, u.level + i));
-      if (totalCost + c > game.cash) break;
-      totalCost += c;
-      count++;
-    }
-    if (count === 0) {
-      // Can't afford any — show cost of next single level
-      return { count: 0, totalCost: Math.floor(u.cost0 * Math.pow(u.costMul, u.level)), canAfford: false, maxed: false };
-    }
-    return { count, totalCost, canAfford: true, maxed: false };
-  } else {
-    const want = Math.min(mul, remaining);
-    let totalCost = 0;
-    for (let i = 0; i < want; i++) {
-      totalCost += Math.floor(u.cost0 * Math.pow(u.costMul, u.level + i));
-    }
-    return { count: want, totalCost, canAfford: game.cash >= totalCost, maxed: false };
-  }
-}
-
-// Get stat descriptor at +N levels (temporarily bumps level, reads, restores)
-function upgradeDescriptorAt(key, bonusLevels) {
-  if (bonusLevels <= 0) return upgradeDescriptor(key);
-  const u = game.upgrades[key];
-  const orig = u.level;
-  u.level += bonusLevels;
-  const desc = upgradeDescriptor(key);
-  u.level = orig;
-  return desc;
-}
-
 function renderUpgrades() {
   const wrap = document.getElementById('upgradesWrap');
   wrap.innerHTML = '';
@@ -393,46 +350,21 @@ function buildUpgradeBtn(key) {
     return btn;
   }
 
-  const batch = batchUpgradeInfo(key);
-  const maxed = batch.maxed;
+  const maxed = u.max && u.level >= u.max;
+  const desc = upgradeDescriptor(key);
+  const deltaText = maxed ? 'MAXED' : `${desc.cur} → ${desc.next}${desc.unit}`;
+  const costText = maxed ? '—' : formatNum(upgradeCost(u));
   const iconMeta = UPGRADE_ICONS[key] || { icon: '?', color: 'var(--accent)' };
 
-  // Delta: show cur → value-after-N-levels
-  let deltaText;
-  if (maxed) {
-    deltaText = 'MAXED';
-  } else {
-    const desc = upgradeDescriptor(key);
-    const descN = upgradeDescriptorAt(key, batch.count);
-    deltaText = batch.count > 1
-      ? `${desc.cur} → ${descN.cur}${desc.unit}`
-      : `${desc.cur} → ${desc.next}${desc.unit}`;
-  }
-
-  // Cost: show total batch cost
-  const mul = save.settings.buyMultiplier || 1;
-  let costText;
-  if (maxed) {
-    costText = '—';
-  } else if (mul === 'max' && batch.count > 0) {
-    costText = `${formatNum(batch.totalCost)} (×${batch.count})`;
-  } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
-    costText = `${formatNum(batch.totalCost)} (×${batch.count})`;
-  } else {
-    costText = formatNum(batch.totalCost);
-  }
-
-  // Progress bar
-  const effLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
+  // Progress bar: for capped stats, show level/max; for uncapped, show log-scale L up to 500
   let progPct = 0;
   if (u.max) {
-    progPct = Math.min(100, (effLvl / u.max) * 100);
+    progPct = Math.min(100, (u.level / u.max) * 100);
   } else {
-    progPct = Math.min(100, (effLvl / 500) * 100);
+    // Uncapped: just show a fill out to level 500 (purely cosmetic feedback)
+    progPct = Math.min(100, (u.level / 500) * 100);
   }
 
-  btn.disabled = !batch.canAfford && !maxed;
-  btn.classList.toggle('affordable', batch.canAfford);
   btn.style.setProperty('--upg-color', iconMeta.color);
   btn.innerHTML = `
     <div class="upgrade-body">
@@ -440,7 +372,7 @@ function buildUpgradeBtn(key) {
       <div class="upgrade-data">
         <div class="upgrade-name">${u.name.toUpperCase()}</div>
         <div class="upgrade-delta" data-delta>${deltaText}</div>
-        <div class="upgrade-level" data-level>Lv. ${effLvl}${u.max ? ' / ' + u.max : ''}</div>
+        <div class="upgrade-level" data-level>Lv. ${u.level}${u.max ? ' / ' + u.max : ''}</div>
       </div>
     </div>
     <div class="upgrade-prog"><div class="upgrade-prog-fill" style="width:${progPct}%;background:${iconMeta.color}"></div></div>
@@ -599,51 +531,20 @@ function refreshBtn(key) {
     if (descEl) descEl.textContent = `Instantly restore ${formatNum(amt)} HP`;
     if (costEl) costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(getHealCost())}`;
   } else {
-    const batch = batchUpgradeInfo(key);
-    const maxed = batch.maxed;
+    const maxed = u.max && u.level >= u.max;
     const desc = upgradeDescriptor(key);
-    const mul = save.settings.buyMultiplier || 1;
     const deltaEl = btn.querySelector('[data-delta]');
     const levelEl = btn.querySelector('[data-level]');
     const costEl = btn.querySelector('[data-cost]');
-
-    // Delta: show stat change for batch
-    if (deltaEl) {
-      if (maxed) {
-        deltaEl.textContent = 'MAXED';
-      } else {
-        const descN = upgradeDescriptorAt(key, batch.count);
-        deltaEl.textContent = batch.count > 1
-          ? `${desc.cur} → ${descN.cur}${desc.unit}`
-          : `${desc.cur} → ${desc.next}${desc.unit}`;
-      }
-    }
-    const eLvl = typeof effectiveLevel === 'function' ? effectiveLevel(key) : u.level;
-    if (levelEl) levelEl.textContent = `Lv. ${eLvl}${u.max ? ' / ' + u.max : ''}`;
-
-    // Cost: show batch total
-    if (costEl) {
-      if (maxed) {
-        costEl.innerHTML = '—';
-      } else if (mul === 'max' && batch.count > 0) {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
-      } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
-      } else {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
-      }
-    }
-
-    // Affordability
-    btn.disabled = !batch.canAfford && !maxed;
-    btn.classList.toggle('affordable', batch.canAfford);
-
+    if (deltaEl) deltaEl.textContent = maxed ? 'MAXED' : `${desc.cur} → ${desc.next}${desc.unit}`;
+    if (levelEl) levelEl.textContent = `Lv. ${u.level}${u.max ? ' / ' + u.max : ''}`;
+    if (costEl) costEl.innerHTML = maxed ? '—' : `<span class="cost-cash">$</span>${formatNum(upgradeCost(u))}`;
     // Update progress bar
     const progFill = btn.querySelector('.upgrade-prog-fill');
     if (progFill) {
       let pct;
-      if (u.max) pct = Math.min(100, (eLvl / u.max) * 100);
-      else pct = Math.min(100, (eLvl / 500) * 100);
+      if (u.max) pct = Math.min(100, (u.level / u.max) * 100);
+      else pct = Math.min(100, (u.level / 500) * 100);
       progFill.style.width = pct + '%';
     }
   }
@@ -669,41 +570,16 @@ function updateUpgradeAffordability() {
     }
     const u = game.upgrades[key];
     if (!u) continue; // safety guard for non-battle buttons
-    const batch = batchUpgradeInfo(key);
-    if (batch.maxed) {
+    const maxed = u.max && u.level >= u.max;
+    if (maxed) {
       btn.disabled = true;
       btn.classList.remove('affordable');
       continue;
     }
-    btn.disabled = !batch.canAfford;
-    btn.classList.toggle('affordable', batch.canAfford);
-
-    // Update cost display to reflect current cash (important for MAX which changes as cash changes)
-    const mul = save.settings.buyMultiplier || 1;
-    const costEl = btn.querySelector('[data-cost]');
-    if (costEl) {
-      if (mul === 'max' && batch.count > 0) {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
-      } else if (mul === 'max' && batch.count === 0) {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
-      } else if (typeof mul === 'number' && mul > 1 && batch.count > 1) {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)} (×${batch.count})`;
-      } else {
-        costEl.innerHTML = `<span class="cost-cash">$</span>${formatNum(batch.totalCost)}`;
-      }
-    }
-
-    // Update delta for MAX mode (count changes as cash grows)
-    if (mul === 'max') {
-      const deltaEl = btn.querySelector('[data-delta]');
-      if (deltaEl && batch.count > 0) {
-        const desc = upgradeDescriptor(key);
-        const descN = upgradeDescriptorAt(key, batch.count);
-        deltaEl.textContent = batch.count > 1
-          ? `${desc.cur} → ${descN.cur}${desc.unit}`
-          : `${desc.cur} → ${desc.next}${desc.unit}`;
-      }
-    }
+    const cost = upgradeCost(u);
+    const can = game.cash >= cost;
+    btn.disabled = !can;
+    btn.classList.toggle('affordable', can);
   }
 }
 
@@ -817,10 +693,10 @@ function renderHud() {
   }
 }
 
-// Cycle buy multiplier 1 → 10 → max → 1
+// Cycle buy multiplier 1 → 10 → 100 → max → 1
 function cycleBuyMultiplier() {
   const cur = save.settings.buyMultiplier || 1;
-  const order = [1, 10, 'max'];
+  const order = [1, 10, 100, 'max'];
   const idx = order.findIndex(v => v === cur);
   save.settings.buyMultiplier = order[(idx + 1) % order.length];
   persistSave();
@@ -834,47 +710,23 @@ function wireBattlefieldSideButtons() {
   const spd = document.getElementById('bfSpeedBtn');
   if (spd) {
     spd.addEventListener('click', () => {
+      const maxSpeed = maxUnlockedSpeed();
       let cur = save.settings.gameSpeed || 1;
-      save.settings.gameSpeed = nextSpeedTier(cur);
+      cur = cur + 1;
+      if (cur > maxSpeed) cur = 1;
+      save.settings.gameSpeed = cur;
       persistSave();
       updateBattlefieldSpeedLabel();
     });
   }
   const stats = document.getElementById('bfStatsBtn');
   if (stats) stats.addEventListener('click', toggleLiveStats);
-
-  // Wire battlefield ad speed boost button
-  const adSpd = document.getElementById('bfAdSpeedBtn');
-  if (adSpd) {
-    adSpd.addEventListener('click', () => {
-      if (typeof claimAdSpeedBoost === 'function') {
-        claimAdSpeedBoost();
-        haptic('success');
-        updateBattlefieldSpeedLabel();
-        var toast = document.createElement('div');
-        toast.className = 'skin-toast';
-        toast.textContent = '⚡ 2× Speed activated! +20 min';
-        document.body.appendChild(toast);
-        setTimeout(function() { toast.remove(); }, 2000);
-      }
-    });
-  }
-
   updateBattlefieldSpeedLabel();
 }
 
 function updateBattlefieldSpeedLabel() {
   const v = document.getElementById('bfSpeedValue');
-  if (!v) return;
-  const base = save.settings.gameSpeed || 1;
-  const boosted = typeof isAdSpeedBoostActive === 'function' && isAdSpeedBoostActive();
-  if (boosted) {
-    v.textContent = '×' + (base * 2);
-    v.style.color = 'var(--gold)';
-  } else {
-    v.textContent = '×' + base;
-    v.style.color = '';
-  }
+  if (v) v.textContent = '×' + (save.settings.gameSpeed || 1);
 }
 
 // ============================================================
@@ -1139,7 +991,9 @@ function renderMenu() {
 
   // Drive the home battlefield preview from the equipped skin
   const previewCore = save.equippedCoreSkin || 'sentinel';
+  const previewBg = save.equippedBgSkin || 'cyber_grid';
   document.body.setAttribute('data-preview-core', previewCore);
+  document.body.setAttribute('data-preview-bg', previewBg);
   const coreNames = { sentinel:'SENTINEL', industrial:'INDUSTRIAL', verdant:'VERDANT',
                       aegis:'AEGIS', frost:'FROST', royal:'ROYAL' };
   const previewLabel = document.getElementById('menuPreviewLabel');
@@ -1148,6 +1002,147 @@ function renderMenu() {
   renderHomePanelsVisual();
   setHomeView(true);
   renderSubmenu();
+}
+
+function renderHomePanels() {
+  const el = document.getElementById('homePanels');
+  if (!el) return;
+
+  const sel = save.selectedTier;
+  const bestThisTier = save.bestWavePerTier[sel] || 0;
+  const maxTier = highestUnlockedTier();
+  const equippedCount = save.equippedCards.filter(c => c && CARD_POOL[c]).length;
+  const totalSlots = getUnlockedSlots();
+
+  // --- Left: Recent Progress ---
+  const progressPct = Math.min(100, (bestThisTier / 50) * 100);
+  const nextTierReady = bestThisTier >= 50 && sel < MAX_TIER;
+
+  let progressHTML = `
+    <div class="home-panel home-progress">
+      <div class="home-panel-header">
+        <span class="home-panel-title">PROGRESS</span>
+      </div>
+      <div class="home-progress-stats">
+        <div class="home-stat">
+          <div class="home-stat-value">W${bestThisTier}</div>
+          <div class="home-stat-label">Best T${sel}</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value">${save.totalRuns}</div>
+          <div class="home-stat-label">Runs</div>
+        </div>
+      </div>
+      <div class="home-progress-bar-wrap">
+        <div class="home-progress-bar" style="width:${progressPct}%"></div>
+        <div class="home-progress-label">${nextTierReady ? 'T' + (sel + 1) + ' READY' : bestThisTier + '/50'}</div>
+      </div>
+    </div>`;
+
+  // --- Center: Tier Milestones ---
+  let claimableCount = 0;
+  let milestonesHTML = '';
+  const showWaves = [25, 50, 100, 200, 500, 1000];
+  for (const w of showWaves) {
+    const key = milestoneKey(sel, w);
+    const claimed = save.claimedMilestones[key];
+    const ready = milestoneReady(sel, w) && !claimed;
+    if (ready) claimableCount++;
+    const cls = claimed ? 'claimed' : ready ? 'ready' : 'locked';
+    const label = claimed ? '✓' : ready ? '!' : (w >= 1000 ? '1K' : w);
+    milestonesHTML += `<div class="home-ms-dot ${cls}">${label}</div>`;
+  }
+
+  let tiersHTML = `
+    <div class="home-panel home-milestones">
+      <div class="home-panel-header">
+        <span class="home-panel-title">MILESTONES</span>
+        ${claimableCount > 0 ? `<span class="home-panel-badge">${claimableCount}</span>` : ''}
+      </div>
+      <div class="home-ms-row">${milestonesHTML}</div>
+    </div>`;
+
+  // --- Right: Loadout Preview ---
+  let cardsHTML = '';
+  for (let i = 0; i < Math.min(totalSlots, 6); i++) {
+    const cid = save.equippedCards[i];
+    if (cid && CARD_POOL[cid]) {
+      const card = CARD_POOL[cid];
+      const inv = save.cardInventory[cid] || { level: 1 };
+      cardsHTML += `<div class="home-card-slot filled">
+        <span class="home-card-icon">${card.icon}</span>
+        <span class="home-card-lvl">${inv.level}</span>
+      </div>`;
+    } else {
+      cardsHTML += `<div class="home-card-slot empty">+</div>`;
+    }
+  }
+
+  let loadoutHTML = `
+    <div class="home-panel home-loadout">
+      <div class="home-panel-header">
+        <span class="home-panel-title">LOADOUT</span>
+        <span class="home-panel-count">${equippedCount}/${totalSlots}</span>
+      </div>
+      <div class="home-card-row">${cardsHTML}</div>
+    </div>`;
+
+  // --- Battle Readiness: key stats for the selected tier ---
+  const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
+  const dmgBonus = rankFlatBonus('damage');
+  const hpBonus = rankFlatBonus('coreHealth');
+  const scrapAmt = formatNum(save.coins);
+  let readinessHTML = `
+    <div class="home-panel home-readiness">
+      <div class="home-panel-header">
+        <span class="home-panel-title">BATTLE READY</span>
+      </div>
+      <div class="home-readiness-stats">
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--danger)">+${dmgBonus.toFixed(1)}</div>
+          <div class="home-stat-label">Dmg Bonus</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--good)">+${hpBonus.toFixed(0)}</div>
+          <div class="home-stat-label">HP Bonus</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--gold)">${scrapAmt}</div>
+          <div class="home-stat-label">Scrap</div>
+        </div>
+        <div class="home-stat">
+          <div class="home-stat-value" style="color:var(--accent)">${totalRanks}</div>
+          <div class="home-stat-label">Total Ranks</div>
+        </div>
+      </div>
+    </div>`;
+
+  el.innerHTML = progressHTML + tiersHTML + loadoutHTML + readinessHTML;
+
+  // Wire milestone panel click to open Goals tab
+  const msPanel = el.querySelector('.home-milestones');
+  if (msPanel) {
+    msPanel.style.cursor = 'pointer';
+    msPanel.addEventListener('click', () => {
+      activeSubmenu = 'milestones';
+      setHomeView(false);
+      renderSubmenu();
+    });
+  }
+  // Wire loadout panel click to open Cards tab
+  const loPanel = el.querySelector('.home-loadout');
+  if (loPanel) {
+    loPanel.style.cursor = 'pointer';
+    loPanel.addEventListener('click', () => {
+      activeSubmenu = 'cards';
+      setHomeView(false);
+      renderSubmenu();
+    });
+  }
+
+  // --- Daily Login & Daily Objective ---
+  renderDailyLogin();
+  renderDailyObjective();
 }
 
 function renderDailyLogin() {
@@ -1294,7 +1289,14 @@ function renderHomePanelsVisual() {
     frost: 'assets/cores/core_05_frost.png',
     royal: 'assets/cores/core_06_royal.png'
   };
+  const bgAssets = {
+    cyber_grid: 'assets/backgrounds/bg_01_cyber_grid.png',
+    industrial: 'assets/backgrounds/bg_02_industrial.png',
+    organic: 'assets/backgrounds/bg_03_organic.png',
+    steel: 'assets/backgrounds/bg_04_steel.png'
+  };
   const previewCore = save.equippedCoreSkin || 'sentinel';
+  const previewBg = save.equippedBgSkin || 'cyber_grid';
 
   // Tier difficulty label
   const tierLabel = getTierLabel(sel);
@@ -1302,7 +1304,7 @@ function renderHomePanelsVisual() {
   // Tier unlock hint
   let tierHint = '';
   if (sel === maxTier && maxTier < MAX_TIER) {
-    const need = 100 - bestThisTier;
+    const need = 50 - bestThisTier;
     tierHint = need > 0 ? `W50 on T${sel} to unlock T${sel+1}` : `T${sel+1} unlocked!`;
   } else if (sel < maxTier) {
     tierHint = `Best on T${sel}: W${bestThisTier}`;
@@ -1310,9 +1312,11 @@ function renderHomePanelsVisual() {
     tierHint = 'Max difficulty reached';
   }
 
-  // Milestone data for the bottom cards — count ALL milestones claimable
+  // Milestone data for the bottom cards
   let claimableCount = 0;
-  for (const w of MILESTONE_WAVES) {
+  const msWaves = [25, 50, 75, 100, 200, 500];
+  let msHTML = '';
+  for (const w of msWaves) {
     const key = milestoneKey(sel, w);
     const claimed = save.claimedMilestones[key];
     const ready = milestoneReady(sel, w) && !claimed;
@@ -1332,9 +1336,17 @@ function renderHomePanelsVisual() {
   }
 
   el.innerHTML =
+    // ─── RESOURCE HUD BAR ───
+    '<div class="mock-hud">' +
+      '<div class="mock-hud-item" data-home-action="labs"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">SCRAP</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div><span class="mock-hud-plus">+</span></div>' +
+      '<div class="mock-hud-item" data-home-action="shop"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div><span class="mock-hud-plus">+</span></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
+    '</div>' +
+
     // ─── HERO SECTION ───
     '<div class="mock-hero">' +
-      '<div class="mock-hero-bg"></div>' +
+      '<div class="mock-hero-bg" style="background-image:url(\'' + bgAssets[previewBg] + '\')"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
       '<div class="mock-hero-title">CORE<br>SURGE</div>' +
@@ -1371,16 +1383,16 @@ function renderHomePanelsVisual() {
           '<div class="mock-info-stat"><span class="mock-info-stat-label">BEST THIS TIER</span><span class="mock-info-stat-val">W ' + bestThisTier + '</span></div>' +
           '<div class="mock-info-stat"><span class="mock-info-stat-label">TOTAL RANKS</span><span class="mock-info-stat-val">' + totalRanks + '</span></div>' +
           '<div class="mock-info-bar"><div class="mock-info-bar-fill" style="width:' + progressPct + '%"></div></div>' +
-          '<div class="mock-info-bar-label">' + bestThisTier + ' / 100</div>' +
+          '<div class="mock-info-bar-label">' + bestThisTier + ' / 50</div>' +
         '</div>' +
       '</div>' +
       // Tier Milestones
       '<div class="mock-info-card mock-info-purple" data-home-action="milestones">' +
         '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
         '<div class="mock-info-body">' +
-          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">' + (MILESTONE_BONUS[100] || '+10% HP') + '</span></div>' +
-          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">' + (MILESTONE_BONUS[50] || '+5% Damage') + '</span></div>' +
-          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">' + (MILESTONE_BONUS[25] || '+3% Damage') + '</span></div>' +
+          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
+          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">+5% Damage</span></div>' +
+          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">Scrap Bonus</span></div>' +
           '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
         '</div>' +
       '</div>' +
@@ -1429,7 +1441,6 @@ function renderHomePanelsVisual() {
   renderDailyLogin();
   renderDailyObjectiveVisual();
   renderHomeUpgrades();
-  renderGlobalCurrencyBar();
 }
 
 // =========================================================
@@ -1572,58 +1583,7 @@ function getSubmenuBadges() {
   // Cards: show badge if player can afford a pull
   if (save.gems >= (CARD_PRICING ? CARD_PRICING.pullSingle : 20)) badges.cards = '!';
 
-  // Shop: badge if hero pulls available
-  if (typeof getHeroPullPool === 'function' && typeof HERO_PULL_PRICING !== 'undefined') {
-    if (save.gems >= HERO_PULL_PRICING.pullSingle && getHeroPullPool().length > 0) badges.shop = '!';
-  }
-
   return badges;
-}
-
-// =========================================================
-//  GLOBAL CURRENCY BAR — persistent across all menu tabs
-// =========================================================
-function renderGlobalCurrencyBar() {
-  var bar = document.getElementById('globalCurrencyBar');
-  if (!bar) return;
-  // Don't show during battle if menu is not overlaying
-  if (game.running && !document.getElementById('screen-menu').classList.contains('active')) {
-    bar.style.display = 'none';
-    return;
-  }
-  bar.style.display = '';
-  var bestOverall = save.bestWave || 0;
-  bar.innerHTML =
-    '<div class="gcb-item" data-action="labs">' +
-      '<span class="gcb-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span>' +
-      '<div class="gcb-data"><span class="gcb-label">SCRAP</span><span class="gcb-val">' + formatNum(save.coins) + '</span></div>' +
-      '<span class="gcb-plus">+</span>' +
-    '</div>' +
-    '<div class="gcb-item" data-action="shop">' +
-      '<span class="gcb-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span>' +
-      '<div class="gcb-data"><span class="gcb-label">GEMS</span><span class="gcb-val">' + formatNum(save.gems) + '</span></div>' +
-      '<span class="gcb-plus">+</span>' +
-    '</div>' +
-    '<div class="gcb-item">' +
-      '<span class="gcb-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span>' +
-      '<div class="gcb-data"><span class="gcb-label">BEST</span><span class="gcb-val">W' + bestOverall + '</span></div>' +
-    '</div>' +
-    '<div class="gcb-item">' +
-      '<span class="gcb-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span>' +
-      '<div class="gcb-data"><span class="gcb-label">RUNS</span><span class="gcb-val">' + save.totalRuns + '</span></div>' +
-    '</div>';
-  // Wire click actions
-  bar.querySelectorAll('[data-action]').forEach(function(el) {
-    el.addEventListener('click', function() {
-      var action = this.getAttribute('data-action');
-      if (action === 'labs') { activeSubmenu = 'labs'; renderSubmenu(); showSubmenuView(); }
-      else if (action === 'shop') { activeSubmenu = 'shop'; renderSubmenu(); showSubmenuView(); }
-    });
-  });
-}
-
-function showSubmenuView() {
-  if (typeof setHomeView === 'function') setHomeView(false);
 }
 
 function renderSubmenu() {
@@ -1689,7 +1649,6 @@ function renderSubmenu() {
   else if (activeSubmenu === 'tournament') renderTournamentTab(inner);
   else if (activeSubmenu === 'settings')   renderSettingsTab(inner);
   updateGlobalNavActive();
-  renderGlobalCurrencyBar();
 }
 
 let activeLabTab = 'combat';
@@ -1800,50 +1759,6 @@ function renderLabsTab(c) {
   html += `</div>`;
 
   // =========================================================
-  //  SPEED UPGRADES — shown on Utility tab only
-  // =========================================================
-  if (activeResearchTab === 'utility') {
-    const speedNames = { 2: 'Swift', 3: 'Rush', 5: 'Overdrive', 10: 'Hyperdrive' };
-    html += `<div class="mockup-rank-section">⚡ <b>Battle Speed</b> · unlock faster game speeds</div>`;
-    html += `<div class="speed-unlock-grid">`;
-    for (const tier of [2, 3, 5, 10]) {
-      const cost = SPEED_UNLOCK_COST[tier];
-      const owned = save.unlockedSpeeds && save.unlockedSpeeds.includes(tier);
-      // Must unlock in order
-      const tierIdx = SPEED_TIERS.indexOf(tier);
-      const prevTier = tierIdx > 1 ? SPEED_TIERS[tierIdx - 1] : 1;
-      const prevOwned = prevTier === 1 || (save.unlockedSpeeds && save.unlockedSpeeds.includes(prevTier));
-      const canCoins = prevOwned && save.coins >= cost.coins;
-      const canGems = prevOwned && save.gems >= cost.gems;
-      const cls = owned ? 'speed-owned' : (!prevOwned ? 'speed-locked' : (canCoins || canGems ? 'speed-can' : 'speed-locked'));
-      html += `<div class="speed-unlock-card ${cls}" data-speed-tier="${tier}">
-        <div class="speed-unlock-icon">×${tier}</div>
-        <div class="speed-unlock-label">${speedNames[tier]}</div>
-        ${owned ? '<div class="speed-unlock-cost speed-cost-owned">✓ UNLOCKED</div>' : `
-          <button class="speed-buy-btn speed-buy-coins" data-speed-tier="${tier}" data-currency="coins" ${!canCoins ? 'disabled' : ''}>
-            ${formatNum(cost.coins)} ⊙
-          </button>
-          <button class="speed-buy-btn speed-buy-gems" data-speed-tier="${tier}" data-currency="gems" ${!canGems ? 'disabled' : ''}>
-            ${cost.gems} 💎
-          </button>
-        `}
-      </div>`;
-    }
-    // Ad-for-speed boost button
-    const adBoostActive = typeof isAdSpeedBoostActive === 'function' && isAdSpeedBoostActive();
-    const adBoostRemain = typeof adSpeedBoostRemaining === 'function' ? adSpeedBoostRemaining() : 0;
-    const adBoostMin = Math.ceil(adBoostRemain / 60000);
-    const adBoostMaxed = adBoostRemain >= (typeof AD_SPEED_BOOST_MAX !== 'undefined' ? AD_SPEED_BOOST_MAX - 60000 : 3540000);
-    html += `<div class="speed-ad-boost">
-      ${adBoostActive
-        ? `<button class="speed-ad-btn ${adBoostMaxed ? 'active' : ''}" ${adBoostMaxed ? 'disabled' : ''} id="adSpeedBoostBtn">📺 2× Speed · ${adBoostMin}m left${adBoostMaxed ? ' (MAX)' : ' · Watch again to add +20m'}</button>`
-        : `<button class="speed-ad-btn" id="adSpeedBoostBtn">📺 Watch Ad · 2× Speed for 20 min</button>`}
-      <div class="speed-ad-desc">Doubles your current speed. +20 min per ad, stacks up to 1 hour!</div>
-    </div>`;
-    html += `</div>`;
-  }
-
-  // =========================================================
   //  RANK ROWS — flow below the mockup, filtered by active sub-tab
   // =========================================================
   // Collect rank ids that belong to the active category AND are unlocked
@@ -1909,35 +1824,6 @@ function renderLabsTab(c) {
       save.settings.buyMultiplier = val === 'max' ? 'max' : parseInt(val, 10);
       persistSave();
       renderLabsTab(c);
-    });
-  });
-
-  // --- Wire ad speed boost button ---
-  const adSpeedBtn = c.querySelector('#adSpeedBoostBtn');
-  if (adSpeedBtn) {
-    adSpeedBtn.addEventListener('click', () => {
-      // Placeholder: in production this triggers an ad SDK
-      // For now it activates immediately (like the gem ad)
-      if (typeof claimAdSpeedBoost === 'function') {
-        claimAdSpeedBoost();
-        haptic('success');
-        renderLabsTab(c);
-        renderHud();
-        updateBattlefieldSpeedLabel();
-      }
-    });
-  }
-
-  // --- Wire speed unlock buttons ---
-  c.querySelectorAll('.speed-buy-btn[data-speed-tier]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tier = parseInt(btn.dataset.speedTier, 10);
-      const useGems = btn.dataset.currency === 'gems';
-      if (purchaseSpeedTier(tier, useGems)) {
-        haptic('success');
-        renderLabsTab(c);
-        renderHud();
-      }
     });
   });
 
@@ -2122,15 +2008,22 @@ function renderMilestonesTab(c) {
     readyCounts[t] = n;
   }
 
-  // Tier tab bar — show unlocked tiers + 1 locked teaser (capped for perf)
-  // No need to render 99999 buttons; show what the player can interact with.
-  const showUpTo = Math.min(unlockedTier + 1, MAX_TIER);
-  let html = `<div class="goal-tier-tabs">`;
-  for (let t = 1; t <= showUpTo; t++) {
-    const isLocked = t > unlockedTier;
+  // Tier hex progression bar — all 18 tiers, scrollable horizontally
+  let html = `<div class="tier-hex-strip">`;
+  for (let t = 1; t <= MAX_TIER; t++) {
+    const state = t > unlockedTier ? 'locked'
+                : t === activeGoalTier ? 'current'
+                : 'unlocked';
+    const badge = readyCounts[t] > 0 ? `<span class="tier-hex-badge">${readyCounts[t]}</span>` : '';
+    html += `<button class="tier-hex ${state}" data-ghex="${t}" ${t > unlockedTier ? 'disabled' : ''}>T${t}${badge}</button>`;
+  }
+  html += `</div>`;
+
+  // Tier tab bar (horizontal scroll if many tiers)
+  html += `<div class="goal-tier-tabs">`;
+  for (let t = 1; t <= unlockedTier; t++) {
     const badge = readyCounts[t] > 0 ? `<span class="goal-tier-badge">${readyCounts[t]}</span>` : '';
-    const cls = isLocked ? 'locked' : (activeGoalTier === t ? 'active' : '');
-    html += `<button class="goal-tier-tab ${cls}" data-gt="${t}" ${isLocked ? 'disabled' : ''}>T${t}${badge}</button>`;
+    html += `<button class="goal-tier-tab ${activeGoalTier === t ? 'active' : ''}" data-gt="${t}">T${t}${badge}</button>`;
   }
   html += `</div>`;
 
@@ -2143,25 +2036,14 @@ function renderMilestonesTab(c) {
     const claimed = save.claimedMilestones[key];
     const ready = milestoneReady(activeGoalTier, w) && !claimed;
     const r = milestoneReward(activeGoalTier, w);
-    // Build reward parts
-    let rewardParts = [`<b>${formatNum(r.coins)}</b> scrap`];
-    if (r.gems > 0) rewardParts.push(`<b class="gem">${r.gems}</b> gems`);
-    if (r.manuals > 0) rewardParts.push(`<b class="manual">${r.manuals}</b> manuals`);
-    // Stat bonus label from MILESTONE_BONUS
-    const bonusLabel = (typeof MILESTONE_BONUS !== 'undefined' && MILESTONE_BONUS[w]) ? MILESTONE_BONUS[w] : '';
-    if (bonusLabel) rewardParts.push(`<span class="ms-bonus">${bonusLabel}</span>`);
-    // Wave difficulty label
-    let diffLabel = '';
-    if (w >= 1000) diffLabel = '<span class="ms-diff ms-ultra">ULTRA</span>';
-    else if (w >= 500) diffLabel = '<span class="ms-diff ms-endgame">ENDGAME</span>';
-    else if (w >= 200) diffLabel = '<span class="ms-diff ms-late">LATE</span>';
+    const gemPart = r.gems > 0 ? ` + <b class="gem">${r.gems} gems</b>` : '';
     const stateClass = claimed ? 'claimed' : ready ? 'ready' : '';
     const btnText = claimed ? 'Claimed' : ready ? 'Claim' : 'Locked';
     html += `
       <div class="milestone ${stateClass}">
         <div class="milestone-info">
-          <div class="milestone-target">Wave ${w} ${diffLabel}</div>
-          <div class="milestone-reward">${rewardParts.join(' + ')}</div>
+          <div class="milestone-target">Wave ${w}</div>
+          <div class="milestone-reward"><b>${formatNum(r.coins)}</b> scrap${gemPart}</div>
         </div>
         <button class="milestone-btn ${!ready ? 'locked' : ''}" data-tier="${activeGoalTier}" data-wave="${w}" ${!ready ? 'disabled' : ''}>
           ${btnText}
@@ -2171,7 +2053,17 @@ function renderMilestonesTab(c) {
   }
 
   c.innerHTML = html;
-  c.querySelectorAll('.goal-tier-tab:not([disabled])').forEach(t => {
+  c.querySelectorAll('.tier-hex').forEach(h => {
+    if (h.disabled) return;
+    h.addEventListener('click', () => {
+      const t = parseInt(h.dataset.ghex);
+      if (t && t <= highestUnlockedTier()) {
+        activeGoalTier = t;
+        renderMilestonesTab(c);
+      }
+    });
+  });
+  c.querySelectorAll('.goal-tier-tab').forEach(t => {
     t.addEventListener('click', () => {
       activeGoalTier = parseInt(t.dataset.gt);
       renderMilestonesTab(c);
@@ -2193,15 +2085,6 @@ function showHeroUnlockToast(heroDef) {
   toast.innerHTML = `<span style="font-size:1.3em">${heroDef.icon}</span> Hero unlocked: <b>${heroDef.name}</b>`;
   document.body.appendChild(toast);
   setTimeout(function() { toast.remove(); }, 3500);
-}
-
-function showHeroPullableToast(heroDef) {
-  const toast = document.createElement('div');
-  toast.className = 'skin-toast hero-unlock-toast';
-  toast.style.background = 'rgba(170,68,255,0.92)';
-  toast.innerHTML = `<span style="font-size:1.3em">${heroDef.icon}</span> New hero pullable: <b>${heroDef.name}</b> — visit Shop!`;
-  document.body.appendChild(toast);
-  setTimeout(function() { toast.remove(); }, 4000);
 }
 
 // Loadout sub-tab state: 'cards' or 'heroes'
@@ -2238,6 +2121,30 @@ function renderCardsTab(c) {
   // Ensure equippedCards array matches slots length
   while (save.equippedCards.length < slots) save.equippedCards.push(null);
   const equipped = save.equippedCards;
+  const cardEffectSummary = (card) => {
+    if (card.special || card.buckets) return card.desc;
+    const summaries = {
+      damage: 'Boosts damage',
+      attackSpeed: 'Boosts fire rate',
+      health: 'Boosts max HP',
+      range: 'Boosts range',
+      defense: 'Adds armor',
+      lifesteal: 'Adds lifesteal',
+      regen: 'Adds core regen',
+      crit: 'Adds crit chance',
+      critPower: 'Boosts crit damage',
+      cash: 'Boosts kill scrap',
+      coinGain: 'Boosts end-run scrap',
+      waveBonus: 'Boosts wave cash',
+      multiChance: 'Adds multishot chance',
+      multiPower: 'Boosts multishot damage',
+      multiTargetsAdd: 'Adds extra multishot targets',
+      bounceChance: 'Adds bounce chance',
+      bouncePower: 'Boosts bounce damage',
+      bounceTargetsAdd: 'Adds extra bounce targets'
+    };
+    return summaries[card.stat] || card.desc || 'Run bonus';
+  };
 
   // Header + slot row
   let html = `
@@ -2254,11 +2161,13 @@ function renderCardsTab(c) {
       const inv = save.cardInventory[cardId] || { level: 1 };
       const tierColor = CARD_TIER_COLORS[card.tier];
       const bonusLabel = cardBonusLabel(card, inv);
+      const effectSummary = cardEffectSummary(card);
       html += `
-        <div class="card-slot filled" data-slot="${i}" style="background:${tierColor.bg};border-color:${tierColor.border}">
-          <div class="card-slot-icon">${card.icon}</div>
+        <div class="card-slot filled" data-slot="${i}" data-card="${card.id}" style="border-color:${tierColor.border}">
+          <div class="card-slot-tier" style="color:${tierColor.nameColor}">${tierColor.name}</div>
           <div class="card-slot-name">${card.name}</div>
-          <div class="card-slot-lvl">Lv${inv.level} · ${bonusLabel}</div>
+          <div class="card-slot-effect">${effectSummary}</div>
+          <div class="card-slot-lvl">Lv ${inv.level} · ${bonusLabel}</div>
         </div>`;
     } else {
       html += `
@@ -2353,6 +2262,7 @@ function renderCardsTab(c) {
         const tierColor = CARD_TIER_COLORS[card.tier];
         const isEquipped = equipped.includes(id);
         const bonusLabel = cardBonusLabel(card, inv);
+        const effectSummary = cardEffectSummary(card);
         // Copies progress to next level
         const thresholds = COPIES_TO_LEVEL[card.tier];
         let copyLabel;
@@ -2365,11 +2275,11 @@ function renderCardsTab(c) {
         html += `
           <div class="card-tile ${isEquipped ? 'equipped' : ''}" data-card="${id}" style="border-color:${tierColor.border}">
             <div class="card-tile-head" style="background:${tierColor.bg}">
-              <span class="card-tile-icon">${card.icon}</span>
               <span class="card-tile-tier" style="color:${tierColor.nameColor}">${tierColor.name}</span>
             </div>
             <div class="card-tile-name">${card.name}</div>
-            <div class="card-tile-stat">${bonusLabel} · Lv ${inv.level}/5</div>
+            <div class="card-tile-effect">${effectSummary}</div>
+            <div class="card-tile-stat">Lv ${inv.level}/5 � ${bonusLabel}</div>
             <div class="card-tile-copies">${copyLabel}</div>
             ${isEquipped ? `<div class="card-tile-badge">EQUIPPED</div>` : ''}
           </div>`;
@@ -2618,28 +2528,15 @@ function renderHeroesTab(c) {
     const catColor = def.category === 'combat' ? 'var(--danger)' : def.category === 'economy' ? 'var(--gold)' : 'var(--good)';
 
     if (!isUnlocked) {
-      // Locked hero — show pullable status or unlock requirements
-      const unlockDesc = typeof heroUnlockDescription === 'function' ? heroUnlockDescription(def.unlock) : '???';
-      const progress = typeof heroUnlockProgress === 'function' ? heroUnlockProgress(def.unlock) : 0;
-      const progressPct = Math.min(100, Math.floor(progress * 100));
-      let lockReason = unlockDesc;
+      // Locked hero
+      let lockReason = 'Tier ' + def.unlockTier;
       if (def.family) lockReason += ' + ' + (UNLOCK_FAMILIES[def.family] ? UNLOCK_FAMILIES[def.family].name : def.family);
-      const familyMet = !def.family || (typeof familyIsOwned === 'function' && familyIsOwned(def.family));
-      const condMet = typeof isHeroUnlockMet === 'function' && isHeroUnlockMet(def.unlock);
-      const devMode = save.settings && save.settings.devMode;
-      const isPullable = devMode || (familyMet && condMet);
       html += `
-        <div class="hero-card locked ${isPullable ? 'pullable' : ''}">
-          <div class="hc-icon">${isPullable ? def.icon : '?'}</div>
+        <div class="hero-card locked">
+          <div class="hc-icon">?</div>
           <div class="hc-info">
             <div class="hc-name">${def.name}</div>
-            ${isPullable ? `
-              <div class="hc-pullable-badge">✦ PULLABLE — Visit Shop</div>
-            ` : `
-              <div class="hc-lock-reason">${lockReason}</div>
-              <div class="hc-progress-bar"><div class="hc-progress-fill" style="width:${progressPct}%"></div></div>
-              <div class="hc-progress-text">${condMet ? '&#10003;' : progressPct + '%'}${def.family && !familyMet ? ' &middot; Need family' : ''}</div>
-            `}
+            <div class="hc-lock-reason">${lockReason}</div>
           </div>
         </div>`;
     } else {
@@ -2723,17 +2620,12 @@ function renderShopTab(c) {
   const available = remaining === 0;
   const hrLeft = Math.ceil(remaining / (60 * 60 * 1000));
 
+  // Direct unlock list — only cards not yet owned
+  const unownedStandard = Object.values(CARD_POOL).filter(c => c.tier === 'standard' && !save.cardInventory[c.id]);
+  const unownedPrime = Object.values(CARD_POOL).filter(c => c.tier === 'prime' && !save.cardInventory[c.id]);
+
   const singlePullDisabled = save.gems < CARD_PRICING.pullSingle;
   const bundleDisabled = save.gems < CARD_PRICING.pullBundle;
-  const pullableCards = typeof countPullableCards === 'function' ? countPullableCards() : Object.keys(CARD_POOL).length;
-  const totalCards = Object.keys(CARD_POOL).length;
-
-  // Hero pull pool
-  const heroPullPool = typeof getHeroPullPool === 'function' ? getHeroPullPool() : [];
-  const heroSingleDisabled = save.gems < HERO_PULL_PRICING.pullSingle || heroPullPool.length === 0;
-  const heroBundleDisabled = save.gems < HERO_PULL_PRICING.pullBundle || heroPullPool.length === 0;
-  const totalHeroes = typeof HERO_COUNT !== 'undefined' ? HERO_COUNT : 30;
-  const ownedHeroes = (save.heroesUnlocked || []).length;
 
   c.innerHTML = `
     <div class="shop-section-title">Free Gems</div>
@@ -2749,8 +2641,7 @@ function renderShopTab(c) {
     </div>
 
     <div class="shop-section-title">Card Packs</div>
-    <div class="shop-section-sub">78% Standard · 20% Prime · 2% Apex · Duplicates level cards · ${pullableCards}/${totalCards} cards in pool</div>
-    ${pullableCards < totalCards ? `<div class="shop-section-hint">🔬 Unlock more research families to expand the card pool</div>` : ''}
+    <div class="shop-section-sub">78% Standard · 20% Prime · 2% Apex · Duplicates level cards</div>
     <div class="card-pack-grid">
       <button class="card-pack-btn" id="cardPullSingleBtn" ${singlePullDisabled ? 'disabled' : ''}>
         <div class="pack-title">Single Pull</div>
@@ -2764,25 +2655,36 @@ function renderShopTab(c) {
       </button>
     </div>
 
-    <div class="shop-section-title">Hero Summons</div>
-    <div class="shop-section-sub">${heroPullPool.length} hero${heroPullPool.length !== 1 ? 's' : ''} available · ${ownedHeroes}/${totalHeroes} owned</div>
-    ${heroPullPool.length === 0 && ownedHeroes < totalHeroes
-      ? `<div class="shop-section-hint">⚔ Progress further to unlock heroes in the pull pool</div>`
-      : heroPullPool.length === 0
-        ? `<div class="shop-section-hint">🏆 All available heroes obtained!</div>`
-        : ''}
-    <div class="card-pack-grid">
-      <button class="card-pack-btn hero-pull" id="heroPullSingleBtn" ${heroSingleDisabled ? 'disabled' : ''}>
-        <div class="pack-title">Hero Pull</div>
-        <div class="pack-desc">1 random hero</div>
-        <div class="pack-cost">${HERO_PULL_PRICING.pullSingle} 💎</div>
-      </button>
-      <button class="card-pack-btn hero-pull bundle" id="heroPullBundleBtn" ${heroBundleDisabled ? 'disabled' : ''}>
-        <div class="pack-title">5-Pull Bundle</div>
-        <div class="pack-desc">5 random heroes · save 25💎</div>
-        <div class="pack-cost">${HERO_PULL_PRICING.pullBundle} 💎</div>
-      </button>
-    </div>
+    ${unownedStandard.length > 0 || unownedPrime.length > 0 ? `
+      <div class="shop-section-title">Direct Unlock</div>
+      <div class="shop-section-sub">Buy a specific new card you don't own yet</div>
+      <div class="direct-unlock-list">
+        ${unownedPrime.map(card => {
+          const disabled = save.gems < CARD_PRICING.unlockPrime;
+          return `
+          <button class="direct-unlock-btn prime" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
+            <span class="du-icon">${card.icon}</span>
+            <span class="du-info">
+              <span class="du-name" style="color:var(--purple)">${card.name}</span>
+              <span class="du-tier">PRIME</span>
+            </span>
+            <span class="du-cost">${CARD_PRICING.unlockPrime} 💎</span>
+          </button>`;
+        }).join('')}
+        ${unownedStandard.map(card => {
+          const disabled = save.gems < CARD_PRICING.unlockStandard;
+          return `
+          <button class="direct-unlock-btn standard" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
+            <span class="du-icon">${card.icon}</span>
+            <span class="du-info">
+              <span class="du-name">${card.name}</span>
+              <span class="du-tier">STANDARD</span>
+            </span>
+            <span class="du-cost">${CARD_PRICING.unlockStandard} 💎</span>
+          </button>`;
+        }).join('')}
+      </div>
+    ` : ''}
 
     <div class="shop-section-title">Mobile Store</div>
     <div class="shop-section-sub">${purchasePlatformLabel()} · ${monetizationStatusText()}</div>
@@ -2888,41 +2790,18 @@ function renderShopTab(c) {
     });
   }
 
-  // Hero single pull
-  const heroPullBtn = document.getElementById('heroPullSingleBtn');
-  if (heroPullBtn) {
-    let heroPullCd = false;
-    heroPullBtn.addEventListener('click', () => {
-      if (heroPullCd) return;
-      const result = performHeroPull();
+  // Direct unlock buttons
+  c.querySelectorAll('.direct-unlock-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.unlock;
+      const result = performDirectUnlock(id);
       if (result) {
-        heroPullCd = true;
-        heroPullBtn.disabled = true;
-        showHeroPullReveal([result]);
+        showPullReveal([result]);
         renderHud();
         renderSubmenu();
-        setTimeout(() => { heroPullCd = false; heroPullBtn.disabled = false; }, 800);
       }
     });
-  }
-
-  // Hero bundle pull
-  const heroBundleBtn = document.getElementById('heroPullBundleBtn');
-  if (heroBundleBtn) {
-    let heroBundleCd = false;
-    heroBundleBtn.addEventListener('click', () => {
-      if (heroBundleCd) return;
-      const results = performHeroBundle();
-      if (results) {
-        heroBundleCd = true;
-        heroBundleBtn.disabled = true;
-        showHeroPullReveal(results);
-        renderHud();
-        renderSubmenu();
-        setTimeout(() => { heroBundleCd = false; heroBundleBtn.disabled = false; }, 800);
-      }
-    });
-  }
+  });
 
   c.querySelectorAll('.mobile-store-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -2982,44 +2861,14 @@ function showPullReveal(results) {
   });
 }
 
-// Reveal hero pull results as a full-screen overlay
-function showHeroPullReveal(results) {
-  const overlay = document.createElement('div');
-  overlay.className = 'pull-reveal-overlay';
-  const catColors = { combat: 'var(--danger)', economy: 'var(--gold)', defense: 'var(--good)' };
-  const grid = results.map(r => {
-    const hero = r.hero;
-    const catLabel = hero.category.charAt(0).toUpperCase() + hero.category.slice(1);
-    const catColor = catColors[hero.category] || 'var(--accent)';
-    return `
-      <div class="pull-card hero-pull-card" style="border-color:${catColor}; background:rgba(20,180,160,0.15)">
-        <div class="pull-card-icon" style="font-size:2em">${hero.icon}</div>
-        <div class="pull-card-tier" style="color:${catColor}">${catLabel}</div>
-        <div class="pull-card-name">${hero.name}</div>
-        <div class="pull-badge new">NEW HERO!</div>
-      </div>`;
-  }).join('');
-  overlay.innerHTML = `
-    <div class="pull-reveal-card">
-      <div class="pull-reveal-title">${results.length === 1 ? 'Hero Recruited!' : `${results.length} Heroes Recruited!`}</div>
-      <div class="pull-reveal-grid">${grid}</div>
-      <button class="pull-reveal-btn" id="pullRevealClose">Continue</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  document.getElementById('pullRevealClose').addEventListener('click', () => {
-    overlay.remove();
-    renderSubmenu();
-  });
-}
-
 // ============================================================
 // SKINS TAB — cosmetic only, no gameplay effect
 // ============================================================
 function renderSkinsTab(c) {
-  // Reflect the currently-equipped core skin from save.
-  // Sentinel is always the default / auto-equipped core skin.
-  const equippedCore = save.equippedCoreSkin || 'sentinel';
+  // Reflect the currently-equipped skins from save.
+  // Defaults: null = no skin equipped → uses original CSS tower/bg.
+  const equippedCore = (save.equippedCoreSkin || null);
+  const equippedBg   = (save.equippedBgSkin   || null);
 
   // Core skins — IDs match /assets/cores/ filenames and css/skins.css selectors.
   // All are free/owned right now for testing; economy wiring is a later pass.
@@ -3032,12 +2881,19 @@ function renderSkinsTab(c) {
     { id: 'royal',      name: 'Royal',      cost: 0 }
   ];
 
-  const tileHTML = (s, equippedId) => {
+  const bgSkins = [
+    { id: 'cyber_grid', name: 'Cyber Grid', cost: 0 },
+    { id: 'industrial', name: 'Reactor',    cost: 0 },
+    { id: 'organic',    name: 'Organic',    cost: 0 },
+    { id: 'steel',      name: 'Steel Bay',  cost: 0 }
+  ];
+
+  const tileHTML = (s, kind, equippedId) => {
     const isEquipped = s.id === equippedId;
     const statusLabel = isEquipped ? 'EQUIPPED' : 'Equip';
     const statusClass = isEquipped ? 'equipped' : 'owned';
     return `
-      <div class="skin-tile ${statusClass}" data-skin="${s.id}" data-kind="core">
+      <div class="skin-tile ${statusClass}" data-skin="${s.id}" data-kind="${kind}">
         <div class="skin-preview"></div>
         <div class="skin-name">${s.name}</div>
         <div class="skin-status">${statusLabel}</div>
@@ -3048,11 +2904,14 @@ function renderSkinsTab(c) {
     <div class="shop-section-title">Core Skins</div>
     <div class="shop-section-sub">Change the look of your Core · cosmetic only</div>
     <div class="skin-grid">
-      ${coreSkins.map(s => tileHTML(s, equippedCore)).join('')}
+      ${coreSkins.map(s => tileHTML(s, 'core', equippedCore)).join('')}
     </div>
 
     <div class="shop-section-title">Background Skins</div>
-    <div class="shop-section-sub">New backgrounds coming soon!</div>
+    <div class="shop-section-sub">Change the battlefield backdrop</div>
+    <div class="skin-grid">
+      ${bgSkins.map(s => tileHTML(s, 'bg', equippedBg)).join('')}
+    </div>
 
     <div class="shop-section-title">Coming Soon</div>
     <div class="shop-coming">
@@ -3083,7 +2942,9 @@ function renderSkinsTab(c) {
   c.querySelectorAll('.skin-tile').forEach(tile => {
     tile.addEventListener('click', () => {
       const id = tile.getAttribute('data-skin');
-      if (typeof equipCoreSkin === 'function') equipCoreSkin(id);
+      const kind = tile.getAttribute('data-kind');
+      if (kind === 'core' && typeof equipCoreSkin === 'function') equipCoreSkin(id);
+      if (kind === 'bg'   && typeof equipBgSkin   === 'function') equipBgSkin(id);
       renderSkinsTab(c); // re-render to update EQUIPPED label
     });
   });
@@ -3261,7 +3122,7 @@ function renderSettingsTab(c) {
   // Version text — tap 7 times to unlock dev panel
   const ver = document.createElement('div');
   ver.style.cssText = 'text-align:center;color:var(--muted);font-size:9px;margin-top:12px;line-height:1.5;cursor:pointer;padding:10px;user-select:none';
-  const verDefault = 'Core Surge v0.7.31 · Installable App Shell · tap 7x for dev tools';
+  const verDefault = 'Core Surge v0.7.24 · Installable App Shell · tap 7x for dev tools';
   ver.textContent = verDefault;
   let tapCount = 0;
   let tapTimer = null;
@@ -3329,7 +3190,7 @@ function renderDevPanel() {
     <div class="dev-section">Progression</div>
     <button class="dev-btn" data-act="maxLabs">Max all labs</button>
     <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
-    <button class="dev-btn" data-act="maxSpeed">Max game speed (10×)</button>
+    <button class="dev-btn" data-act="maxSpeed">Max game speed (3×)</button>
     <button class="dev-btn" data-act="setBestWave">Set best to W1000 on T1</button>
 
     <div class="dev-section">In-Battle (battle only)</div>
@@ -3352,12 +3213,6 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="spawnOrbNow" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Spawn gem orb now</button>
     <button class="dev-btn" data-act="resetAdCooldown">Reset shop ad cooldown</button>
     <button class="dev-btn" data-act="clearAllMilestones">Clear all milestone claims</button>
-
-    <div class="dev-section">Heroes</div>
-    <button class="dev-btn" data-act="unlockAllHeroes">Unlock all 30 heroes</button>
-    <button class="dev-btn" data-act="addManuals100">+ 100 training manuals</button>
-    <button class="dev-btn" data-act="maxCore">Max core level (30 slots)</button>
-    <button class="dev-btn" data-act="maxAllHeroes">Max all hero levels</button>
 
     <div class="dev-section">Cards (v0.7.9 economy)</div>
     <button class="dev-btn" data-act="addAllCardsL1">Give all cards · Lv 1</button>
@@ -3400,12 +3255,8 @@ function devAct(act) {
       for (let t = 1; t < MAX_TIER; t++) save.bestWavePerTier[t] = Math.max(save.bestWavePerTier[t] || 0, 100);
       break;
     case 'maxSpeed':
-      // Unlock all speeds and set to max
-      if (!save.unlockedSpeeds) save.unlockedSpeeds = [];
-      for (const s of [2, 3, 5, 10]) {
-        if (!save.unlockedSpeeds.includes(s)) save.unlockedSpeeds.push(s);
-      }
-      save.settings.gameSpeed = 10;
+      // Game speed is a hard-coded baseline now (3x always available)
+      save.settings.gameSpeed = 3;
       break;
     case 'setBestWave':
       save.bestWavePerTier[1] = 1000;
@@ -3479,24 +3330,6 @@ function devAct(act) {
     case 'clearAllMilestones':
       save.claimedMilestones = {};
       break;
-    case 'unlockAllHeroes':
-      // Dev shortcut: directly unlock every hero (bypasses pull system)
-      for (const hid of Object.keys(HERO_DEFS)) {
-        unlockHero(hid);
-      }
-      break;
-    case 'addManuals100':
-      save.trainingManuals = (save.trainingManuals || 0) + 100;
-      break;
-    case 'maxCore':
-      save.coreLevel = CORE_UPGRADE.maxLevel;
-      break;
-    case 'maxAllHeroes':
-      for (const hid of Object.keys(HERO_DEFS)) {
-        if (!save.heroes[hid]) save.heroes[hid] = { level: 1 };
-        save.heroes[hid].level = 50; // high level for testing
-      }
-      break;
     case 'addAllCardsL1':
       for (const id of Object.keys(CARD_POOL)) {
         if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
@@ -3543,7 +3376,7 @@ function devAct(act) {
   persistSave();
   renderDevPanel();
   renderHud();
-  if (activeSubmenu === 'labs' || activeSubmenu === 'cards' || activeSubmenu === 'heroes') renderSubmenu();
+  if (activeSubmenu === 'labs' || activeSubmenu === 'cards') renderSubmenu();
 }
 
 // override startBattle to honor jump wave
@@ -3553,6 +3386,305 @@ startBattle = function () {
   devJumpWave = 0;
   _origStartBattle(w);
 };
+
+function getDevGrantAmount() {
+  const input = document.getElementById('devGrantAmount');
+  const raw = input ? parseInt(input.value, 10) : 0;
+  return Math.max(1, Math.min(1000000000, raw || 0));
+}
+
+function clearHeroDevState() {
+  if (typeof heroActiveState === 'object' && heroActiveState) {
+    for (const heroId of Object.keys(heroActiveState)) delete heroActiveState[heroId];
+  }
+}
+
+function renderDevPanel() {
+  const body = document.getElementById('devBody');
+  const inBattle = game.running;
+  const unlockedHeroes = Array.isArray(save.heroesUnlocked) ? save.heroesUnlocked.length : 0;
+  const totalHeroes = typeof HERO_COUNT === 'number' ? HERO_COUNT : Object.keys(HERO_DEFS || {}).length;
+  const garrisonCount = Array.isArray(save.garrisonSlots) ? save.garrisonSlots.filter(Boolean).length : 0;
+  const manuals = save.trainingManuals || 0;
+
+  body.innerHTML = `
+    <div class="dev-info">
+      Dev cheats are for testing only. Changes apply immediately. Battle state: <b>${inBattle ? 'IN BATTLE' : 'IN MENU'}</b>
+    </div>
+
+    <div class="dev-section">Custom Grant</div>
+    <div class="dev-grant-row">
+      <label class="dev-field-label" for="devGrantAmount">Amount</label>
+      <input class="dev-input" id="devGrantAmount" type="number" min="1" step="1" value="1000" inputmode="numeric">
+    </div>
+    <button class="dev-btn" data-act="grantCoins">Give chosen scrap</button>
+    <button class="dev-btn" data-act="grantGems">Give chosen gems</button>
+    <button class="dev-btn" data-act="grantManuals">Give chosen manuals</button>
+    <button class="dev-btn" data-act="grantBattleCash" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Give chosen battle cash</button>
+
+    <div class="dev-section">Currency</div>
+    <button class="dev-btn" data-act="coins1k">+ 1,000 scrap</button>
+    <button class="dev-btn" data-act="coins100k">+ 100,000 scrap</button>
+    <button class="dev-btn" data-act="coins10m">+ 10,000,000 scrap</button>
+    <button class="dev-btn" data-act="gems100">+ 100 gems</button>
+    <button class="dev-btn" data-act="coins1b">+ 1,000,000,000 scrap</button>
+    <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
+
+    <div class="dev-section">Progression</div>
+    <button class="dev-btn" data-act="maxLabs">Max all labs</button>
+    <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
+    <button class="dev-btn" data-act="maxSpeed">Max game speed (3x)</button>
+    <button class="dev-btn" data-act="setBestWave">Set best to W1000 on T1</button>
+
+    <div class="dev-section">In-Battle (battle only)</div>
+    <button class="dev-btn" data-act="fullHeal" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Full heal</button>
+    <button class="dev-btn" data-act="killAll" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Kill all enemies</button>
+    <button class="dev-btn" data-act="spawnBoss" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Force spawn boss</button>
+    <button class="dev-btn" data-act="maxInRun" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Max in-run (L200)</button>
+    <button class="dev-btn" data-act="trueMaxInRun" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>True max (L5000)</button>
+    <button class="dev-btn" data-act="cash10k" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>+ 10,000 cash</button>
+    <button class="dev-btn" data-act="addWave" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Skip to next wave</button>
+
+    <div class="dev-section">Starting Wave (next battle)</div>
+    <button class="dev-btn" data-act="jumpW50">Start next run at W50</button>
+    <button class="dev-btn" data-act="jumpW100">Start next run at W100</button>
+    <button class="dev-btn" data-act="jumpW500">Start next run at W500</button>
+    <button class="dev-btn" data-act="jumpW1000">Start next run at W1000</button>
+
+    <div class="dev-section">Toggles</div>
+    <button class="dev-btn ${save.devState.godMode ? 'toggle-on' : ''}" data-act="godMode">God Mode: ${save.devState.godMode ? 'ON' : 'OFF'}</button>
+    <button class="dev-btn" data-act="spawnOrbNow" ${!inBattle ? 'disabled style="opacity:0.4"' : ''}>Spawn gem orb now</button>
+    <button class="dev-btn" data-act="resetAdCooldown">Reset shop ad cooldown</button>
+    <button class="dev-btn" data-act="clearAllMilestones">Clear all milestone claims</button>
+
+    <div class="dev-section">Cards</div>
+    <button class="dev-btn" data-act="addAllCardsL1">Give all cards | Lv 1</button>
+    <button class="dev-btn" data-act="addAllCardsL5">Give all cards | Lv 5 max</button>
+    <button class="dev-btn" data-act="clearCards">Wipe card inventory</button>
+    <button class="dev-btn" data-act="unlockAllSlots">Unlock all 10 slots</button>
+
+    <div class="dev-section">Heroes</div>
+    <div class="dev-info">
+      Heroes unlocked: <b>${unlockedHeroes}/${totalHeroes}</b> | Garrisoned: <b>${garrisonCount}</b> | Manuals: <b>${manuals}</b>
+    </div>
+    <button class="dev-btn" data-act="unlockAllHeroes">Unlock all heroes</button>
+    <button class="dev-btn" data-act="removeAllHeroes">Remove all heroes</button>
+    <button class="dev-btn" data-act="fillGarrison">Fill garrison with unlocked heroes</button>
+    <button class="dev-btn" data-act="clearGarrison">Clear garrison</button>
+    <button class="dev-btn" data-act="heroesLv10">Set all unlocked heroes to Lv 10</button>
+    <button class="dev-btn" data-act="heroesLv50">Set all unlocked heroes to Lv 50</button>
+    <button class="dev-btn" data-act="maxCoreLevel">Max core level</button>
+
+    <div class="dev-section">Tournament</div>
+    <button class="dev-btn" data-act="tourneyForceEnd">Force cycle end now</button>
+    <button class="dev-btn" data-act="tourneyResetBracket">Reset bracket (new synths)</button>
+
+    <div class="dev-section">Danger</div>
+    <button class="dev-btn" style="border-color:var(--danger);color:var(--danger)" data-act="hideDev">Disable dev mode</button>
+    <button class="dev-btn" style="border-color:var(--danger);color:var(--danger)" data-act="reset">Reset all progress</button>
+  `;
+
+  body.querySelectorAll('.dev-btn').forEach((button) => {
+    button.addEventListener('click', () => devAct(button.dataset.act));
+  });
+}
+
+function devAct(act) {
+  const grantAmount = getDevGrantAmount();
+  switch (act) {
+    case 'coins1k': save.coins += 1000; break;
+    case 'coins100k': save.coins += 100000; break;
+    case 'coins10m': save.coins += 10000000; break;
+    case 'coins1b': save.coins += 1000000000; break;
+    case 'gems100': save.gems += 100; break;
+    case 'gems10k': save.gems += 10000; break;
+    case 'grantCoins':
+      save.coins += grantAmount;
+      break;
+    case 'grantGems':
+      save.gems += grantAmount;
+      break;
+    case 'grantManuals':
+      save.trainingManuals = (save.trainingManuals || 0) + grantAmount;
+      break;
+    case 'grantBattleCash':
+      if (game.running) {
+        game.cash += grantAmount;
+        game.cashEarnedThisRun += grantAmount;
+      }
+      break;
+    case 'maxLabs':
+      for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
+      for (const rid of Object.keys(RANK_DEFS)) {
+        if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
+        save.ranks[rid].level = RANK_DEFS[rid].maxRank;
+      }
+      break;
+    case 'unlockTiers':
+      for (let tier = 1; tier < MAX_TIER; tier++) save.bestWavePerTier[tier] = Math.max(save.bestWavePerTier[tier] || 0, 100);
+      break;
+    case 'maxSpeed':
+      save.settings.gameSpeed = 3;
+      break;
+    case 'setBestWave':
+      save.bestWavePerTier[1] = 1000;
+      save.bestWave = 1000;
+      break;
+    case 'fullHeal':
+      if (game.running) game.hp = game.hpMax;
+      break;
+    case 'killAll':
+      if (game.running) {
+        for (const enemy of game.enemies) {
+          if (!enemy.dead) hitEnemy(enemy, enemy.hp + 1, true);
+        }
+      }
+      break;
+    case 'spawnBoss':
+      if (game.running) spawnBoss();
+      break;
+    case 'maxInRun':
+      if (game.running) {
+        for (const key of Object.keys(game.upgrades)) {
+          const upgrade = game.upgrades[key];
+          if (upgrade.isAction) continue;
+          if (upgrade.max && upgrade.max <= 200) upgrade.level = upgrade.max;
+          else upgrade.level = 200;
+        }
+        game.hpMax = getMaxHp();
+        game.hp = game.hpMax;
+        renderUpgrades();
+      }
+      break;
+    case 'trueMaxInRun':
+      if (game.running) {
+        for (const key of Object.keys(game.upgrades)) {
+          const upgrade = game.upgrades[key];
+          if (upgrade.isAction) continue;
+          upgrade.level = upgrade.max || 100;
+        }
+        game.hpMax = getMaxHp();
+        game.hp = game.hpMax;
+        renderUpgrades();
+      }
+      break;
+    case 'cash10k':
+      if (game.running) {
+        game.cash += 10000;
+        game.cashEarnedThisRun += 10000;
+      }
+      break;
+    case 'addWave':
+      if (game.running) {
+        for (const enemy of game.enemies) enemy.dead = true;
+        cleanDeadEnemies();
+        advanceWave();
+      }
+      break;
+    case 'jumpW50': devJumpWave = 50; alert('Next battle will start at Wave 50'); break;
+    case 'jumpW100': devJumpWave = 100; alert('Next battle will start at Wave 100'); break;
+    case 'jumpW500': devJumpWave = 500; alert('Next battle will start at Wave 500'); break;
+    case 'jumpW1000': devJumpWave = 1000; alert('Next battle will start at Wave 1000'); break;
+    case 'godMode':
+      save.devState.godMode = !save.devState.godMode;
+      break;
+    case 'spawnOrbNow':
+      if (game.running && !orbState.currentOrb) spawnGemOrb();
+      break;
+    case 'resetAdCooldown':
+      save.lastAdRewardTime = 0;
+      break;
+    case 'clearAllMilestones':
+      save.claimedMilestones = {};
+      break;
+    case 'addAllCardsL1':
+      for (const cardId of Object.keys(CARD_POOL)) {
+        if (!save.cardInventory[cardId]) save.cardInventory[cardId] = { level: 1, copies: 1 };
+      }
+      break;
+    case 'addAllCardsL5':
+      for (const cardId of Object.keys(CARD_POOL)) {
+        const card = CARD_POOL[cardId];
+        const maxCopies = COPIES_TO_LEVEL[card.tier][4];
+        save.cardInventory[cardId] = { level: 5, copies: maxCopies };
+      }
+      break;
+    case 'clearCards':
+      save.cardInventory = {};
+      save.equippedCards = [];
+      for (let i = 0; i < save.unlockedSlots; i++) save.equippedCards.push(null);
+      break;
+    case 'unlockAllSlots':
+      save.unlockedSlots = MAX_SLOTS;
+      while (save.equippedCards.length < MAX_SLOTS) save.equippedCards.push(null);
+      break;
+    case 'unlockAllHeroes':
+      if (!save.heroesUnlocked) save.heroesUnlocked = [];
+      if (!save.heroes) save.heroes = {};
+      for (const heroId of Object.keys(HERO_DEFS)) {
+        if (save.heroesUnlocked.indexOf(heroId) === -1) save.heroesUnlocked.push(heroId);
+        if (!save.heroes[heroId]) save.heroes[heroId] = { level: 1 };
+      }
+      break;
+    case 'removeAllHeroes':
+      save.heroes = {};
+      save.heroesUnlocked = [];
+      save.garrisonSlots = [];
+      save.coreLevel = 1;
+      save.trainingManuals = 0;
+      clearHeroDevState();
+      break;
+    case 'fillGarrison': {
+      const unlocked = Array.isArray(save.heroesUnlocked) ? save.heroesUnlocked.slice() : [];
+      const maxSlots = save.coreLevel || 1;
+      save.garrisonSlots = unlocked.slice(0, maxSlots);
+      clearHeroDevState();
+      break;
+    }
+    case 'clearGarrison':
+      save.garrisonSlots = [];
+      clearHeroDevState();
+      break;
+    case 'heroesLv10':
+    case 'heroesLv50': {
+      const targetLevel = act === 'heroesLv10' ? 10 : 50;
+      if (!save.heroes) save.heroes = {};
+      for (const heroId of (save.heroesUnlocked || [])) {
+        save.heroes[heroId] = { level: targetLevel };
+      }
+      break;
+    }
+    case 'maxCoreLevel':
+      save.coreLevel = CORE_UPGRADE.maxLevel;
+      if (Array.isArray(save.garrisonSlots)) save.garrisonSlots = save.garrisonSlots.filter(Boolean).slice(0, save.coreLevel);
+      break;
+    case 'tourneyForceEnd':
+      tourneyDevForceCycleEnd();
+      break;
+    case 'tourneyResetBracket':
+      if (save.tournament) {
+        save.tournament.currentBracket = null;
+        save.tournament.playerBestWave = 0;
+        save.tournament.playerBestTime = 0;
+        save.tournament.playerEntries = 0;
+        tourneyEnsureActive();
+      }
+      break;
+    case 'hideDev':
+      save.settings.devMode = false;
+      closeDevPanel();
+      renderSubmenu();
+      break;
+    case 'reset':
+      closeDevPanel();
+      resetSave();
+      return;
+  }
+  persistSave();
+  renderDevPanel();
+  renderHud();
+  if (activeSubmenu === 'labs' || activeSubmenu === 'cards') renderSubmenu();
+}
 
 
 // ============================================================
@@ -3704,3 +3836,5 @@ function renderTournamentTab(c) {
     });
   }
 }
+
+

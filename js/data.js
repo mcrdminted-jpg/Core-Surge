@@ -1223,7 +1223,8 @@ function coreMultiplier(coreLevel) {
 
 // Hero passive multiplier at a given level: 1 + 0.1 * level
 function heroPassiveMultiplier(heroLevel) {
-  return 1 + 0.1 * Math.max(1, heroLevel);
+  if (heroLevel <= 0) return 1.0;
+  return 1 + 0.1 * heroLevel;
 }
 
 // Training manuals needed to go from current level to next level

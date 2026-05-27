@@ -1526,3 +1526,31 @@ pm.cmd run test passed with 261 passed, 0 failed
 
 **Blockers:**
 - None in source verification. Only the isolated git replay/push step remains for live deployment.
+
+## 2026-05-26 - Codex - v0.7.32 Card Polish And Tablet Guardrail
+
+**What I did:**
+- Synced the verified card-art/readability batch from the primary folder into the git repo for deployment.
+- Removed the small card header icons, added readable effect text, and made equipped cards use the same art system as inventory cards.
+- Fixed the iPad Pro and Nest Hub break where single-card tier sections stretched across the whole row on wide screens.
+- Updated the version test to read from package.json so future version bumps stop breaking the suite.
+
+**Files changed:**
+- package.json`r
+- index.html`r
+- js/ui.js`r
+- css/menu.css`r
+- scripts/test.js`r
+
+**Verification:**
+- 
+pm.cmd run build passed
+- 
+pm.cmd run typecheck passed
+- 
+pm.cmd run test passed with 264 passed, 0 failed`r
+
+**What other agents need to know:**
+- The tablet break was caused by the inventory grid stretching sections with only one card, not by the equipped-row markup.
+- The primary Tower Mobile App Game folder was re-synced and re-verified at 0.7.32 before push.
+

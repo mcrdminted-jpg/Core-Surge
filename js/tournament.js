@@ -158,7 +158,8 @@ function tourneyEnsureActive() {
   // Update band based on current progression (highest tier unlocked)
   const band = tourneyBandForTier(save.bestTier || 1);
   if (band.id !== t.playerBand) {
-    // Player unlocked a new band — reset to Copper in new band
+    // Player unlocked a new band — process old cycle rewards first
+    if (t.currentBracket) tourneyProcessCycleEnd();
     t.playerBand = band.id;
     t.playerLeague = 'copper';
     t.currentBracket = null; // force new bracket in new band

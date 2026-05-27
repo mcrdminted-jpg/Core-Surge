@@ -341,14 +341,14 @@ function getMaxHpNext() {
   return Math.floor(val * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 
-// === Armor === (0.5% per effective level, cap 75%)
+// === Armor === (0.4% per effective level, cap 75% — matches RANK_DEFS flatPerRank)
 function getDefenseFraction() {
   const eff = effectiveLevel('defense');
-  return Math.min(0.75, (eff * 0.005 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  return Math.min(0.75, (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
 }
 function getDefenseFractionNext() {
   const eff = effectiveLevel('defense') + 1;
-  return Math.min(0.75, (eff * 0.005 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  return Math.min(0.75, (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
 }
 
 // === Range ===
@@ -545,14 +545,14 @@ function getThornsFraction() { return rankFlatBonus('thorns') * getHeroCoreMulti
 function getKnockbackChance() { return rankFlatBonus('knockback') * getHeroCoreMultiplier('knockback'); }
 
 // === Barrier / Permanent Shield ===
-// Shield max = 8 HP per effective level
+// Shield max = 5 HP per effective level (matches RANK_DEFS flatPerRank)
 function getBarrierShieldMax() {
   const eff = effectiveLevel('shield');
-  return Math.floor(eff * 8 * getHeroCoreMultiplier('shieldHP'));
+  return Math.floor(eff * 5 * getHeroCoreMultiplier('shieldHP'));
 }
 function getBarrierShieldMaxNext() {
   const eff = effectiveLevel('shield') + 1;
-  return Math.floor(eff * 8 * getHeroCoreMultiplier('shieldHP'));
+  return Math.floor(eff * 5 * getHeroCoreMultiplier('shieldHP'));
 }
 function getBarrierRegenPerSec() { return rankFlatBonus('shieldRegen') * getHeroCoreMultiplier('shieldRegen'); }
 
@@ -611,25 +611,22 @@ function upgradeDescriptor(key) {
 }
 
 // ============================================================
-// WAVE SCALING — piecewise (was 1.18^wave across all bands)
+// WAVE SCALING — smooth polynomial (replaces old piecewise exponential)
 // ============================================================
-// Early game (W1-30): fast ramp, exciting first 30 waves
-// Mid game (W31-120): moderate, rewarding progression
-// Late game (W121+): flat growth, keeps runs possible without fake-difficulty wall
+// Difficulty follows w^2.3 / 320:
+//   W50 ≈ 25, W100 ≈ 124, W200 ≈ 614, W5000 ≈ 1 M
+// Curve starts flat, begins curving up around W50, steepens at W100.
+// This avoids fake-difficulty walls and keeps endless runs viable.
 function hpWaveMul(w) {
-  if (w <= 30) return Math.pow(1.055, w - 1);
-  if (w <= 120) return Math.pow(1.055, 29) * Math.pow(1.028, w - 30);
-  return Math.pow(1.055, 29) * Math.pow(1.028, 90) * Math.pow(1.009, w - 120);
+  return Math.max(1, Math.pow(w, 2.3) / 320);
 }
 function dmgWaveMul(w) {
-  if (w <= 30) return Math.pow(1.038, w - 1);
-  if (w <= 120) return Math.pow(1.038, 29) * Math.pow(1.020, w - 30);
-  return Math.pow(1.038, 29) * Math.pow(1.020, 90) * Math.pow(1.007, w - 120);
+  // Damage grows slower than HP so enemies become tanks, not one-shotters
+  return Math.max(1, Math.pow(w, 2.0) / 220);
 }
 function cashWaveMul(w) {
-  if (w <= 30) return Math.pow(1.060, w - 1);
-  if (w <= 120) return Math.pow(1.060, 29) * Math.pow(1.030, w - 30);
-  return Math.pow(1.060, 29) * Math.pow(1.030, 90) * Math.pow(1.011, w - 120);
+  // Cash tracks slightly above HP so economy keeps pace with difficulty
+  return Math.max(1, Math.pow(w, 2.35) / 280);
 }
 // Tier multipliers — SPLIT per stat (was uniform ×1.5)
 // v0.7.31: Tiers 1-10 ramp gently so day-1 players reach T6-10 quickly.
@@ -1046,14 +1043,15 @@ function update(dt, rawDt) {
     if (e.type === 'shooter') {
       const SHOOTER_IDEAL = 90;
       if (dist > SHOOTER_IDEAL) {
-        // Close in until we reach our firing range
+        // Close in until we reach our firing range (apply Time Lock slow)
+        const slow = game.enemySlowFrac || 0;
         const buffMul = e.auraBuffed ? 1.3 : 1;
-        const speed = baseSpeed * (e.speedMul || 1) * buffMul;
+        const speed = baseSpeed * (e.speedMul || 1) * buffMul * (1 - slow);
         e.x += (dx / dist) * speed * dt;
         e.y += (dy / dist) * speed * dt;
       }
-      // Fire projectiles
-      if ((now - (e.lastShot || 0)) * speedFactor > 1500) {
+      // Fire projectiles (enforce cooldown from spawn, not instant)
+      if (e.lastShot > 0 && (now - e.lastShot) * speedFactor > 1500) {
         e.lastShot = now;
         spawnEnemyProjectile(e);
       }
@@ -1080,11 +1078,7 @@ function update(dt, rawDt) {
         const thornsFrac = getThornsFraction();
         if (thornsFrac > 0 && !e.dead) {
           const thornsDmg = baseDmg * thornsFrac;
-          e.hp -= thornsDmg;
-          if (save.settings.showFloatingDamage) {
-            spawnFloat(e.x, e.y - 6, Math.floor(thornsDmg), 'crit');
-          }
-          if (e.hp <= 0) { e.dead = true; game.enemiesKilledInWave++; game.enemiesKilledThisRun++; }
+          hitEnemy(e, thornsDmg, false);
         }
         // Knockback: chance to push attacker back to interrupt melee
         const kbChance = getKnockbackChance();
@@ -1418,12 +1412,14 @@ function hitEnemy(e, dmg, crit) {
 }
 
 function advanceWave() {
+  const clearedWave = game.wave;
   game.wave++;
   game.enemiesKilledInWave = 0;
   game.bossWave = game.wave % 25 === 0;
   game.enemiesPerWave = enemiesForWave(game.wave, game.tier);
   game.bossSpawned = false;
-  const bonus = Math.floor(cashRewardForWave(game.wave) * 5 * getCashMul() * getWaveBonusMul());
+  // Cash bonus for clearing the previous wave (not the new one)
+  const bonus = Math.floor(cashRewardForWave(clearedWave) * 5 * getCashMul() * getWaveBonusMul());
   game.cash += bonus;
   game.cashEarnedThisRun += bonus;
   if (game.bossWave) showWaveBanner('BOSS ' + game.wave, true);
@@ -1446,7 +1442,7 @@ function spawnEnemy() {
   let type = 'normal';
   // Tier gates enemy variety. Higher tier = more variety available.
   if (game.tier >= ENEMY_TYPES.augmenter.unlockTier && r < 0.03) type = 'augmenter';
-  else if (game.tier >= ENEMY_TYPES.elite.unlockTier && game.wave >= 10 && game.wave % 10 === 0 && r < 0.04) type = 'elite';
+  else if (game.tier >= ENEMY_TYPES.elite.unlockTier && game.wave >= 10 && r < 0.08) type = 'elite';
   else if (game.tier >= ENEMY_TYPES.shooter.unlockTier && game.wave >= 5 && r < 0.10) type = 'shooter';
   else if (game.tier >= ENEMY_TYPES.tank.unlockTier && r < 0.20) type = 'tank';
   else if (game.tier >= ENEMY_TYPES.fast.unlockTier && r < 0.25) type = 'fast';
@@ -1457,7 +1453,7 @@ function spawnEnemy() {
     hpMax: enemyHpForWave(game.wave) * t.hpMul,
     speedMul: t.speedMul, dmgMul: t.dmgMul, hpMul: t.hpMul,
     meleeIntervalMul: t.meleeIntervalMul || 1.0,
-    dead: false, el: null, hpEl: null, hpFillEl: null, lastShot: 0, lastMeleeAt: 0,
+    dead: false, el: null, hpEl: null, hpFillEl: null, lastShot: performance.now(), lastMeleeAt: 0,
     auraActive: type === 'augmenter'
   });
 }

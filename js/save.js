@@ -11,7 +11,7 @@ const defaultSave = {
   gems: 0,
   totalRuns: 0,
   bestTier: 1,
-  bestWave: 1,
+  bestWave: 0,
   bestWavePerTier: { 1: 0 },
   claimedMilestones: {},
   selectedTier: 1,

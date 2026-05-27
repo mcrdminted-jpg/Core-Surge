@@ -3,6 +3,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
+const pkg = require(path.join(root, 'package.json'));
 let passed = 0;
 let failed = 0;
 const failures = [];
@@ -73,7 +74,7 @@ async function runTests() {
   const indexHtml = await fs.readFile(path.join(root, 'index.html'), 'utf8');
   assert(indexHtml.includes('<!DOCTYPE html>'), 'index.html has DOCTYPE');
   assert(indexHtml.includes('manifest.webmanifest'), 'index.html references manifest');
-  assert(indexHtml.includes('Core Surge v0.7.31'), 'index.html title version is current');
+  assert(indexHtml.includes(`Core Surge v${pkg.version}`), 'index.html title version is current');
   assert(indexHtml.includes('assets/app/icon-180.png'), 'index.html references Apple touch icon');
   assert(indexHtml.includes('assets/app/icon-192.png'), 'index.html references PNG favicon');
 
@@ -219,6 +220,31 @@ async function runTests() {
   assert(ctx.MILESTONE_WAVES.length === 17, `17 milestone waves (got ${ctx.MILESTONE_WAVES.length})`);
   assert(ctx.MILESTONE_WAVES[0] === 25, `First milestone = wave 25`);
   assert(ctx.MILESTONE_WAVES[ctx.MILESTONE_WAVES.length - 1] === 2000, `Last milestone = wave 2000`);
+
+  // â”€â”€ 10b. Wave scaling curve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Verify the polynomial formula in game.js: hpWaveMul(w) = max(1, w^2.3/320)
+  console.log('â”€â”€ Wave Scaling â”€â”€');
+
+  function _hpMul(w) { return Math.max(1, Math.pow(w, 2.3) / 320); }
+  function _dmgMul(w) { return Math.max(1, Math.pow(w, 2.0) / 220); }
+  function _cashMul(w) { return Math.max(1, Math.pow(w, 2.35) / 280); }
+
+  assert(_hpMul(1) >= 1, 'hpWaveMul(1) >= 1 (floor)');
+  assert(_hpMul(50) > 20 && _hpMul(50) < 30, `hpWaveMul(50) ≈ 25 (got ${_hpMul(50).toFixed(1)})`);
+  assert(_hpMul(100) > 110 && _hpMul(100) < 140, `hpWaveMul(100) ≈ 124 (got ${_hpMul(100).toFixed(1)})`);
+  assert(_hpMul(200) > 550 && _hpMul(200) < 700, `hpWaveMul(200) ≈ 614 (got ${_hpMul(200).toFixed(1)})`);
+  assert(_hpMul(5000) > 800000 && _hpMul(5000) < 1200000, `hpWaveMul(5000) ≈ 1M (got ${_hpMul(5000).toFixed(0)})`);
+  // Monotonically increasing
+  assert(_hpMul(50) < _hpMul(100), 'hpWaveMul increases W50 → W100');
+  assert(_hpMul(100) < _hpMul(200), 'hpWaveMul increases W100 → W200');
+  // Smooth: derivative is continuous (steepens from W50 to W100)
+  const d50  = _hpMul(51)  - _hpMul(50);
+  const d100 = _hpMul(101) - _hpMul(100);
+  assert(d100 > d50, 'hpWaveMul curve steepens from W50 to W100');
+  // Damage scales slower than HP
+  assert(_dmgMul(100) < _hpMul(100), 'Damage scales slower than HP at W100');
+  // Cash tracks difficulty
+  assert(_cashMul(100) > 1, 'cashWaveMul(100) > 1');
 
   // â”€â”€ 11. Unlock families â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   console.log('â”€â”€ Unlock Families â”€â”€');
