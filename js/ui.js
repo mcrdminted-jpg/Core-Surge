@@ -2123,14 +2123,18 @@ function renderMilestonesTab(c) {
     const claimed = save.claimedMilestones[key];
     const ready = milestoneReady(activeGoalTier, w) && !claimed;
     const r = milestoneReward(activeGoalTier, w);
-    const gemPart = r.gems > 0 ? ` + <b class="gem">${r.gems} gems</b>` : '';
+    const gemPart = r.gems > 0 ? ` + <b class="gem">${r.gems} 💎</b>` : '';
+    const manualPart = r.manuals > 0 ? ` + <b class="manual">${r.manuals} 📜</b>` : '';
+    const bonus = typeof MILESTONE_BONUS !== 'undefined' ? MILESTONE_BONUS[w] : null;
+    const bonusPart = bonus ? `<div class="milestone-bonus">⚡ ${bonus}</div>` : '';
     const stateClass = claimed ? 'claimed' : ready ? 'ready' : '';
     const btnText = claimed ? 'Claimed' : ready ? 'Claim' : 'Locked';
     html += `
       <div class="milestone ${stateClass}">
         <div class="milestone-info">
           <div class="milestone-target">Wave ${w}</div>
-          <div class="milestone-reward"><b>${formatNum(r.coins)}</b> scrap${gemPart}</div>
+          <div class="milestone-reward"><b>${formatNum(r.coins)}</b> ⊙${gemPart}${manualPart}</div>
+          ${bonusPart}
         </div>
         <button class="milestone-btn ${!ready ? 'locked' : ''}" data-tier="${activeGoalTier}" data-wave="${w}" ${!ready ? 'disabled' : ''}>
           ${btnText}
