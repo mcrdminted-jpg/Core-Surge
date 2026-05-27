@@ -20,10 +20,10 @@ function defenseFraction() { return 0; }        // armor now comes from ranks
 // Speed tiers: x1 free, x2/x3/x5/x10 require purchase (coins OR gems).
 const SPEED_TIERS = [1, 2, 3, 5, 10];
 const SPEED_UNLOCK_COST = {
-  2:  { coins: 5000,    gems: 25  },   // early unlock
-  3:  { coins: 50000,   gems: 100 },   // mid unlock
-  5:  { coins: 500000,  gems: 500 },   // late unlock
-  10: { coins: 5000000, gems: 1500 }   // endgame unlock
+  2:  { coins: 5000,    gems: 200  },   // 2 × 100 gems
+  3:  { coins: 50000,   gems: 300  },   // 3 × 100 gems
+  5:  { coins: 500000,  gems: 500  },   // 5 × 100 gems
+  10: { coins: 5000000, gems: 1000 }    // 10 × 100 gems
 };
 function maxUnlockedSpeed() {
   // Dev mode: all speed tiers unlocked
