@@ -1329,11 +1329,6 @@ function renderHomePanelsVisual() {
       '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
-      '<div class="mock-hero-copy-shell"></div>' +
-      '<div class="mock-hero-tier-aura"></div>' +
-      '<div class="mock-hero-title">CORE<br>SURGE</div>' +
-      '<div class="mock-hero-subtitle">&#8226; ENDLESS TOWER DEFENSE &#8226;</div>' +
-      '<div class="mock-hero-tier-ghost">T' + sel + '</div>' +
     '</div>' +
 
     // ─── TIER SELECTOR ───
@@ -1700,6 +1695,79 @@ function renderLabsTab(c) {
   // =========================================================
   //  MOCKUP OVERLAY — title + sub-tabs + family cards
   // =========================================================
+  // =========================================================
+  //  CORE UPGRADE + GAME SPEED — right under Research header
+  // =========================================================
+  const coreLevel = save.coreLevel || 1;
+  const coreMul = coreMultiplier(coreLevel);
+  const nextCoreCost = coreUpgradeCost(coreLevel);
+  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
+  const coreMaxed = coreLevel >= CORE_UPGRADE.maxLevel;
+
+  html += `<div class="core-upgrade-card">`;
+  html += `  <div class="core-upgrade-header">`;
+  html += `    <div class="core-upgrade-icon">⚛</div>`;
+  html += `    <div class="core-upgrade-info">`;
+  html += `      <div class="core-upgrade-title">Core Level ${coreLevel}</div>`;
+  html += `      <div class="core-upgrade-mul">All stats ×${coreMul.toFixed(2)} &middot; ${Math.min(coreLevel, MAX_SLOTS)} hero slots</div>`;
+  html += `    </div>`;
+  if (!coreMaxed) {
+    html += `  <button class="core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">`;
+    html += `    Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} ⊙`;
+    html += `  </button>`;
+  } else {
+    html += `  <div class="core-upgrade-maxed">MAXED</div>`;
+  }
+  html += `  </div>`;
+  html += `</div>`;
+
+  // =========================================================
+  //  GAME SPEED UNLOCK CARD
+  // =========================================================
+  const curSpeed = save.settings.gameSpeed || 1;
+  const maxSpeed = maxUnlockedSpeed();
+  const speedTiers = typeof SPEED_TIERS !== 'undefined' ? SPEED_TIERS : [1, 2, 3, 5, 10];
+  const speedCosts = typeof SPEED_UNLOCK_COST !== 'undefined' ? SPEED_UNLOCK_COST : {};
+  let nextTier = null;
+  for (const t of speedTiers) {
+    if (t > 1 && (!save.unlockedSpeeds || !save.unlockedSpeeds.includes(t))) {
+      nextTier = t;
+      break;
+    }
+  }
+  const allSpeedsUnlocked = !nextTier;
+  const nextCost = nextTier ? speedCosts[nextTier] : null;
+  const canAffordScrap = nextCost && save.coins >= nextCost.coins;
+  const canAffordGems = nextCost && save.gems >= nextCost.gems;
+
+  html += `<div class="core-upgrade-card speed-upgrade-card">`;
+  html += `  <div class="core-upgrade-header">`;
+  html += `    <div class="core-upgrade-icon">⚡</div>`;
+  html += `    <div class="core-upgrade-info">`;
+  html += `      <div class="core-upgrade-title">Game Speed</div>`;
+  html += `      <div class="core-upgrade-mul">Current: ×${maxSpeed} max unlocked</div>`;
+  html += `    </div>`;
+  if (!allSpeedsUnlocked && nextCost) {
+    html += `  <div class="speed-unlock-btns">`;
+    html += `    <button class="core-upgrade-btn ${canAffordScrap ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="coins">`;
+    html += `      ×${nextTier} &middot; ${formatNum(nextCost.coins)} ⊙`;
+    html += `    </button>`;
+    html += `    <button class="core-upgrade-btn speed-gem-btn ${canAffordGems ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="gems">`;
+    html += `      ${nextCost.gems} 💎`;
+    html += `    </button>`;
+    html += `  </div>`;
+  } else {
+    html += `  <div class="core-upgrade-maxed">ALL UNLOCKED</div>`;
+  }
+  html += `  </div>`;
+  html += `  <div class="speed-tier-badges">`;
+  for (const t of speedTiers) {
+    const owned = t === 1 || (save.unlockedSpeeds && save.unlockedSpeeds.includes(t));
+    html += `<span class="speed-badge ${owned ? 'owned' : 'locked'}">×${t}</span>`;
+  }
+  html += `  </div>`;
+  html += `</div>`;
+
   html += `<div class="mockup-bg-research">`;
   html += `  <div class="mor-title">Research</div>`;
 
@@ -1739,81 +1807,6 @@ function renderLabsTab(c) {
   }
   html += `</div>`;
   html += `</div>`; // end mockup-bg-research
-
-  // =========================================================
-  //  CORE UPGRADE CARD — prominent upgrade above rank rows
-  // =========================================================
-  const coreLevel = save.coreLevel || 1;
-  const coreMul = coreMultiplier(coreLevel);
-  const nextCoreCost = coreUpgradeCost(coreLevel);
-  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
-  const coreMaxed = coreLevel >= CORE_UPGRADE.maxLevel;
-
-  html += `<div class="core-upgrade-card">`;
-  html += `  <div class="core-upgrade-header">`;
-  html += `    <div class="core-upgrade-icon">⚛</div>`;
-  html += `    <div class="core-upgrade-info">`;
-  html += `      <div class="core-upgrade-title">Core Level ${coreLevel}</div>`;
-  html += `      <div class="core-upgrade-mul">All stats ×${coreMul.toFixed(2)} &middot; ${Math.min(coreLevel, MAX_SLOTS)} hero slots</div>`;
-  html += `    </div>`;
-  if (!coreMaxed) {
-    html += `  <button class="core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">`;
-    html += `    Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} ⊙`;
-    html += `  </button>`;
-  } else {
-    html += `  <div class="core-upgrade-maxed">MAXED</div>`;
-  }
-  html += `  </div>`;
-  html += `</div>`;
-
-  // =========================================================
-  //  GAME SPEED UNLOCK CARD
-  // =========================================================
-  const curSpeed = save.settings.gameSpeed || 1;
-  const maxSpeed = maxUnlockedSpeed();
-  const speedTiers = typeof SPEED_TIERS !== 'undefined' ? SPEED_TIERS : [1, 2, 3, 5, 10];
-  const speedCosts = typeof SPEED_UNLOCK_COST !== 'undefined' ? SPEED_UNLOCK_COST : {};
-  // Find next locked tier
-  let nextTier = null;
-  for (const t of speedTiers) {
-    if (t > 1 && (!save.unlockedSpeeds || !save.unlockedSpeeds.includes(t))) {
-      nextTier = t;
-      break;
-    }
-  }
-  const allSpeedsUnlocked = !nextTier;
-  const nextCost = nextTier ? speedCosts[nextTier] : null;
-  const canAffordScrap = nextCost && save.coins >= nextCost.coins;
-  const canAffordGems = nextCost && save.gems >= nextCost.gems;
-
-  html += `<div class="core-upgrade-card speed-upgrade-card">`;
-  html += `  <div class="core-upgrade-header">`;
-  html += `    <div class="core-upgrade-icon">⚡</div>`;
-  html += `    <div class="core-upgrade-info">`;
-  html += `      <div class="core-upgrade-title">Game Speed</div>`;
-  html += `      <div class="core-upgrade-mul">Current: ×${maxSpeed} max unlocked</div>`;
-  html += `    </div>`;
-  if (!allSpeedsUnlocked && nextCost) {
-    html += `  <div class="speed-unlock-btns">`;
-    html += `    <button class="core-upgrade-btn ${canAffordScrap ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="coins">`;
-    html += `      ×${nextTier} &middot; ${formatNum(nextCost.coins)} ⊙`;
-    html += `    </button>`;
-    html += `    <button class="core-upgrade-btn speed-gem-btn ${canAffordGems ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="gems">`;
-    html += `      ${nextCost.gems} 💎`;
-    html += `    </button>`;
-    html += `  </div>`;
-  } else {
-    html += `  <div class="core-upgrade-maxed">ALL UNLOCKED</div>`;
-  }
-  html += `  </div>`;
-  // Show tier badges
-  html += `  <div class="speed-tier-badges">`;
-  for (const t of speedTiers) {
-    const owned = t === 1 || (save.unlockedSpeeds && save.unlockedSpeeds.includes(t));
-    html += `<span class="speed-badge ${owned ? 'owned' : 'locked'}">×${t}</span>`;
-  }
-  html += `  </div>`;
-  html += `</div>`;
 
   // =========================================================
   //  BUY MULTIPLIER TOGGLE — x1 / x10 / MAX
