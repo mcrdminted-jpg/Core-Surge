@@ -1339,22 +1339,25 @@ function renderHomePanelsVisual() {
       '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
     '</div>' +
 
-    // ─── HERO + TIER COMBINED (merged to eliminate doubled look) ───
+    // ─── HERO SECTION ───
     '<div class="mock-hero">' +
       '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
       '<div class="mock-hero-logo" aria-hidden="true"></div>' +
-      '<div class="mock-tier-overlay">' +
-        '<div class="mock-tier-row">' +
-          '<button class="mock-tier-arrow" data-tier-dir="down" aria-label="Previous tier"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
-          '<div class="mock-tier-center" aria-live="polite">' +
-            '<div class="mock-tier-num">T' + sel + '</div>' +
-            '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
-            '<div class="mock-tier-hint">' + tierHint + '</div>' +
-          '</div>' +
-          '<button class="mock-tier-arrow" data-tier-dir="up" aria-label="Next tier"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
+    '</div>' +
+
+    // ─── TIER SELECTOR ───
+    '<div class="mock-tier-box">' +
+      '<div class="mock-tier-art" aria-hidden="true"></div>' +
+      '<div class="mock-tier-row">' +
+        '<button class="mock-tier-arrow" data-tier-dir="down" aria-label="Previous tier"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
+        '<div class="mock-tier-center" aria-live="polite">' +
+          '<div class="mock-tier-num">T' + sel + '</div>' +
+          '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
+          '<div class="mock-tier-hint">' + tierHint + '</div>' +
         '</div>' +
+        '<button class="mock-tier-arrow" data-tier-dir="up" aria-label="Next tier"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
       '</div>' +
     '</div>' +
 
@@ -1634,9 +1637,16 @@ function renderSubmenu() {
     settings:   { t: 'SETTINGS',   s: 'CUSTOMIZE YOUR GAME' }
   };
   const info = titles[activeSubmenu];
-  const headerHTML = info
+  // Compact resource bar on all submenu tabs
+  const subHudHTML = `<div class="sub-hud">` +
+    `<div class="sub-hud-item"><span class="sub-hud-icon" style="color:#f5a623">⊙</span> ${formatNum(save.coins)}</div>` +
+    `<div class="sub-hud-item"><span class="sub-hud-icon" style="color:#a855f7">💎</span> ${formatNum(save.gems)}</div>` +
+    `<div class="sub-hud-item"><span class="sub-hud-icon" style="color:#22d3ee">★</span> W${save.bestWave}</div>` +
+    `<div class="sub-hud-item"><span class="sub-hud-icon" style="color:#4ade80">▲</span> ${save.totalRuns}</div>` +
+  `</div>`;
+  const headerHTML = subHudHTML + (info
     ? `<div class="panel-title">${info.t}</div><div class="panel-subtitle">${info.s}</div>`
-    : '';
+    : '');
   c.innerHTML = headerHTML; // reset + set header first
   const inner = document.createElement('div');
   inner.className = 'panel-inner';
