@@ -57,6 +57,18 @@ function showOfflineToast(elapsedMs, cappedMs, earned, capMin, rate) {
   setTimeout(() => { if (t) t.style.display = 'none'; }, 9000);
 }
 
+function formatTimeAgo(ts) {
+  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return Math.floor(days / 30) + 'mo ago';
+}
+
 function formatNum(n) {
   n = Math.floor(n);
   if (n < 1000) return n.toString();

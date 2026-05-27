@@ -41,6 +41,7 @@ const defaultSave = {
   cardInventory: {},
   equippedCards: [null, null, null],
   unlockedSlots: 3,
+  runHistory: [],   // v0.7.39: last 50 match records
 
   // v0.7.15: unlock families (coin-bought gates) and permanent ranks.
   // Each unlock family, once bought, reveals stats gated behind it.
@@ -292,9 +293,12 @@ const SAVE_MIGRATIONS = {
       if (typeof s.unlocks.spikedCore === 'undefined') s.unlocks.spikedCore = false;
       if (typeof s.unlocks.knockbackSystems === 'undefined') s.unlocks.knockbackSystems = false;
     }
+  },
+  13: function(s) {
+    if (!Array.isArray(s.runHistory)) s.runHistory = [];
   }
 };
-const CURRENT_SAVE_VERSION = 13;
+const CURRENT_SAVE_VERSION = 14;
 
 function migrateSave(loaded) {
   let v = parseInt(loaded.version, 10) || 0;

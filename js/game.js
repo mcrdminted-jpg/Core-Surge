@@ -869,8 +869,7 @@ function endRun() {
   save.trainingManuals = (save.trainingManuals || 0) + manualsEarned;
   // Check hero unlocks based on new bestTier
   if (typeof checkHeroUnlocks === 'function') checkHeroUnlocks();
-  persistSave();
-  const stats = document.getElementById('endStats');
+
   const isNewBest = maxWave > prevBest;
   const tierJustUnlocked = (prevBest < 50 && maxWave >= 50);
   const runDurationMs = endTime - game.startTime;
@@ -879,6 +878,25 @@ function endRun() {
   const runSecRem = runSec % 60;
   const durationStr = runMin > 0 ? `${runMin}m ${runSecRem}s` : `${runSecRem}s`;
   const kps = runSec > 0 ? (game.enemiesKilledThisRun / runSec).toFixed(1) : '0';
+
+  // === MATCH HISTORY: persist per-run record (capped at 50) ===
+  if (!Array.isArray(save.runHistory)) save.runHistory = [];
+  const scrapPerMin = runDurationMs > 0 ? Math.round(coinsEarned / (runDurationMs / 60000)) : 0;
+  save.runHistory.unshift({
+    ts:      endTime,
+    tier:    game.tier,
+    wave:    maxWave,
+    dur:     runDurationMs,
+    scrap:   coinsEarned,
+    spm:     scrapPerMin,
+    kills:   game.enemiesKilledThisRun,
+    bosses:  game.bossesDefeated,
+    best:    isNewBest
+  });
+  if (save.runHistory.length > 50) save.runHistory.length = 50;
+
+  persistSave();
+  const stats = document.getElementById('endStats');
   stats.innerHTML = `
     ${isNewBest ? '<div class="end-banner new-best">★ NEW BEST WAVE ★</div>' : ''}
     ${tierJustUnlocked ? `<div class="end-banner tier-unlock">⚡ TIER ${game.tier + 1} UNLOCKED ⚡</div>` : ''}

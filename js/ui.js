@@ -3269,6 +3269,56 @@ function renderSettingsTab(c) {
   `;
   c.appendChild(statsBox);
 
+  // --- Match History ---
+  const histHeader = document.createElement('div');
+  histHeader.className = 'settings-section-title';
+  histHeader.textContent = 'Match History';
+  c.appendChild(histHeader);
+
+  const histArr = Array.isArray(save.runHistory) ? save.runHistory : [];
+  if (histArr.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;color:var(--muted);font-size:11px;padding:16px 8px;';
+    empty.textContent = 'No matches yet — play a run to see your history here.';
+    c.appendChild(empty);
+  } else {
+    const histWrap = document.createElement('div');
+    histWrap.className = 'match-history-list';
+    const showCount = Math.min(histArr.length, 20);
+    for (let i = 0; i < showCount; i++) {
+      const r = histArr[i];
+      const ago = formatTimeAgo(r.ts);
+      const durSec = Math.floor((r.dur || 0) / 1000);
+      const durMin = Math.floor(durSec / 60);
+      const durRem = durSec % 60;
+      const durStr = durMin > 0 ? `${durMin}m ${durRem}s` : `${durRem}s`;
+      const spmStr = formatNum(r.spm || 0);
+      const row = document.createElement('div');
+      row.className = 'match-history-row' + (r.best ? ' new-best' : '');
+      row.innerHTML =
+        `<div class="mh-top">` +
+          `<span class="mh-tier">T${r.tier}</span>` +
+          `<span class="mh-wave">W${r.wave}</span>` +
+          (r.best ? `<span class="mh-best">★ NEW BEST</span>` : '') +
+          `<span class="mh-ago">${ago}</span>` +
+        `</div>` +
+        `<div class="mh-details">` +
+          `<span>⊙ ${formatNum(r.scrap)}</span>` +
+          `<span>⊙/min ${spmStr}</span>` +
+          `<span>⏱ ${durStr}</span>` +
+          `<span>💀 ${r.kills || 0}</span>` +
+        `</div>`;
+      histWrap.appendChild(row);
+    }
+    c.appendChild(histWrap);
+    if (histArr.length > showCount) {
+      const more = document.createElement('div');
+      more.style.cssText = 'text-align:center;color:var(--muted);font-size:10px;padding:6px 0;';
+      more.textContent = `Showing ${showCount} of ${histArr.length} matches`;
+      c.appendChild(more);
+    }
+  }
+
   // --- Danger Zone ---
   const dangerHeader = document.createElement('div');
   dangerHeader.className = 'settings-section-title';
