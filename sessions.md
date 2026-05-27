@@ -1619,3 +1619,26 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - This batch is source-only for deployment. The local repo still has separate uncommitted gameplay edits in `js/game.js` and `js/data.js` that were intentionally not included in this visual push.
 - The browser blocked `127.0.0.1` preview in this Codex session, so live visual confirmation should happen against the hosted Pages build after push.
 
+## 2026-05-26 - Codex - V0.7.36 Full Art Home Surfaces
+
+**What I did:**
+- Upgraded the full home screen to use real reference-derived art slices instead of only gradient chrome.
+- Added image-driven backgrounds for the HUD, hero, tier panel, begin-defense slab, bottom info cards, and bottom nav strip.
+- Swapped the home HUD and panel header glyphs to dedicated SVG icon assets so the main page reads as one art direction.
+- Kept the existing home layout and click flow intact.
+
+**Files changed:**
+- `assets/home-art/*.png`
+- `assets/ui/hud/*.svg`
+- `index.html`
+- `package.json`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The reference image was sliced into deployable section art under `assets/home-art/` for the home screen surfaces.
+- This batch is specifically the “not placeholders, full art like the reference” lane for the main page.
+
