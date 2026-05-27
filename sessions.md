@@ -1595,3 +1595,27 @@ pm.cmd run typecheck passed
 - 
 pm.cmd run test passed with 274 passed, 0 failed`r
 
+## 2026-05-26 - Codex - V0.7.35 Control Deck Reskin
+
+**What I did:**
+- Kept the existing layout and replaced the childish bottom bar treatment with a cleaner neon control-deck skin.
+- Swapped the submenu emoji icons to real SVG icon assets under `assets/ui/nav/`.
+- Reskinned the bottom nav, top HUD, tier panel, begin-defense button, and the three home info cards to match the cleaner reference direction.
+- Left unrelated local gameplay edits in `js/game.js` and `js/data.js` out of this visual push scope.
+
+**Files changed:**
+- `assets/ui/nav/*.svg`
+- `css/base.css`
+- `css/menu.css`
+- `index.html`
+- `package.json`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch is source-only for deployment. The local repo still has separate uncommitted gameplay edits in `js/game.js` and `js/data.js` that were intentionally not included in this visual push.
+- The browser blocked `127.0.0.1` preview in this Codex session, so live visual confirmation should happen against the hosted Pages build after push.
+
