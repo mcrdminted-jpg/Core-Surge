@@ -3234,11 +3234,14 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  align-self: flex-end;
+  width: max-content;
+  max-width: calc(100% - 20px);
   margin: 10px 10px auto;
-  padding: 8px 10px;
+  padding: 6px 9px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(6, 13, 26, 0.12), rgba(6, 13, 26, 0.52));
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(6, 13, 26, 0.14), rgba(6, 13, 26, 0.42));
   backdrop-filter: blur(10px);
 }
 
@@ -3247,11 +3250,10 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 }
 
 .card-tile-tier {
-  justify-self: end;
   text-align: right;
-  font-size: clamp(9px, 1.05vw, 11px);
+  font-size: clamp(8px, 0.95vw, 10px);
   font-weight: 900;
-  letter-spacing: 1.6px;
+  letter-spacing: 1.3px;
   text-transform: uppercase;
   text-shadow: 0 0 16px rgba(0, 0, 0, 0.45);
 }
@@ -3262,10 +3264,12 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 .card-tile-copies {
   margin-left: 10px;
   margin-right: 10px;
-  background: linear-gradient(180deg, rgba(4, 10, 20, 0.24), rgba(4, 10, 20, 0.9));
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, rgba(4, 10, 20, 0.36), rgba(4, 10, 20, 0.78));
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(5, 12, 22, 0.08);
   text-shadow: 0 3px 14px rgba(0, 0, 0, 0.78);
 }
 
@@ -3284,7 +3288,7 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   color: rgba(236, 247, 255, 0.92);
   font-size: clamp(10px, 1vw, 11px);
   line-height: 1.35;
-  min-height: 2.7em;
+  min-height: 2.5em;
 }
 
 .card-tile-stat {
@@ -3296,6 +3300,7 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 
 .card-tile-copies {
   padding: 6px 12px 12px;
+  padding-right: 78px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 0 14px 14px;
   color: rgba(203, 223, 238, 0.92);
@@ -3304,17 +3309,19 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 }
 
 .card-tile-badge {
-  top: 10px;
-  right: 10px;
-  padding: 4px 7px;
+  top: auto;
+  right: 12px;
+  bottom: 10px;
+  padding: 5px 8px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 221, 102, 0.92), rgba(255, 180, 57, 0.88));
-  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(180deg, rgba(55, 240, 255, 0.92), rgba(0, 183, 232, 0.88));
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.24);
   color: #111827;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.9px;
+  z-index: 2;
 }
 
 .card-slot.filled,
@@ -3492,7 +3499,15 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 700px) and (max-width: 1100px) {
+  .card-inventory {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 180px));
+    justify-content: start;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1101px) {
   .card-inventory {
     grid-template-columns: repeat(auto-fit, minmax(172px, 220px));
     justify-content: start;

@@ -1554,3 +1554,22 @@ pm.cmd run test passed with 264 passed, 0 failed`r
 - The tablet break was caused by the inventory grid stretching sections with only one card, not by the equipped-row markup.
 - The primary Tower Mobile App Game folder was re-synced and re-verified at 0.7.32 before push.
 
+
+## 2026-05-26 - Codex - Card Chrome Refinement And Tablet Break Fix
+
+**What I did:**
+- Narrowed the top tier chip so it no longer blocks the art.
+- Moved the EQUIPPED badge into the lower card area and made it brighter/more readable.
+- Softened the text backing strips and added a tablet breakpoint so single-card tier rows stop stretching on iPad/Nest Hub widths.
+
+**Files changed:**
+- css/menu.css`r
+
+**Verification:**
+- 
+pm.cmd run build passed
+- 
+pm.cmd run typecheck passed
+- 
+pm.cmd run test passed with 274 passed, 0 failed`r
+
