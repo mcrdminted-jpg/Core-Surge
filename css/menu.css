@@ -2658,16 +2658,17 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   position: absolute; inset: 0;
   background-image: url("../assets/backgrounds/bg_05_home_static.png");
   background-size: cover;
-  background-position: center top;
+  background-position: center 72%;
   background-repeat: no-repeat;
-  filter: brightness(0.42) saturate(1.02);
-  transform: scale(1.02);
+  filter: brightness(0.76) saturate(1.08);
+  opacity: 0.96;
+  transform: scale(1.05);
 }
 .mock-hero-vignette {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 50% 58%, transparent 28%, rgba(4,8,16,0.78) 74%),
-    linear-gradient(180deg, rgba(4,8,16,0.28) 0%, rgba(4,8,16,0.88) 100%);
+    radial-gradient(ellipse at 50% 58%, rgba(4,8,16,0.04) 18%, rgba(4,8,16,0.32) 58%, rgba(4,8,16,0.68) 100%),
+    linear-gradient(180deg, rgba(4,8,16,0.10) 0%, rgba(4,8,16,0.54) 100%);
 }
 .mock-hero-beam {
   position: absolute;
@@ -2714,18 +2715,6 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   color: rgba(169, 240, 255, 0.3);
   text-shadow: 0 0 16px rgba(46, 212, 255, 0.18);
   pointer-events: none;
-}
-.mock-hero-core {
-  position: relative; z-index: 2;
-  width: 138px; height: 138px;
-  margin-top: 18px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 24px rgba(0,200,255,0.6)) drop-shadow(0 4px 12px rgba(0,0,0,0.6));
-  animation: mock-core-float 3s ease-in-out infinite;
-}
-@keyframes mock-core-float {
-  0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-6px); }
 }
 
 /* ─── TIER SELECTOR ─── */
@@ -3004,6 +2993,60 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ==================== HERO TAB — compact core bar + train button ==================== */
+.hero-core-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.hero-core-upgrade-btn {
+  flex: 1;
+  background: rgba(0,180,255,0.08);
+  border: 1px solid rgba(0,180,255,0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.hero-core-upgrade-btn:hover:not(.disabled) { background: rgba(0,180,255,0.16); }
+.hero-core-upgrade-btn.disabled { opacity: 0.35; cursor: default; }
+.hero-core-maxed-label {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.hero-core-manuals {
+  font-size: 11px;
+  color: var(--cyan2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hero-train-btn {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 3px 0;
+  background: rgba(0,180,255,0.1);
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+.hero-train-btn:hover { background: rgba(0,180,255,0.2); }
 
 /* ==================== HERO SYSTEM UI (v0.8) ==================== */
 .hero-core-section {

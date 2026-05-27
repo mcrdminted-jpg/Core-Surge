@@ -333,8 +333,8 @@ const COPIES_TO_LEVEL = {
 
 // Slot ladder: starts with 3 free, max 10 at launch (12 future)
 const SLOT_UNLOCK_COSTS = {
-  4: 100, 5: 200, 6: 350, 7: 550, 8: 800, 9: 1100, 10: 1500
-  // 11: 2000, 12: 2600  // future extension
+  4: 100, 5: 200, 6: 350, 7: 550, 8: 800, 9: 1100, 10: 1500,
+  11: 2000, 12: 2600
 };
 const MAX_SLOTS = 12;
 const STARTING_SLOTS = 3;
@@ -1313,27 +1313,40 @@ function purchaseCoreUpgrade() {
   return true;
 }
 
-// Garrison a hero into the next available slot
+// Garrison a hero into the next available slot (up to MAX_SLOTS)
 function garrisonHero(heroId) {
   if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
   if (isHeroGarrisoned(heroId)) return false;
-  const maxSlots = save.coreLevel || 1;
   if (!save.garrisonSlots) save.garrisonSlots = [];
-  // Remove nulls and compact
-  const active = save.garrisonSlots.filter(function(h) { return h !== null; });
-  if (active.length >= maxSlots) return false;
-  save.garrisonSlots = active;
-  save.garrisonSlots.push(heroId);
+  // Pad to MAX_SLOTS with nulls
+  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+  // Find first empty slot
+  var idx = save.garrisonSlots.indexOf(null);
+  if (idx === -1) return false;
+  save.garrisonSlots[idx] = heroId;
   persistSave();
   return true;
 }
 
-// Remove a hero from garrison
+// Garrison a hero into a specific slot index
+function garrisonHeroAt(heroId, slotIdx) {
+  if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
+  if (isHeroGarrisoned(heroId)) return false;
+  if (slotIdx < 0 || slotIdx >= MAX_SLOTS) return false;
+  if (!save.garrisonSlots) save.garrisonSlots = [];
+  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+  if (save.garrisonSlots[slotIdx] !== null) return false;
+  save.garrisonSlots[slotIdx] = heroId;
+  persistSave();
+  return true;
+}
+
+// Remove a hero from garrison (sets slot to null, keeps position)
 function ungarrisonHero(heroId) {
   if (!save.garrisonSlots) return false;
   const idx = save.garrisonSlots.indexOf(heroId);
   if (idx === -1) return false;
-  save.garrisonSlots.splice(idx, 1);
+  save.garrisonSlots[idx] = null;
   // Clear active state
   delete heroActiveState[heroId];
   persistSave();

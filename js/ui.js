@@ -1340,7 +1340,6 @@ function renderHomePanelsVisual() {
       '<div class="mock-hero-title">CORE<br>SURGE</div>' +
       '<div class="mock-hero-subtitle">&#8226; ENDLESS TOWER DEFENSE &#8226;</div>' +
       '<div class="mock-hero-tier-ghost">T' + sel + '</div>' +
-      '<img class="mock-hero-core" src="' + coreAssets[previewCore] + '" alt="Core">' +
     '</div>' +
 
     // ─── TIER SELECTOR ───
@@ -2114,9 +2113,12 @@ function loadPreset(idx) {
   save.equippedCards = cards;
   if (Array.isArray(preset.garrisonSlots)) {
     var unlocked = save.heroesUnlocked || [];
-    save.garrisonSlots = preset.garrisonSlots.filter(function(hid) {
-      return unlocked.includes(hid);
+    var heroes = preset.garrisonSlots.map(function(hid) {
+      return (hid && unlocked.includes(hid)) ? hid : null;
     });
+    while (heroes.length < MAX_SLOTS) heroes.push(null);
+    heroes.length = MAX_SLOTS;
+    save.garrisonSlots = heroes;
   }
   save.activePreset = idx;
   persistSave();
@@ -2150,6 +2152,9 @@ let loadoutSubTab = 'cards';
 // When user taps an empty slot, we store the slot index here and let
 // them tap an inventory card to fill it.
 let cardSelectingSlot = -1;
+
+// Same for heroes — tap empty garrison slot, then tap a hero to fill it.
+let heroSelectingSlot = -1;
 
 function cardBonusLabel(card, inv) {
   if (card.values && Array.isArray(card.values)) {
@@ -2532,164 +2537,173 @@ function renderLoadoutTab(c) {
 // ============================================================
 function renderHeroesTab(c) {
   const coreLevel = save.coreLevel || 1;
-  const maxSlots = coreLevel;
-  const garrison = save.garrisonSlots || [];
   const unlocked = save.heroesUnlocked || [];
   const manuals = save.trainingManuals || 0;
   const coreMul = coreMultiplier(coreLevel);
-  const nextCoreCost = coreUpgradeCost(coreLevel);
-  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
 
-  // --- Core Upgrade Section ---
+  // Ensure garrisonSlots has MAX_SLOTS entries
+  if (!save.garrisonSlots) save.garrisonSlots = [];
+  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+  const garrison = save.garrisonSlots;
+  const filledCount = garrison.filter(Boolean).length;
+
+  // --- Header (matches cards: "Equipped  N / 12 slots") ---
   let html = `
-    <div class="hero-core-section">
-      <div class="hero-core-header">
-        <span class="hero-core-icon">&#9883;</span>
-        <span class="hero-core-title">CORE LEVEL ${coreLevel}</span>
-      </div>
-      <div class="hero-core-stats">
-        <div class="hero-core-stat"><span>Garrison Slots</span><span>${garrison.length} / ${maxSlots}</span></div>
-        <div class="hero-core-stat"><span>Global Multiplier</span><span>${coreMul.toFixed(2)}x</span></div>
-        <div class="hero-core-stat"><span>Training Manuals</span><span style="color:var(--cyan2)">${manuals}</span></div>
-      </div>
-      ${coreLevel < CORE_UPGRADE.maxLevel ? `
-        <button class="hero-core-upgrade ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">
-          UPGRADE CORE &rarr; Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} scrap
-        </button>
-      ` : '<div class="hero-core-maxed">CORE MAXED</div>'}
+    <div class="cards-header">
+      <div class="cards-header-title">Equipped</div>
+      <div class="cards-header-sub">${filledCount} / ${MAX_SLOTS} hero slots &middot; Core Lv${coreLevel} (${coreMul.toFixed(1)}x)</div>
     </div>
-  `;
+    <div class="card-slots">`;
 
-  // --- Garrison Slots Visual ---
-  html += '<div class="hero-garrison-section"><div class="hero-garrison-title">GARRISON</div><div class="hero-garrison-slots">';
-  for (let i = 0; i < maxSlots; i++) {
-    const hid = garrison[i] || null;
+  // --- Garrison Slot Grid (matches card-slot pattern) ---
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const hid = garrison[i];
+    const selecting = heroSelectingSlot === i;
     if (hid && HERO_DEFS[hid]) {
       const def = HERO_DEFS[hid];
       const heroData = save.heroes[hid] || { level: 1 };
       const passiveMul = heroPassiveMultiplier(heroData.level);
-      const isActive = isHeroAbilityActive(hid);
-      const cdRemain = getHeroAbilityCooldownRemaining(hid);
-      const cat = HERO_CATEGORIES[def.category];
+      const catColor = def.category === 'combat' ? '#f87171' : def.category === 'economy' ? '#fbbf24' : '#34d399';
       html += `
-        <div class="hero-garrison-slot filled ${isActive ? 'ability-active' : ''}" data-hero="${hid}">
-          <div class="hgs-icon">${def.icon}</div>
-          <div class="hgs-name">${def.name}</div>
-          <div class="hgs-level">Lv${heroData.level} &middot; ${passiveMul.toFixed(1)}x</div>
-          ${cdRemain > 0
-            ? `<div class="hgs-cooldown">${Math.ceil(cdRemain / 1000)}s</div>`
-            : `<button class="hgs-activate" data-activate="${hid}">&#9889; ACTIVATE</button>`}
-          <button class="hgs-remove" data-ungarrison="${hid}">&times;</button>
-        </div>`;
-    } else {
-      html += `<div class="hero-garrison-slot empty"><div class="hgs-empty-plus">+</div></div>`;
-    }
-  }
-  html += '</div></div>';
-
-  // --- Hero Roster ---
-  html += '<div class="hero-roster-section"><div class="hero-roster-title">ALL HEROES</div><div class="hero-roster">';
-  const sortedHeroes = Object.values(HERO_DEFS).sort(function(a, b) { return a.order - b.order; });
-  for (let i = 0; i < sortedHeroes.length; i++) {
-    const def = sortedHeroes[i];
-    const isUnlocked = unlocked.indexOf(def.id) !== -1;
-    const isGarr = isHeroGarrisoned(def.id);
-    const heroData = save.heroes[def.id] || { level: 1 };
-    const passiveMul = isUnlocked ? heroPassiveMultiplier(heroData.level) : 0;
-    const cat = HERO_CATEGORIES[def.category];
-    const manualCost = isUnlocked ? heroManualCost(heroData.level) : 0;
-    const canLevel = isUnlocked && manuals >= manualCost;
-    const canGarrison = isUnlocked && !isGarr && garrison.length < maxSlots;
-    const rankDef = typeof RANK_DEFS !== 'undefined' ? RANK_DEFS[def.stat] : null;
-    const statName = rankDef ? rankDef.name : def.stat;
-    const catLabel = def.category.charAt(0).toUpperCase() + def.category.slice(1);
-    const catColor = def.category === 'combat' ? 'var(--danger)' : def.category === 'economy' ? 'var(--gold)' : 'var(--good)';
-
-    if (!isUnlocked) {
-      // Locked hero
-      let lockReason = 'Tier ' + def.unlockTier;
-      if (def.family) lockReason += ' + ' + (UNLOCK_FAMILIES[def.family] ? UNLOCK_FAMILIES[def.family].name : def.family);
-      html += `
-        <div class="hero-card locked">
-          <div class="hc-icon">?</div>
-          <div class="hc-info">
-            <div class="hc-name">${def.name}</div>
-            <div class="hc-lock-reason">${lockReason}</div>
-          </div>
+        <div class="card-slot filled" data-hslot="${i}" data-hero="${hid}" style="border-color:${catColor}">
+          <div class="card-slot-tier" style="color:${catColor}">${def.icon}</div>
+          <div class="card-slot-name">${def.name}</div>
+          <div class="card-slot-effect">Boosts ${def.stat}</div>
+          <div class="card-slot-lvl">Lv${heroData.level} &middot; ${passiveMul.toFixed(1)}x</div>
         </div>`;
     } else {
       html += `
-        <div class="hero-card unlocked ${isGarr ? 'garrisoned' : ''}">
-          <div class="hc-icon">${def.icon}</div>
-          <div class="hc-info">
-            <div class="hc-name">${def.name} <span class="hc-cat" style="color:${catColor}">${catLabel}</span></div>
-            <div class="hc-stat">Boosts: ${statName}</div>
-            <div class="hc-passive">Passive: ${passiveMul.toFixed(1)}x &middot; Active: ${(passiveMul * cat.activeMul).toFixed(1)}x for ${cat.activeDuration / 1000}s</div>
-            <div class="hc-level">Lv${heroData.level} &middot; Next: ${manualCost} manuals</div>
-          </div>
-          <div class="hc-actions">
-            <button class="hc-btn-level ${canLevel ? '' : 'disabled'}" data-levelup="${def.id}">TRAIN</button>
-            ${!isGarr ? `<button class="hc-btn-garrison ${canGarrison ? '' : 'disabled'}" data-garrison="${def.id}">EQUIP</button>` : '<span class="hc-equipped-badge">EQUIPPED</span>'}
-          </div>
+        <div class="card-slot ${selecting ? 'selecting' : 'empty'}" data-hslot="${i}">
+          <div class="card-slot-empty-plus">+</div>
+          <div class="card-slot-empty-label">${selecting ? 'pick hero' : 'empty'}</div>
         </div>`;
     }
   }
-  html += '</div></div>';
+  html += `</div>`;
 
-  // --- Manual Store ---
-  html += '<div class="hero-store-section"><div class="hero-store-title">MANUAL STORE</div><div class="hero-store-packs">';
-  for (let i = 0; i < MANUAL_STORE.length; i++) {
-    const pack = MANUAL_STORE[i];
-    const canBuy = save.gems >= pack.gemCost;
+  // --- Core Upgrade + Manuals (compact bar) ---
+  const nextCoreCost = coreUpgradeCost(coreLevel);
+  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
+  html += `<div class="hero-core-bar">`;
+  if (coreLevel < CORE_UPGRADE.maxLevel) {
+    html += `<button class="hero-core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">
+      UPGRADE CORE &rarr; Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} scrap
+    </button>`;
+  } else {
+    html += `<div class="hero-core-maxed-label">CORE MAXED</div>`;
+  }
+  html += `<div class="hero-core-manuals">${manuals} manuals</div></div>`;
+
+  // --- Hero Inventory (grid tiles, matches card-tile pattern) ---
+  html += `<div class="cards-section-title">Heroes &middot; ${unlocked.length} / ${HERO_COUNT}</div>`;
+
+  if (unlocked.length === 0) {
     html += `
-      <button class="hero-store-pack ${canBuy ? '' : 'disabled'}" data-buypack="${pack.id}">
-        <div class="hsp-name">${pack.name}</div>
-        <div class="hsp-cost">${pack.gemCost} gems</div>
-      </button>`;
+      <div class="shop-coming">
+        <div class="shop-coming-item">
+          <div class="shop-coming-icon">&#9883;</div>
+          <div class="shop-coming-text">
+            <b>No heroes yet</b><br>
+            <span>Pull heroes in the Store with gems, or unlock them by reaching tiers.</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    const sortedHeroes = Object.values(HERO_DEFS).sort(function(a, b) { return a.order - b.order; });
+    // Show unlocked heroes as tiles, then locked ones dimmed
+    html += `<div class="card-inventory">`;
+    for (let i = 0; i < sortedHeroes.length; i++) {
+      const def = sortedHeroes[i];
+      const isUnlocked = unlocked.indexOf(def.id) !== -1;
+      const isGarr = isHeroGarrisoned(def.id);
+      const heroData = save.heroes[def.id] || { level: 1 };
+      const passiveMul = isUnlocked ? heroPassiveMultiplier(heroData.level) : 0;
+      const catLabel = def.category.charAt(0).toUpperCase() + def.category.slice(1);
+      const catColor = def.category === 'combat' ? '#f87171' : def.category === 'economy' ? '#fbbf24' : '#34d399';
+      const manualCost = isUnlocked ? heroManualCost(heroData.level) : 0;
+      const canLevel = isUnlocked && manuals >= manualCost;
+
+      if (!isUnlocked) {
+        html += `
+          <div class="card-tile hero-tile locked" style="border-color:rgba(255,255,255,0.06);opacity:0.35">
+            <div class="card-tile-head" style="background:rgba(255,255,255,0.04)">
+              <span class="card-tile-tier" style="color:rgba(255,255,255,0.3)">?</span>
+            </div>
+            <div class="card-tile-name">${def.name}</div>
+            <div class="card-tile-effect" style="font-size:9px">Locked</div>
+          </div>`;
+      } else {
+        html += `
+          <div class="card-tile hero-tile ${isGarr ? 'equipped' : ''}" data-hero="${def.id}" style="border-color:${catColor}">
+            <div class="card-tile-head" style="background:rgba(${def.category === 'combat' ? '248,113,113' : def.category === 'economy' ? '251,191,36' : '52,211,153'},0.12)">
+              <span class="card-tile-tier" style="color:${catColor}">${def.icon} ${catLabel}</span>
+            </div>
+            <div class="card-tile-name">${def.name}</div>
+            <div class="card-tile-effect">Boosts ${def.stat}</div>
+            <div class="card-tile-stat">Lv${heroData.level} &middot; ${passiveMul.toFixed(1)}x</div>
+            ${canLevel ? `<button class="hero-train-btn" data-levelup="${def.id}">TRAIN (${manualCost})</button>` : ''}
+            ${isGarr ? `<div class="card-tile-badge">EQUIPPED</div>` : ''}
+          </div>`;
+      }
+    }
+    html += `</div>`;
   }
-  html += '</div></div>';
 
   c.innerHTML = html;
 
   // --- Wire Events ---
+  // Core upgrade
   const btnCore = c.querySelector('#btnCoreUpgrade');
   if (btnCore) btnCore.addEventListener('click', function() {
     if (purchaseCoreUpgrade()) renderSubmenu();
   });
-  c.querySelectorAll('[data-activate]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      activateHeroAbility(this.getAttribute('data-activate'));
-      renderSubmenu();
-    });
-  });
-  c.querySelectorAll('[data-ungarrison]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      ungarrisonHero(this.getAttribute('data-ungarrison'));
-      saveCurrentToPreset(save.activePreset || 0); // auto-save
-      renderSubmenu();
-    });
-  });
+
+  // Train hero (level up)
   c.querySelectorAll('[data-levelup]').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (levelUpHero(this.getAttribute('data-levelup'))) renderSubmenu();
     });
   });
-  c.querySelectorAll('[data-garrison]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (garrisonHero(this.getAttribute('data-garrison'))) {
-        saveCurrentToPreset(save.activePreset || 0); // auto-save
-        renderSubmenu();
+
+  // Slot taps — same pattern as cards: tap filled = unequip, tap empty = select
+  c.querySelectorAll('[data-hslot]').forEach(function(slotEl) {
+    slotEl.addEventListener('click', function() {
+      var idx = parseInt(slotEl.dataset.hslot);
+      var equippedNow = save.garrisonSlots[idx];
+      if (equippedNow) {
+        ungarrisonHero(equippedNow);
+        heroSelectingSlot = -1;
+        saveCurrentToPreset(save.activePreset || 0);
+        renderHeroesTab(c);
+      } else {
+        heroSelectingSlot = (heroSelectingSlot === idx) ? -1 : idx;
+        renderHeroesTab(c);
       }
     });
   });
-  c.querySelectorAll('[data-buypack]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (buyManualPack(this.getAttribute('data-buypack'))) renderSubmenu();
+
+  // Hero tile taps — same as card tiles: tap = equip/unequip
+  c.querySelectorAll('.hero-tile:not(.locked)').forEach(function(tileEl) {
+    tileEl.addEventListener('click', function(e) {
+      if (e.target.hasAttribute('data-levelup')) return; // don't intercept train button
+      var heroId = tileEl.dataset.hero;
+      if (!heroId) return;
+      var garrIdx = save.garrisonSlots.indexOf(heroId);
+      if (garrIdx !== -1) {
+        // Already equipped — unequip
+        ungarrisonHero(heroId);
+        heroSelectingSlot = -1;
+      } else if (heroSelectingSlot !== -1) {
+        // Selecting slot mode — place in that slot
+        garrisonHeroAt(heroId, heroSelectingSlot);
+        heroSelectingSlot = -1;
+      } else {
+        // No slot selected — place in first empty
+        garrisonHero(heroId);
+      }
+      saveCurrentToPreset(save.activePreset || 0);
+      renderHeroesTab(c);
     });
   });
 }
@@ -3726,8 +3740,8 @@ function devAct(act) {
       break;
     case 'fillGarrison': {
       const unlocked = Array.isArray(save.heroesUnlocked) ? save.heroesUnlocked.slice() : [];
-      const maxSlots = save.coreLevel || 1;
-      save.garrisonSlots = unlocked.slice(0, maxSlots);
+      save.garrisonSlots = unlocked.slice(0, MAX_SLOTS);
+      while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
       clearHeroDevState();
       break;
     }
@@ -3746,7 +3760,6 @@ function devAct(act) {
     }
     case 'maxCoreLevel':
       save.coreLevel = CORE_UPGRADE.maxLevel;
-      if (Array.isArray(save.garrisonSlots)) save.garrisonSlots = save.garrisonSlots.filter(Boolean).slice(0, save.coreLevel);
       break;
     case 'tourneyForceEnd':
       tourneyDevForceCycleEnd();
