@@ -1338,10 +1338,10 @@ function renderHomePanelsVisual() {
   el.innerHTML =
     // ─── RESOURCE HUD BAR ───
     '<div class="mock-hud">' +
-      '<div class="mock-hud-item mock-hud-coins" data-home-action="labs"><span class="mock-hud-icon mock-hud-icon-coins"></span><div class="mock-hud-data"><span class="mock-hud-label">SCRAP</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div><span class="mock-hud-plus">+</span></div>' +
-      '<div class="mock-hud-item mock-hud-gems" data-home-action="shop"><span class="mock-hud-icon mock-hud-icon-gems"></span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div><span class="mock-hud-plus">+</span></div>' +
-      '<div class="mock-hud-item mock-hud-best"><span class="mock-hud-icon mock-hud-icon-best"></span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
-      '<div class="mock-hud-item mock-hud-runs"><span class="mock-hud-icon mock-hud-icon-runs"></span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
+      '<div class="mock-hud-item" data-home-action="labs"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#f5a623,#e8871e)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">SCRAP</span><span class="mock-hud-val">' + formatNum(save.coins) + '</span></div><span class="mock-hud-plus">+</span></div>' +
+      '<div class="mock-hud-item" data-home-action="shop"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">&#9830;</span><div class="mock-hud-data"><span class="mock-hud-label">GEMS</span><span class="mock-hud-val">' + formatNum(save.gems) + '</span></div><span class="mock-hud-plus">+</span></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)">&#9733;</span><div class="mock-hud-data"><span class="mock-hud-label">BEST</span><span class="mock-hud-val">W' + bestOverall + '</span></div></div>' +
+      '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
     '</div>' +
 
     // ─── HERO SECTION ───
@@ -1369,7 +1369,7 @@ function renderHomePanelsVisual() {
 
     // ─── BEGIN DEFENSE BUTTON ───
     '<button class="mock-start-btn" data-home-action="battle">' +
-      '<span class="mock-start-icon"></span>' +
+      '<span class="mock-start-icon">&#9812;</span>' +
       '<span>BEGIN DEFENSE (T' + sel + ')</span>' +
       '<span class="mock-start-arrows">&raquo;</span>' +
     '</button>' +
@@ -1377,8 +1377,8 @@ function renderHomePanelsVisual() {
     // ─── THREE INFO CARDS ───
     '<div class="mock-info-row">' +
       // Recent Progress
-      '<div class="mock-info-card mock-info-cyan" data-home-action="labs">' +
-        '<div class="mock-info-header"><span class="mock-info-header-icon mock-info-header-progress"></span>RECENT PROGRESS</div>' +
+      '<div class="mock-info-card mock-info-purple" data-home-action="labs">' +
+        '<div class="mock-info-header">RECENT PROGRESS</div>' +
         '<div class="mock-info-body">' +
           '<div class="mock-info-stat"><span class="mock-info-stat-label">BEST THIS TIER</span><span class="mock-info-stat-val">W ' + bestThisTier + '</span></div>' +
           '<div class="mock-info-stat"><span class="mock-info-stat-label">TOTAL RANKS</span><span class="mock-info-stat-val">' + totalRanks + '</span></div>' +
@@ -1388,7 +1388,7 @@ function renderHomePanelsVisual() {
       '</div>' +
       // Tier Milestones
       '<div class="mock-info-card mock-info-purple" data-home-action="milestones">' +
-        '<div class="mock-info-header"><span class="mock-info-header-icon mock-info-header-milestones"></span>TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
+        '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
         '<div class="mock-info-body">' +
           '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
           '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">+3% Damage</span></div>' +
@@ -1398,7 +1398,7 @@ function renderHomePanelsVisual() {
       '</div>' +
       // Loadout Preview
       '<div class="mock-info-card mock-info-gold" data-home-action="cards">' +
-        '<div class="mock-info-header"><span class="mock-info-header-icon mock-info-header-loadout"></span>LOADOUT PREVIEW</div>' +
+        '<div class="mock-info-header">LOADOUT PREVIEW</div>' +
         '<div class="mock-info-body">' +
           '<div class="mock-card-slots">' + cardSlotsHTML + '</div>' +
           '<div class="mock-info-hint">Equip towers, modules, and artifacts in LOADOUT.</div>' +
@@ -1998,25 +1998,34 @@ function renderMilestonesTab(c) {
   if (activeGoalTier > unlockedTier) activeGoalTier = unlockedTier;
   if (activeGoalTier < 1) activeGoalTier = 1;
 
-  // Count ready-to-claim milestones for the ACTIVE tier only (fast)
-  let readyCount = 0;
-  for (const w of MILESTONE_WAVES) {
-    if (milestoneReady(activeGoalTier, w) && !save.claimedMilestones[milestoneKey(activeGoalTier, w)]) readyCount++;
+  // Count ready-to-claim milestones per tier for badge
+  const readyCounts = {};
+  for (let t = 1; t <= unlockedTier; t++) {
+    let n = 0;
+    for (const w of MILESTONE_WAVES) {
+      if (milestoneReady(t, w) && !save.claimedMilestones[milestoneKey(t, w)]) n++;
+    }
+    readyCounts[t] = n;
   }
 
-  // Compact tier selector: ◀ T5 ▶  (no 99999-button strip)
-  const canPrev = activeGoalTier > 1;
-  const canNext = activeGoalTier < unlockedTier;
-  let html = `
-    <div class="goal-tier-selector">
-      <button class="goal-tier-arrow" data-gdir="prev" ${!canPrev ? 'disabled' : ''}>&lsaquo;</button>
-      <div class="goal-tier-current">
-        <span class="goal-tier-label">T${activeGoalTier}</span>
-        ${readyCount > 0 ? '<span class="goal-tier-badge">' + readyCount + '</span>' : ''}
-      </div>
-      <button class="goal-tier-arrow" data-gdir="next" ${!canNext ? 'disabled' : ''}>&rsaquo;</button>
-      <span class="goal-tier-range">of ${unlockedTier} unlocked</span>
-    </div>`;
+  // Tier hex progression bar — all 18 tiers, scrollable horizontally
+  let html = `<div class="tier-hex-strip">`;
+  for (let t = 1; t <= MAX_TIER; t++) {
+    const state = t > unlockedTier ? 'locked'
+                : t === activeGoalTier ? 'current'
+                : 'unlocked';
+    const badge = readyCounts[t] > 0 ? `<span class="tier-hex-badge">${readyCounts[t]}</span>` : '';
+    html += `<button class="tier-hex ${state}" data-ghex="${t}" ${t > unlockedTier ? 'disabled' : ''}>T${t}${badge}</button>`;
+  }
+  html += `</div>`;
+
+  // Tier tab bar (horizontal scroll if many tiers)
+  html += `<div class="goal-tier-tabs">`;
+  for (let t = 1; t <= unlockedTier; t++) {
+    const badge = readyCounts[t] > 0 ? `<span class="goal-tier-badge">${readyCounts[t]}</span>` : '';
+    html += `<button class="goal-tier-tab ${activeGoalTier === t ? 'active' : ''}" data-gt="${t}">T${t}${badge}</button>`;
+  }
+  html += `</div>`;
 
   // Current tier's best
   html += `<div class="milestone-tier-header">Tier ${activeGoalTier} · best W${save.bestWavePerTier[activeGoalTier] || 0}</div>`;
@@ -2044,11 +2053,19 @@ function renderMilestonesTab(c) {
   }
 
   c.innerHTML = html;
-  c.querySelectorAll('.goal-tier-arrow').forEach(btn => {
-    if (btn.disabled) return;
-    btn.addEventListener('click', () => {
-      if (btn.dataset.gdir === 'prev' && activeGoalTier > 1) activeGoalTier--;
-      else if (btn.dataset.gdir === 'next' && activeGoalTier < highestUnlockedTier()) activeGoalTier++;
+  c.querySelectorAll('.tier-hex').forEach(h => {
+    if (h.disabled) return;
+    h.addEventListener('click', () => {
+      const t = parseInt(h.dataset.ghex);
+      if (t && t <= highestUnlockedTier()) {
+        activeGoalTier = t;
+        renderMilestonesTab(c);
+      }
+    });
+  });
+  c.querySelectorAll('.goal-tier-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      activeGoalTier = parseInt(t.dataset.gt);
       renderMilestonesTab(c);
     });
   });
@@ -3169,7 +3186,6 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
 
     <div class="dev-section">Progression</div>
-    <button class="dev-btn" style="border-color:var(--good);color:var(--good);font-weight:bold" data-act="unlockAll">⚡ UNLOCK ALL FEATURES</button>
     <button class="dev-btn" data-act="maxLabs">Max all labs</button>
     <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
     <button class="dev-btn" data-act="maxSpeed">Max game speed (3×)</button>
@@ -3225,24 +3241,6 @@ function devAct(act) {
     case 'coins1b':   save.coins += 1000000000; break;
     case 'gems100':   save.gems += 100; break;
     case 'gems10k':   save.gems += 10000; break;
-    case 'unlockAll':
-      // Unlock every feature without maxing stats
-      for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
-      for (const rid of Object.keys(RANK_DEFS)) {
-        if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
-        if (save.ranks[rid].level < 10) save.ranks[rid].level = 10;
-      }
-      for (let t = 1; t <= 10; t++) save.bestWavePerTier[t] = Math.max(save.bestWavePerTier[t] || 0, 100);
-      save.bestWave = Math.max(save.bestWave, 100);
-      for (const id of Object.keys(CARD_POOL)) {
-        if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
-      }
-      save.unlockedSlots = MAX_SLOTS;
-      while (save.equippedCards.length < MAX_SLOTS) save.equippedCards.push(null);
-      if (save.coins < 500000) save.coins = 500000;
-      if (save.gems < 1000) save.gems = 1000;
-      save.totalRuns = Math.max(save.totalRuns, 10);
-      break;
     case 'maxLabs':
       // Max all ranks + unlock all families
       for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
@@ -3431,7 +3429,6 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
 
     <div class="dev-section">Progression</div>
-    <button class="dev-btn" style="border-color:var(--good);color:var(--good);font-weight:bold" data-act="unlockAll">⚡ UNLOCK ALL FEATURES</button>
     <button class="dev-btn" data-act="maxLabs">Max all labs</button>
     <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
     <button class="dev-btn" data-act="maxSpeed">Max game speed (3x)</button>
@@ -3512,30 +3509,6 @@ function devAct(act) {
       if (game.running) {
         game.cash += grantAmount;
         game.cashEarnedThisRun += grantAmount;
-      }
-      break;
-    case 'unlockAll':
-      // Unlock every feature without maxing stats — for testing all UI
-      for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
-      for (const rid of Object.keys(RANK_DEFS)) {
-        if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
-        if (save.ranks[rid].level < 10) save.ranks[rid].level = 10;
-      }
-      for (let t = 1; t <= 10; t++) save.bestWavePerTier[t] = Math.max(save.bestWavePerTier[t] || 0, 100);
-      save.bestWave = Math.max(save.bestWave, 100);
-      for (const id of Object.keys(CARD_POOL)) {
-        if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
-      }
-      save.unlockedSlots = MAX_SLOTS;
-      while (save.equippedCards.length < MAX_SLOTS) save.equippedCards.push(null);
-      if (save.coins < 500000) save.coins = 500000;
-      if (save.gems < 1000) save.gems = 1000;
-      save.totalRuns = Math.max(save.totalRuns, 10);
-      if (typeof HERO_DEFS !== 'undefined') {
-        if (!Array.isArray(save.heroesUnlocked)) save.heroesUnlocked = [];
-        for (const hid of Object.keys(HERO_DEFS)) {
-          if (!save.heroesUnlocked.includes(hid)) save.heroesUnlocked.push(hid);
-        }
       }
       break;
     case 'maxLabs':

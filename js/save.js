@@ -111,8 +111,16 @@ const defaultSave = {
   trainingManuals: 0,      // currency for hero leveling
   heroesUnlocked: [],      // array of heroId strings the player has unlocked
 
+  // Loadout presets (v0.7.36) — 3 quick-switch loadout slots
+  activePreset: 0,         // 0, 1, or 2
+  loadoutPresets: [
+    { equippedCards: null, garrisonSlots: null },   // slot 1 — null means "use current"
+    { equippedCards: null, garrisonSlots: null },   // slot 2
+    { equippedCards: null, garrisonSlots: null }    // slot 3
+  ],
+
   lastSaveTime: Date.now(),
-  version: 11,
+  version: 12,
 
   // Tournament (v0.7.13+): persistent bracket state, league, cycle info.
   // See js/tournament.js for the full shape and helpers.
@@ -203,6 +211,13 @@ function hydrateSaveState(loaded) {
   nextSave.coreLevel = Math.max(1, parseInt(source.coreLevel, 10) || 1);
   nextSave.trainingManuals = Math.max(0, parseInt(source.trainingManuals, 10) || 0);
   nextSave.heroesUnlocked = Array.isArray(source.heroesUnlocked) ? source.heroesUnlocked : [];
+  // Loadout presets
+  nextSave.activePreset = typeof source.activePreset === 'number' ? source.activePreset : 0;
+  nextSave.loadoutPresets = Array.isArray(source.loadoutPresets) ? source.loadoutPresets : [
+    { equippedCards: null, garrisonSlots: null },
+    { equippedCards: null, garrisonSlots: null },
+    { equippedCards: null, garrisonSlots: null }
+  ];
   nextSave._notifiedPullable = Array.isArray(source._notifiedPullable) ? source._notifiedPullable : [];
   nextSave.unlockedSpeeds = Array.isArray(source.unlockedSpeeds) ? source.unlockedSpeeds : [];
   nextSave.equippedCoreSkin = source.equippedCoreSkin || 'sentinel';
@@ -252,9 +267,21 @@ const SAVE_MIGRATIONS = {
     if (!s.heroesUnlocked) s.heroesUnlocked = [];
     // Remove MAX_TIER cap on bestTier (was capped at 100)
     // No longer clamped — tiers are unlimited now.
+  },
+  // v11 → v12: Loadout presets (3 quick-switch slots)
+  11: function(s) {
+    if (typeof s.activePreset === 'undefined') s.activePreset = 0;
+    if (!Array.isArray(s.loadoutPresets)) {
+      // Snapshot current loadout into preset 0
+      s.loadoutPresets = [
+        { equippedCards: s.equippedCards ? s.equippedCards.slice() : null, garrisonSlots: s.garrisonSlots ? s.garrisonSlots.slice() : null },
+        { equippedCards: null, garrisonSlots: null },
+        { equippedCards: null, garrisonSlots: null }
+      ];
+    }
   }
 };
-const CURRENT_SAVE_VERSION = 11;
+const CURRENT_SAVE_VERSION = 12;
 
 function migrateSave(loaded) {
   let v = parseInt(loaded.version, 10) || 0;
