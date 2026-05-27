@@ -30,9 +30,9 @@ const PROPOSED_RANKS = {
   // Sustain
   regen:      { cost0:45, costMul:1.26, maxRank:20, family:'sustainSystems' },
   lifesteal:  { cost0:70, costMul:1.28, maxRank:18, family:'sustainSystems' },
-  // Fortification
-  thorns:     { cost0:55, costMul:1.28, maxRank:18, family:'fortification' },
-  knockback:  { cost0:70, costMul:1.28, maxRank:12, family:'fortification' },
+  // Spiked Core / Knockback
+  thorns:     { cost0:55, costMul:1.28, maxRank:18, family:'spikedCore' },
+  knockback:  { cost0:70, costMul:1.28, maxRank:12, family:'knockbackSystems' },
   // Barrier
   shieldHP:   { cost0:60, costMul:1.28, maxRank:18, family:'barrierSystems' },
   shieldRegen:{ cost0:80, costMul:1.28, maxRank:15, family:'barrierSystems' },
@@ -62,7 +62,8 @@ const PROPOSED_UNLOCKS = [
   { id: 'critSystems', cost: 5000 },
   { id: 'economyExpansion', cost: 15000 },
   { id: 'sustainSystems', cost: 30000 },
-  { id: 'fortification', cost: 50000 },
+  { id: 'spikedCore', cost: 35000 },
+  { id: 'knockbackSystems', cost: 45000 },
   { id: 'coinMastery', cost: 75000 },
   { id: 'multishotSystems', cost: 100000 },
   { id: 'barrierSystems', cost: 150000 },

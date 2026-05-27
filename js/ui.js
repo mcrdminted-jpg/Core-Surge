@@ -1676,7 +1676,7 @@ function rankCategory(rid) { return RANK_CATEGORY[rid] || 'utility'; }
 // stats relevant to that tab. The painted mockup has 4 family card slots.
 const FAMILIES_BY_CATEGORY = {
   combat:  ['critSystems', 'multishotSystems', 'bounceSystems', 'comboSystems'],
-  defense: ['sustainSystems', 'fortification', 'barrierSystems'],
+  defense: ['sustainSystems', 'spikedCore', 'knockbackSystems', 'barrierSystems'],
   economy: ['economyExpansion', 'coinMastery'],
   utility: ['tacticalSystems', 'overcharge']
 };

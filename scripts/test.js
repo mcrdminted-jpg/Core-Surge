@@ -250,7 +250,7 @@ async function runTests() {
   console.log('â”€â”€ Unlock Families â”€â”€');
 
   const UNLOCK_FAMILIES = ctx.UNLOCK_FAMILIES;
-  assert(Object.keys(UNLOCK_FAMILIES).length === 11, `11 unlock families (got ${Object.keys(UNLOCK_FAMILIES).length})`);
+  assert(Object.keys(UNLOCK_FAMILIES).length === 12, `12 unlock families (got ${Object.keys(UNLOCK_FAMILIES).length})`);
   for (const [id, fam] of Object.entries(UNLOCK_FAMILIES)) {
     assert(fam.icon, `Family ${id} has an icon`);
     assert(fam.cost > 0, `Family ${id} has a positive cost`);

@@ -52,7 +52,8 @@ const defaultSave = {
     multishotSystems: false,
     bounceSystems: false,
     comboSystems: false,
-    fortification: false,
+    spikedCore: false,
+    knockbackSystems: false,
     barrierSystems: false,
     coinMastery: false,
     tacticalSystems: false,
@@ -279,9 +280,21 @@ const SAVE_MIGRATIONS = {
         { equippedCards: null, garrisonSlots: null }
       ];
     }
+  },
+  // v12 → v13: Split fortification family into spikedCore + knockbackSystems
+  12: function(s) {
+    if (s.unlocks && s.unlocks.fortification) {
+      s.unlocks.spikedCore = true;
+      s.unlocks.knockbackSystems = true;
+      delete s.unlocks.fortification;
+    }
+    if (s.unlocks) {
+      if (typeof s.unlocks.spikedCore === 'undefined') s.unlocks.spikedCore = false;
+      if (typeof s.unlocks.knockbackSystems === 'undefined') s.unlocks.knockbackSystems = false;
+    }
   }
 };
-const CURRENT_SAVE_VERSION = 12;
+const CURRENT_SAVE_VERSION = 13;
 
 function migrateSave(loaded) {
   let v = parseInt(loaded.version, 10) || 0;

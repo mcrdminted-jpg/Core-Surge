@@ -407,7 +407,7 @@ const CARD_STAT_TO_FAMILY = {
   multiChance: 'multishotSystems', multiPower: 'multishotSystems', multiTargetsAdd: 'multishotSystems',
   bounceChance: 'bounceSystems', bouncePower: 'bounceSystems', bounceTargetsAdd: 'bounceSystems',
   comboMax: 'comboSystems', comboDecay: 'comboSystems',
-  thorns: 'fortification', knockback: 'fortification',
+  thorns: 'spikedCore', knockback: 'knockbackSystems',
   shieldHP: 'barrierSystems', shieldRegen: 'barrierSystems',
   projSpeed: 'tacticalSystems', pierce: 'tacticalSystems',
   overchargeChance: 'overcharge', overchargePower: 'overcharge'
@@ -779,53 +779,59 @@ const UNLOCK_FAMILIES = {
     unlocks: ['regen', 'lifesteal'],
     order: 3
   },
-  fortification: {
-    id: 'fortification', name: 'Fortification', icon: '🔰',
-    cost: 300000,
-    unlocks: ['thorns', 'knockback'],
+  spikedCore: {
+    id: 'spikedCore', name: 'Spiked Core', icon: '🔰',
+    cost: 200000,
+    unlocks: ['thorns'],
     order: 4
+  },
+  knockbackSystems: {
+    id: 'knockbackSystems', name: 'Knockback', icon: '💥',
+    cost: 250000,
+    unlocks: ['knockback'],
+    order: 5
   },
   coinMastery: {
     id: 'coinMastery', name: 'Scrap Mastery', icon: '🔩',
     cost: 450000,
     unlocks: ['coinMultiplier', 'gemFind'],
-    order: 5
+    order: 6
   },
   multishotSystems: {
     id: 'multishotSystems', name: 'Multishot Systems', icon: '🔱',
     cost: 600000,
     unlocks: ['multiChance', 'multiPower', 'multiTargets'],
-    order: 6
+    order: 7
   },
   barrierSystems: {
     id: 'barrierSystems', name: 'Barrier Systems', icon: '🛡',
     cost: 900000,
     unlocks: ['shieldHP', 'shieldRegen'],
-    order: 7
+    order: 8
   },
   tacticalSystems: {
     id: 'tacticalSystems', name: 'Tactical Systems', icon: '🎯',
     cost: 1200000,
     unlocks: ['projSpeed', 'pierce'],
-    order: 8
+    order: 9
   },
   bounceSystems: {
     id: 'bounceSystems', name: 'Bounce Systems', icon: '⚡',
     cost: 1650000,
     unlocks: ['bounceChance', 'bouncePower', 'bounceTargets'],
-    order: 9
+    order: 10
   },
   overcharge: {
     id: 'overcharge', name: 'Overcharge', icon: '⚡',
     cost: 2250000,
     unlocks: ['overchargeChance', 'overchargePower'],
-    order: 10
+    order: 11
   },
   comboSystems: {
     id: 'comboSystems', name: 'Combo Systems', icon: '🔥',
     cost: 3000000,
     unlocks: ['comboBonus', 'comboDuration'],
-    order: 11
+    order: 12
   }
 };
 
@@ -974,15 +980,17 @@ const RANK_DEFS = {
     desc: '+200ms combo window per rank'
   },
 
-  // === FORTIFICATION (Defense) ===
+  // === SPIKED CORE (Thorns Defense) ===
   thorns: {
-    id: 'thorns', name: 'Thorns', family: 'fortification', startsUnlocked: false,
+    id: 'thorns', name: 'Thorns', family: 'spikedCore', startsUnlocked: false,
     base: 0, flatPerRank: 0.005, maxRank: 99999,
     cost0: 55, costMul: 1.12,
     desc: '+0.5% damage reflected per rank'
   },
+
+  // === KNOCKBACK ===
   knockback: {
-    id: 'knockback', name: 'Knockback', family: 'fortification', startsUnlocked: false,
+    id: 'knockback', name: 'Knockback', family: 'knockbackSystems', startsUnlocked: false,
     base: 0, flatPerRank: 0.008, maxRank: 99999,
     cost0: 70, costMul: 1.12,
     desc: '+0.8% knockback chance per rank'
@@ -1166,8 +1174,8 @@ const HERO_DEFS = {
   leech:       { id: 'leech',       name: 'Leech',       icon: '🩸',  stat: 'lifesteal',    category: 'defense', family: 'sustainSystems',    unlock: { type: 'runs', value: 50 },       order: 12 },
 
   // === FORTIFICATION (2) — achievement-based ===
-  thornguard:  { id: 'thornguard',  name: 'Thornguard',  icon: '🌵',  stat: 'thorns',       category: 'defense', family: 'fortification',     unlock: { type: 'kills', value: 25000 },   order: 13 },
-  shockwave:   { id: 'shockwave',   name: 'Shockwave',   icon: '💫',  stat: 'knockback',    category: 'defense', family: 'fortification',     unlock: { type: 'wave', value: 100 },      order: 14 },
+  thornguard:  { id: 'thornguard',  name: 'Thornguard',  icon: '🌵',  stat: 'thorns',       category: 'defense', family: 'spikedCore',        unlock: { type: 'kills', value: 25000 },   order: 13 },
+  shockwave:   { id: 'shockwave',   name: 'Shockwave',   icon: '💫',  stat: 'knockback',    category: 'defense', family: 'knockbackSystems',  unlock: { type: 'wave', value: 100 },      order: 14 },
 
   // === COIN MASTERY (2) — achievement-based ===
   smelter:     { id: 'smelter',     name: 'Smelter',     icon: '🔥',  stat: 'coinMultiplier', category: 'economy', family: 'coinMastery',     unlock: { type: 'cash', value: 500000 },   order: 15 },
