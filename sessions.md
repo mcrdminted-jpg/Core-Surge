@@ -1903,3 +1903,24 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - The selector now uses clean box art under live copy, with arrow pods as separate art-backed buttons.
 - Untracked experimental crops and source leftovers should stay out of the push unless explicitly requested.
 
+## 2026-05-26 - Codex - Selector Container Fit And Text Restore
+
+**What I did:**
+- I corrected the lower selector container so the frame art fits the card instead of being cropped inside a smaller dark matte.
+- I removed the extra underlay feel from the selector box and restored the center copy scale closer to the original tier-card proportions.
+- I kept this as a CSS-only follow-up on top of the previously pushed clean selector asset batch.
+
+**Files changed:**
+- `css/menu.css`
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch does not replace assets. It only corrects container fit and text sizing for the already-pushed selector art.
+- Untracked art leftovers remain intentionally out of git.
+
