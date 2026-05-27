@@ -1391,8 +1391,8 @@ function renderHomePanelsVisual() {
         '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
         '<div class="mock-info-body">' +
           '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
-          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">+5% Damage</span></div>' +
-          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">Scrap Bonus</span></div>' +
+          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">+3% Damage</span></div>' +
+          '<div class="mock-ms-item">W 75 <span class="mock-ms-reward">+5% Fire Rate</span></div>' +
           '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
         '</div>' +
       '</div>' +
