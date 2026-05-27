@@ -1069,9 +1069,9 @@ function renderHomePanels() {
     if (cid && CARD_POOL[cid]) {
       const card = CARD_POOL[cid];
       const inv = save.cardInventory[cid] || { level: 1 };
-      cardsHTML += `<div class="home-card-slot filled">
-        <span class="home-card-icon">${card.icon}</span>
-        <span class="home-card-lvl">${inv.level}</span>
+      cardsHTML += `<div class="home-card-slot filled" data-card="${card.id}">
+        <span class="home-card-name">${card.name}</span>
+        <span class="home-card-lvl">Lv ${inv.level}</span>
       </div>`;
     } else {
       cardsHTML += `<div class="home-card-slot empty">+</div>`;
@@ -1329,7 +1329,7 @@ function renderHomePanelsVisual() {
     const cid = save.equippedCards[i];
     if (cid && CARD_POOL[cid]) {
       const card = CARD_POOL[cid];
-      cardSlotsHTML += '<div class="mock-card-slot filled"><span>' + card.icon + '</span></div>';
+      cardSlotsHTML += '<div class="mock-card-slot filled" data-card="' + card.id + '"><span>' + card.name + '</span></div>';
     } else {
       cardSlotsHTML += '<div class="mock-card-slot empty">+</div>';
     }
@@ -1390,8 +1390,8 @@ function renderHomePanelsVisual() {
       '<div class="mock-info-card mock-info-purple" data-home-action="milestones">' +
         '<div class="mock-info-header">TIER MILESTONES' + (claimableCount > 0 ? '<span class="mock-info-badge">' + claimableCount + '</span>' : '') + '</div>' +
         '<div class="mock-info-body">' +
-          '<div class="mock-ms-item">W 100 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
-          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">+5% Damage</span></div>' +
+          '<div class="mock-ms-item">W 50 <span class="mock-ms-reward">Unlock T' + (sel+1) + '</span></div>' +
+          '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">+5% Damage</span></div>' +
           '<div class="mock-ms-item">W 25 <span class="mock-ms-reward">Scrap Bonus</span></div>' +
           '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
         '</div>' +
@@ -2402,9 +2402,8 @@ function showCardDetail(cardId) {
   const overlay = document.createElement('div');
   overlay.className = 'card-detail-overlay';
   overlay.innerHTML = `
-    <div class="card-detail-card" style="border-color:${tierColor.border}">
+    <div class="card-detail-card" data-card="${card.id}" style="border-color:${tierColor.border}">
       <div class="cd-header" style="background:${tierColor.bg}">
-        <span class="cd-icon">${card.icon}</span>
         <span class="cd-tier" style="color:${tierColor.nameColor}">${tierColor.name}</span>
       </div>
       <div class="cd-name">${card.name}</div>
@@ -2662,7 +2661,7 @@ function renderShopTab(c) {
         ${unownedPrime.map(card => {
           const disabled = save.gems < CARD_PRICING.unlockPrime;
           return `
-          <button class="direct-unlock-btn prime" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
+          <button class="direct-unlock-btn prime" data-unlock="${card.id}" data-card="${card.id}" ${disabled ? 'disabled' : ''}>
             <span class="du-icon">${card.icon}</span>
             <span class="du-info">
               <span class="du-name" style="color:var(--purple)">${card.name}</span>
@@ -2674,7 +2673,7 @@ function renderShopTab(c) {
         ${unownedStandard.map(card => {
           const disabled = save.gems < CARD_PRICING.unlockStandard;
           return `
-          <button class="direct-unlock-btn standard" data-unlock="${card.id}" ${disabled ? 'disabled' : ''}>
+          <button class="direct-unlock-btn standard" data-unlock="${card.id}" data-card="${card.id}" ${disabled ? 'disabled' : ''}>
             <span class="du-icon">${card.icon}</span>
             <span class="du-info">
               <span class="du-name">${card.name}</span>
@@ -2839,8 +2838,7 @@ function showPullReveal(results) {
                 : r.leveledUp ? `<div class="pull-badge up">LV UP → ${r.level}</div>`
                 : `<div class="pull-badge dup">DUPE +1</div>`;
     return `
-      <div class="pull-card" style="border-color:${tc.border}; background:${tc.bg}">
-        <div class="pull-card-icon">${card.icon}</div>
+      <div class="pull-card" data-card="${card.id}" style="border-color:${tc.border}; background:${tc.bg}">
         <div class="pull-card-tier" style="color:${tc.nameColor}">${tc.name}</div>
         <div class="pull-card-name">${card.name}</div>
         ${badge}
@@ -3836,5 +3834,3 @@ function renderTournamentTab(c) {
     });
   }
 }
-
-

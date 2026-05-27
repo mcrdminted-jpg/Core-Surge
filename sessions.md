@@ -1573,3 +1573,25 @@ pm.cmd run typecheck passed
 - 
 pm.cmd run test passed with 274 passed, 0 failed`r
 
+
+## 2026-05-26 - Codex - Full Art On Remaining Card Surfaces
+
+**What I did:**
+- Extended the full-art system onto the remaining card surfaces: home slots, mock preview slots, pull reveals, card detail popup, and direct-unlock cards.
+- Tightened the tablet breakpoint again so single-card sections stop stretching on iPad Mini class widths.
+- Refined the card chrome so the art stays visible and the tier/equipped markers read cleanly.
+
+**Files changed:**
+- package.json`r
+- index.html`r
+- js/ui.js`r
+- css/menu.css`r
+
+**Verification:**
+- 
+pm.cmd run build passed
+- 
+pm.cmd run typecheck passed
+- 
+pm.cmd run test passed with 274 passed, 0 failed`r
+

@@ -867,43 +867,43 @@ const RANK_DEFS = {
   },
   range: {
     id: 'range', name: 'Range', family: null, startsUnlocked: true,
-    base: 0, flatPerRank: 1.2, maxRank: 500,
+    base: 0, flatPerRank: 1.5, maxRank: 500,
     cost0: 5, costMul: 1.015,
-    desc: '+1.2 range per rank (500 ranks = full screen)'
+    desc: '+1.5 range per rank (500 ranks = full screen)'
   },
   cashBonus: {
     id: 'cashBonus', name: 'Cash Bonus', family: null, startsUnlocked: true,
-    base: 0, flatPerRank: 0.02, maxRank: 99999,
+    base: 0, flatPerRank: 0.05, maxRank: 99999,
     cost0: 25, costMul: 1.427,
-    desc: '+2% cash per kill per rank'
+    desc: '+5% cash per kill per rank'
   },
 
   // === CRIT SYSTEMS ===
   critChance: {
     id: 'critChance', name: 'Crit Chance', family: 'critSystems', startsUnlocked: false,
-    base: 0, flatPerRank: 0.005, maxRank: 99999,
+    base: 0, flatPerRank: 0.01, maxRank: 99999,
     cost0: 50, costMul: 1.427,
-    desc: '+0.5% crit chance per rank'
+    desc: '+1% crit chance per rank'
   },
   critPower: {
     id: 'critPower', name: 'Crit Power', family: 'critSystems', startsUnlocked: false,
-    base: 2.0, flatPerRank: 0.02, maxRank: 99999,
+    base: 2.0, flatPerRank: 0.01, maxRank: 99999,
     cost0: 60, costMul: 1.427,
-    desc: '+0.02× crit multiplier per rank'
+    desc: '+0.01× crit multiplier per rank'
   },
 
   // === ECONOMY EXPANSION ===
   waveBonus: {
     id: 'waveBonus', name: 'Wave Bonus', family: 'economyExpansion', startsUnlocked: false,
-    base: 0, flatPerRank: 0.05, maxRank: 99999,
+    base: 0, flatPerRank: 0.15, maxRank: 99999,
     cost0: 55, costMul: 1.427,
-    desc: '+5% end-of-wave cash per rank'
+    desc: '+15% end-of-wave cash per rank'
   },
   bossBounty: {
     id: 'bossBounty', name: 'Boss Bounty', family: 'economyExpansion', startsUnlocked: false,
-    base: 0, flatPerRank: 0.05, maxRank: 99999,
+    base: 0, flatPerRank: 0.25, maxRank: 99999,
     cost0: 60, costMul: 1.427,
-    desc: '+5% boss kill reward per rank'
+    desc: '+25% boss kill reward per rank'
   },
 
   // === SUSTAIN SYSTEMS ===
@@ -915,9 +915,9 @@ const RANK_DEFS = {
   },
   lifesteal: {
     id: 'lifesteal', name: 'Lifesteal', family: 'sustainSystems', startsUnlocked: false,
-    base: 0, flatPerRank: 0.003, maxRank: 99999,
+    base: 0, flatPerRank: 0.0025, maxRank: 99999,
     cost0: 70, costMul: 1.427,
-    desc: '+0.3% lifesteal per rank'
+    desc: '+0.25% lifesteal per rank'
   },
 
   // === MULTISHOT SYSTEMS ===
@@ -929,9 +929,9 @@ const RANK_DEFS = {
   },
   multiPower: {
     id: 'multiPower', name: 'Multishot Power', family: 'multishotSystems', startsUnlocked: false,
-    base: 0, flatPerRank: 0.02, maxRank: 99999,
+    base: 0, flatPerRank: 0.005, maxRank: 99999,
     cost0: 100, costMul: 1.427,
-    desc: '+2% multishot power per rank'
+    desc: '+0.5% multishot power per rank'
   },
   multiTargets: {
     id: 'multiTargets', name: 'Multishot Targets', family: 'multishotSystems', startsUnlocked: false,
@@ -949,9 +949,9 @@ const RANK_DEFS = {
   },
   bouncePower: {
     id: 'bouncePower', name: 'Bounce Power', family: 'bounceSystems', startsUnlocked: false,
-    base: 0, flatPerRank: 0.025, maxRank: 99999,
+    base: 0, flatPerRank: 0.005, maxRank: 99999,
     cost0: 150, costMul: 1.427,
-    desc: '+2.5% bounce damage per rank'
+    desc: '+0.5% bounce damage per rank'
   },
   bounceTargets: {
     id: 'bounceTargets', name: 'Bounce Targets', family: 'bounceSystems', startsUnlocked: false,
