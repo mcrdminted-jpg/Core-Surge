@@ -1315,6 +1315,21 @@ function renderHomePanelsVisual() {
     presetChipsHTML += '<button class="preset-quick-btn' + (qi === homeAP ? ' active' : '') + '" data-pidx="' + qi + '">' + (qi + 1) + '</button>';
   }
 
+  // Last run summary for Match History card
+  var histArr = Array.isArray(save.runHistory) ? save.runHistory : [];
+  var lastRunHTML = '';
+  if (histArr.length > 0) {
+    var lr = histArr[0];
+    var lrDurSec = Math.floor((lr.dur || 0) / 1000);
+    var lrDurStr = lrDurSec >= 60 ? Math.floor(lrDurSec / 60) + 'm ' + (lrDurSec % 60) + 's' : lrDurSec + 's';
+    lastRunHTML =
+      '<div class="mock-info-stat"><span class="mock-info-stat-label">LAST RUN</span><span class="mock-info-stat-val">T' + lr.tier + ' W' + lr.wave + '</span></div>' +
+      '<div class="mock-info-stat"><span class="mock-info-stat-label">SCRAP/MIN</span><span class="mock-info-stat-val">' + formatNum(lr.spm || 0) + '</span></div>' +
+      '<div class="mock-info-stat"><span class="mock-info-stat-label">DURATION</span><span class="mock-info-stat-val">' + lrDurStr + '</span></div>';
+  } else {
+    lastRunHTML = '<div class="mock-info-hint" style="padding:6px 0">Play a run to see stats here.</div>';
+  }
+
   el.innerHTML =
     // ─── RESOURCE HUD BAR ───
     '<div class="mock-hud">' +
@@ -1324,45 +1339,40 @@ function renderHomePanelsVisual() {
       '<div class="mock-hud-item"><span class="mock-hud-icon" style="background:linear-gradient(135deg,#4ade80,#16a34a)">&#9650;</span><div class="mock-hud-data"><span class="mock-hud-label">RUNS</span><span class="mock-hud-val">' + save.totalRuns + '</span></div></div>' +
     '</div>' +
 
-    // ─── HERO SECTION ───
+    // ─── HERO + TIER COMBINED (merged to eliminate doubled look) ───
     '<div class="mock-hero">' +
       '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
       '<div class="mock-hero-logo" aria-hidden="true"></div>' +
-    '</div>' +
-
-    // ─── TIER SELECTOR ───
-    '<div class="mock-tier-box">' +
-      '<div class="mock-tier-art" aria-hidden="true"></div>' +
-      '<div class="mock-tier-row">' +
-        '<button class="mock-tier-arrow" data-tier-dir="down" aria-label="Previous tier"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
-        '<div class="mock-tier-center" aria-live="polite">' +
-          '<div class="mock-tier-num">T' + sel + '</div>' +
-          '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
-          '<div class="mock-tier-hint">' + tierHint + '</div>' +
+      '<div class="mock-tier-overlay">' +
+        '<div class="mock-tier-row">' +
+          '<button class="mock-tier-arrow" data-tier-dir="down" aria-label="Previous tier"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
+          '<div class="mock-tier-center" aria-live="polite">' +
+            '<div class="mock-tier-num">T' + sel + '</div>' +
+            '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
+            '<div class="mock-tier-hint">' + tierHint + '</div>' +
+          '</div>' +
+          '<button class="mock-tier-arrow" data-tier-dir="up" aria-label="Next tier"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
         '</div>' +
-        '<button class="mock-tier-arrow" data-tier-dir="up" aria-label="Next tier"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
       '</div>' +
     '</div>' +
 
     // ─── BEGIN DEFENSE BUTTON ───
     '<button class="mock-start-btn" data-home-action="battle">' +
       '<span class="mock-start-icon">&#9812;</span>' +
-      '<span>BEGIN DEFENSE (T' + sel + ')</span>' +
+      '<span class="mock-start-label">BEGIN DEFENSE (T' + sel + ')</span>' +
       '<span class="mock-start-arrows">&raquo;</span>' +
     '</button>' +
 
     // ─── THREE INFO CARDS ───
     '<div class="mock-info-row">' +
-      // Recent Progress
-      '<div class="mock-info-card mock-info-purple" data-home-action="labs">' +
-        '<div class="mock-info-header">RECENT PROGRESS</div>' +
+      // Match History
+      '<div class="mock-info-card mock-info-purple" data-home-action="matchHistory">' +
+        '<div class="mock-info-header">MATCH HISTORY</div>' +
         '<div class="mock-info-body">' +
-          '<div class="mock-info-stat"><span class="mock-info-stat-label">BEST THIS TIER</span><span class="mock-info-stat-val">W ' + bestThisTier + '</span></div>' +
-          '<div class="mock-info-stat"><span class="mock-info-stat-label">TOTAL RANKS</span><span class="mock-info-stat-val">' + totalRanks + '</span></div>' +
-          '<div class="mock-info-bar"><div class="mock-info-bar-fill" style="width:' + progressPct + '%"></div></div>' +
-          '<div class="mock-info-bar-label">' + bestThisTier + ' / 50</div>' +
+          lastRunHTML +
+          '<button class="mock-ms-view" data-home-action="matchHistory">VIEW ALL &gt;</button>' +
         '</div>' +
       '</div>' +
       // Tier Milestones
@@ -1391,6 +1401,7 @@ function renderHomePanelsVisual() {
     button.addEventListener('click', function() {
       var action = button.dataset.homeAction;
       if (action === 'battle') { startBattle(); return; }
+      if (action === 'matchHistory') { showMatchHistoryPopup(); return; }
       if (typeof featureUnlocked === 'function' && !featureUnlocked(action)) {
         var toast = document.createElement('div');
         toast.className = 'skin-toast';
@@ -3269,56 +3280,6 @@ function renderSettingsTab(c) {
   `;
   c.appendChild(statsBox);
 
-  // --- Match History ---
-  const histHeader = document.createElement('div');
-  histHeader.className = 'settings-section-title';
-  histHeader.textContent = 'Match History';
-  c.appendChild(histHeader);
-
-  const histArr = Array.isArray(save.runHistory) ? save.runHistory : [];
-  if (histArr.length === 0) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'text-align:center;color:var(--muted);font-size:11px;padding:16px 8px;';
-    empty.textContent = 'No matches yet — play a run to see your history here.';
-    c.appendChild(empty);
-  } else {
-    const histWrap = document.createElement('div');
-    histWrap.className = 'match-history-list';
-    const showCount = Math.min(histArr.length, 20);
-    for (let i = 0; i < showCount; i++) {
-      const r = histArr[i];
-      const ago = formatTimeAgo(r.ts);
-      const durSec = Math.floor((r.dur || 0) / 1000);
-      const durMin = Math.floor(durSec / 60);
-      const durRem = durSec % 60;
-      const durStr = durMin > 0 ? `${durMin}m ${durRem}s` : `${durRem}s`;
-      const spmStr = formatNum(r.spm || 0);
-      const row = document.createElement('div');
-      row.className = 'match-history-row' + (r.best ? ' new-best' : '');
-      row.innerHTML =
-        `<div class="mh-top">` +
-          `<span class="mh-tier">T${r.tier}</span>` +
-          `<span class="mh-wave">W${r.wave}</span>` +
-          (r.best ? `<span class="mh-best">★ NEW BEST</span>` : '') +
-          `<span class="mh-ago">${ago}</span>` +
-        `</div>` +
-        `<div class="mh-details">` +
-          `<span>⊙ ${formatNum(r.scrap)}</span>` +
-          `<span>⊙/min ${spmStr}</span>` +
-          `<span>⏱ ${durStr}</span>` +
-          `<span>💀 ${r.kills || 0}</span>` +
-        `</div>`;
-      histWrap.appendChild(row);
-    }
-    c.appendChild(histWrap);
-    if (histArr.length > showCount) {
-      const more = document.createElement('div');
-      more.style.cssText = 'text-align:center;color:var(--muted);font-size:10px;padding:6px 0;';
-      more.textContent = `Showing ${showCount} of ${histArr.length} matches`;
-      c.appendChild(more);
-    }
-  }
-
   // --- Danger Zone ---
   const dangerHeader = document.createElement('div');
   dangerHeader.className = 'settings-section-title';
@@ -3372,6 +3333,72 @@ function renderSettingsTab(c) {
     devBtn.addEventListener('click', openDevPanel);
     c.appendChild(devBtn);
   }
+}
+
+// ============================================================
+// MATCH HISTORY POPUP
+// ============================================================
+function showMatchHistoryPopup() {
+  // Remove existing popup if any
+  const old = document.getElementById('matchHistoryPopup');
+  if (old) old.remove();
+
+  const histArr = Array.isArray(save.runHistory) ? save.runHistory : [];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'matchHistoryPopup';
+  overlay.className = 'mh-popup-overlay';
+
+  let rowsHTML = '';
+  if (histArr.length === 0) {
+    rowsHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 8px;">No matches yet.<br>Play a run to see your history here.</div>';
+  } else {
+    const showCount = Math.min(histArr.length, 30);
+    for (let i = 0; i < showCount; i++) {
+      const r = histArr[i];
+      const ago = formatTimeAgo(r.ts);
+      const durSec = Math.floor((r.dur || 0) / 1000);
+      const durMin = Math.floor(durSec / 60);
+      const durRem = durSec % 60;
+      const durStr = durMin > 0 ? durMin + 'm ' + durRem + 's' : durRem + 's';
+      const spmStr = formatNum(r.spm || 0);
+      rowsHTML +=
+        '<div class="match-history-row' + (r.best ? ' new-best' : '') + '">' +
+          '<div class="mh-top">' +
+            '<span class="mh-tier">T' + r.tier + '</span>' +
+            '<span class="mh-wave">W' + r.wave + '</span>' +
+            (r.best ? '<span class="mh-best">★ NEW BEST</span>' : '') +
+            '<span class="mh-ago">' + ago + '</span>' +
+          '</div>' +
+          '<div class="mh-details">' +
+            '<span>⊙ ' + formatNum(r.scrap) + '</span>' +
+            '<span>⊙/min ' + spmStr + '</span>' +
+            '<span>⏱ ' + durStr + '</span>' +
+            '<span>💀 ' + (r.kills || 0) + '</span>' +
+          '</div>' +
+        '</div>';
+    }
+    if (histArr.length > showCount) {
+      rowsHTML += '<div style="text-align:center;color:var(--muted);font-size:10px;padding:6px 0;">Showing ' + showCount + ' of ' + histArr.length + ' matches</div>';
+    }
+  }
+
+  overlay.innerHTML =
+    '<div class="mh-popup-panel">' +
+      '<div class="mh-popup-header">' +
+        '<span class="mh-popup-title">MATCH HISTORY</span>' +
+        '<button class="mh-popup-close">✕</button>' +
+      '</div>' +
+      '<div class="mh-popup-body">' +
+        '<div class="match-history-list">' + rowsHTML + '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // Close on X button or overlay background
+  overlay.querySelector('.mh-popup-close').addEventListener('click', function() { overlay.remove(); });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
 }
 
 // ============================================================

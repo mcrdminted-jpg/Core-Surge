@@ -1278,6 +1278,42 @@
 }
 .mh-details span { white-space: nowrap; }
 
+/* Match History Popup */
+.mh-popup-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.15s ease;
+}
+.mh-popup-panel {
+  background: var(--bg, #0c101a);
+  border: 1px solid var(--border, #2a3050);
+  border-radius: 14px;
+  width: 100%; max-width: 380px; max-height: 80vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.mh-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #2a3050);
+}
+.mh-popup-title {
+  font-size: 14px; font-weight: 800;
+  color: var(--cyan2, #22d3ee);
+  letter-spacing: 1.5px;
+}
+.mh-popup-close {
+  background: none; border: none; color: var(--muted, #667); font-size: 18px; cursor: pointer; padding: 4px 8px;
+}
+.mh-popup-close:hover { color: var(--accent, #fff); }
+.mh-popup-body {
+  overflow-y: auto; padding: 10px 14px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.mh-popup-body .match-history-list { gap: 8px; }
+
 .mobile-store-grid {
   display: grid;
   gap: 10px;
@@ -4690,28 +4726,67 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 .mock-start-btn {
   position: relative;
   overflow: hidden;
-  margin: 10px 0 12px;
-  padding: 18px 22px;
-  border: 1px solid rgba(81, 220, 255, 0.34);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(32, 204, 255, 0.94) 0%, rgba(8, 134, 190, 0.92) 52%, rgba(2, 84, 126, 0.96) 100%),
-    radial-gradient(circle at top center, rgba(255, 255, 255, 0.24), transparent 38%);
+  display: grid;
+  grid-template-columns: 58px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+  min-height: 96px;
+  padding: 18px 24px;
+  border: none;
+  border-radius: 0;
+  background: url("../assets/home-art/start_frame.png") center / 100% 100% no-repeat;
   color: #edfaff;
   font-size: clamp(15px, 2.4vw, 22px);
   letter-spacing: 2.2px;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.24);
-  box-shadow:
-    0 0 28px rgba(0, 214, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    inset 0 -12px 22px rgba(0, 34, 60, 0.28);
+  box-shadow: 0 0 24px rgba(0, 214, 255, 0.22);
+}
+
+.mock-start-btn::before {
+  content: "";
+  position: absolute;
+  inset: 12px 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 108, 152, 0.42), rgba(4, 72, 110, 0.34)),
+    radial-gradient(circle at top center, rgba(255, 255, 255, 0.16), transparent 42%);
+  z-index: 0;
+}
+
+.mock-start-btn::after {
+  display: none;
 }
 
 .mock-start-icon,
+.mock-start-label,
 .mock-start-arrows {
   position: relative;
   z-index: 1;
-  opacity: 0.9;
+}
+
+.mock-start-icon {
+  justify-self: center;
+  font-size: 30px;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 8px rgba(122, 232, 255, 0.32));
+}
+
+.mock-start-label {
+  text-align: center;
+  font-size: clamp(15px, 2.6vw, 22px);
+  font-weight: 900;
+  letter-spacing: 2.8px;
+  color: #eefaff;
+  text-transform: uppercase;
+}
+
+.mock-start-arrows {
+  justify-self: center;
+  font-size: 24px;
+  letter-spacing: -1px;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 8px rgba(122, 232, 255, 0.28));
 }
 
 .mock-info-row {
@@ -4896,4 +4971,79 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 0 36px rgba(0, 200, 255, 0.05);
 }
+
+/* ─── TIER OVERLAY: merged into mock-hero bottom ─── */
+.mock-tier-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  padding: 40px 12px 14px;
+  background: linear-gradient(180deg,
+    rgba(4,8,16,0) 0%,
+    rgba(4,8,16,0.45) 25%,
+    rgba(4,8,16,0.82) 55%,
+    rgba(4,8,16,0.94) 100%);
+}
+.mock-tier-overlay .mock-tier-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3vw, 20px);
+}
+.mock-tier-overlay .mock-tier-arrow {
+  width: clamp(36px, 11vw, 48px);
+  height: clamp(36px, 11vw, 48px);
+  border-radius: 50%;
+  border: 1.5px solid rgba(80,200,255,0.35);
+  background: rgba(0,30,50,0.6);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: all 0.15s;
+  box-shadow: 0 0 10px rgba(0,180,255,0.15);
+}
+.mock-tier-overlay .mock-tier-arrow:active:not(:disabled) {
+  background: rgba(0,220,255,0.2);
+  transform: scale(0.92);
+}
+.mock-tier-overlay .mock-tier-arrow:disabled { opacity: 0.25; cursor: default; }
+.mock-tier-overlay .mock-tier-center { flex: 1; text-align: center; }
+.mock-tier-overlay .mock-tier-num {
+  font-size: clamp(44px, 11vw, 60px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #edf9ff;
+  text-shadow: 0 0 24px rgba(108,234,255,0.5), 0 2px 8px rgba(0,0,0,0.6);
+}
+.mock-tier-overlay .mock-tier-label {
+  margin-top: 4px;
+  font-size: clamp(10px, 2.4vw, 13px);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #8eeaff;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(74,222,255,0.3);
+}
+.mock-tier-overlay .mock-tier-hint {
+  margin-top: 4px;
+  font-size: clamp(9px, 2vw, 11px);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(200,225,240,0.7);
+}
+
+/* Hide old standalone mock-tier-box since tier is now inside mock-hero */
+.mock-tier-box { display: none !important; }
+
+/* Force vignette visible (may have been hidden by other overrides) */
+.mock-hero-vignette { display: block !important; z-index: 1; }
 
