@@ -1665,3 +1665,68 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - Do not use reference slices that contain baked text inside dynamic home containers.
 - For Progress, Milestones, and Loadout, only art-direct the containers and frames, never the changing content regions.
 
+## 2026-05-26 - Codex - V0.7.38 Static Hero Background
+
+**What I did:**
+- Added a new static futurist hero background with no baked UI text or tower art.
+- Kept the live `CORE SURGE` title and added a live `T#` ghost layer behind the selected core skin.
+- Left milestones, progress, and loadout content dynamic and untouched inside their containers.
+
+**Files changed:**
+- `assets/backgrounds/bg_05_home_static.png`
+- `css/menu.css`
+- `js/ui.js`
+- `index.html`
+- `package.json`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch is only for the home hero section and shell version bump.
+- The unused experimental crops under `assets/home-art/` should stay out of future deploy batches unless they are intentionally reused.
+
+## 2026-05-26 - Codex - Pushed Current Main To GitHub
+
+**What I did:**
+- Pushed the current `main` branch for Core Surge to `origin`.
+- Confirmed the remote now matches local at commit `7b7c9ff` (`Preset chips, 12 slots, rank cost rebalance`).
+- Left the separate uncommitted local art and `sessions.md` worktree changes alone so I did not accidentally publish an unfinished batch.
+
+**Files changed:**
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `git push origin main` passed
+
+**What other agents need to know:**
+- The repo is now synced on `origin/main` at `7b7c9ff`.
+- Local uncommitted files still remain under `assets/backgrounds/`, `assets/home-art/`, matching `dist/assets/`, and `sessions.md`.
+
+## 2026-05-26 - Codex - Static Hero Background Wired Live
+
+**What I did:**
+- Removed the stale duplicate `.mock-hero` override that was still forcing `hero_city.png` onto the home screen.
+- Kept the live `CORE SURGE` title and live `T#` ghost layer while switching the hero shell to the static `bg_05_home_static.png` asset.
+- Synced the same source and built asset files back into `Tower Mobile App Game` so the primary folder matches the push lane for this batch.
+
+**Files changed:**
+- `assets/backgrounds/bg_05_home_static.png`
+- `css/menu.css`
+- `dist/assets/backgrounds/bg_05_home_static.png`
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The actual blocker was a stale later CSS override, not missing markup or JS.
+- The unrelated experimental files under `assets/home-art/` and `dist/assets/home-art/` remain uncommitted and were intentionally left out of this batch.
+

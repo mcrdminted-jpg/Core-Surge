@@ -4270,21 +4270,12 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   }
 }
 
-/* ==================== V0.7.37 CONTAINER-ONLY HERO ART ==================== */
+/* Keep the shell framing on the home hero without overriding the live background asset. */
 .mock-hero {
-  background:
-    linear-gradient(180deg, rgba(4, 8, 16, 0.12), rgba(4, 8, 16, 0.46)),
-    url('../assets/home-art/hero_city.png') center top / cover no-repeat;
   border: 1px solid rgba(84, 220, 255, 0.16);
   border-radius: 24px 24px 0 0;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 0 36px rgba(0, 200, 255, 0.05);
-}
-
-.mock-hero-bg {
-  background-image: url('../assets/home-art/hero_city.png') !important;
-  filter: brightness(0.2) saturate(0.92) blur(0.6px);
-  opacity: 0.38;
 }
 
