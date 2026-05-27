@@ -169,7 +169,7 @@ async function runTests() {
 
   const dmgDef = RANK_DEFS.damage;
   assert(dmgDef.cost0 === 15, `Damage cost0 = 15 (got ${dmgDef.cost0})`);
-  assertClose(dmgDef.costMul, 1.427, 'Damage costMul = 1.427');
+  assertClose(dmgDef.costMul, 1.12, 'Damage costMul = 1.12');
 
   const cost0 = rankCost('damage', 0);
   const cost10 = rankCost('damage', 10);

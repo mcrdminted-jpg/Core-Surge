@@ -1289,14 +1289,7 @@ function renderHomePanelsVisual() {
     frost: 'assets/cores/core_05_frost.png',
     royal: 'assets/cores/core_06_royal.png'
   };
-  const bgAssets = {
-    cyber_grid: 'assets/backgrounds/bg_01_cyber_grid.png',
-    industrial: 'assets/backgrounds/bg_02_industrial.png',
-    organic: 'assets/backgrounds/bg_03_organic.png',
-    steel: 'assets/backgrounds/bg_04_steel.png'
-  };
   const previewCore = save.equippedCoreSkin || 'sentinel';
-  const previewBg = save.equippedBgSkin || 'cyber_grid';
 
   // Tier difficulty label
   const tierLabel = getTierLabel(sel);
@@ -1323,16 +1316,11 @@ function renderHomePanelsVisual() {
     if (ready) claimableCount++;
   }
 
-  // Build card slot preview
-  let cardSlotsHTML = '';
-  for (let i = 0; i < Math.min(totalSlots, 3); i++) {
-    const cid = save.equippedCards[i];
-    if (cid && CARD_POOL[cid]) {
-      const card = CARD_POOL[cid];
-      cardSlotsHTML += '<div class="mock-card-slot filled" data-card="' + card.id + '"><span>' + card.name + '</span></div>';
-    } else {
-      cardSlotsHTML += '<div class="mock-card-slot empty">+</div>';
-    }
+  // Build preset quick-switch chips for home page
+  var homeAP = save.activePreset || 0;
+  var presetChipsHTML = '';
+  for (var qi = 0; qi < 3; qi++) {
+    presetChipsHTML += '<button class="preset-quick-btn' + (qi === homeAP ? ' active' : '') + '" data-pidx="' + qi + '">' + (qi + 1) + '</button>';
   }
 
   el.innerHTML =
@@ -1346,11 +1334,12 @@ function renderHomePanelsVisual() {
 
     // ─── HERO SECTION ───
     '<div class="mock-hero">' +
-      '<div class="mock-hero-bg" style="background-image:url(\'' + bgAssets[previewBg] + '\')"></div>' +
+      '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
       '<div class="mock-hero-title">CORE<br>SURGE</div>' +
       '<div class="mock-hero-subtitle">&#8226; ENDLESS TOWER DEFENSE &#8226;</div>' +
+      '<div class="mock-hero-tier-ghost">T' + sel + '</div>' +
       '<img class="mock-hero-core" src="' + coreAssets[previewCore] + '" alt="Core">' +
     '</div>' +
 
@@ -1396,13 +1385,13 @@ function renderHomePanelsVisual() {
           '<button class="mock-ms-view" data-home-action="milestones">VIEW ALL &gt;</button>' +
         '</div>' +
       '</div>' +
-      // Loadout Preview
+      // Quick Loadout — preset chips
       '<div class="mock-info-card mock-info-gold" data-home-action="cards">' +
-        '<div class="mock-info-header">LOADOUT PREVIEW</div>' +
+        '<div class="mock-info-header">QUICK LOADOUT</div>' +
         '<div class="mock-info-body">' +
-          '<div class="mock-card-slots">' + cardSlotsHTML + '</div>' +
-          '<div class="mock-info-hint">Equip towers, modules, and artifacts in LOADOUT.</div>' +
-          '<button class="mock-ms-view gold" data-home-action="cards">GO TO LOADOUT &gt;</button>' +
+          '<div class="preset-quick-bar">' + presetChipsHTML + '</div>' +
+          '<div class="mock-info-hint">Quick-switch your cards &amp; heroes.</div>' +
+          '<button class="mock-ms-view gold" data-home-action="cards">EDIT LOADOUT &gt;</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1423,6 +1412,17 @@ function renderHomePanelsVisual() {
       activeSubmenu = action;
       setHomeView(false);
       renderSubmenu();
+    });
+  });
+
+  // Preset quick-switch chips on home page
+  el.querySelectorAll('.preset-quick-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      var pidx = parseInt(btn.dataset.pidx, 10);
+      if (pidx === (save.activePreset || 0)) return;
+      switchPreset(pidx);
+      renderHomePanelsVisual();
     });
   });
 
@@ -2482,40 +2482,22 @@ function showCardDetail(cardId) {
 // LOADOUT TAB — wraps Cards and Heroes with sub-tab switcher
 // ============================================================
 function renderLoadoutTab(c) {
-  // Preset selector bar (1, 2, 3) — auto-saves, tap name to rename
+  // Preset selector chips (1, 2, 3) — equal-sized, matching subtab style
   const ap = save.activePreset || 0;
   const presetBar = document.createElement('div');
   presetBar.className = 'loadout-preset-bar';
   var presetBtnsHtml = '';
   for (var pi = 0; pi < 3; pi++) {
     var pActive = pi === ap ? ' active' : '';
-    var preset = save.loadoutPresets && save.loadoutPresets[pi];
-    var pName = (preset && preset.name) ? preset.name : 'Loadout ' + (pi+1);
-    presetBtnsHtml += '<button class="loadout-preset-btn' + pActive + '" data-pidx="' + pi + '">' +
-      '<span class="lp-num">' + (pi+1) + '</span>' +
-      '<span class="lp-label" data-rename="' + pi + '">' + pName + '</span>' +
-    '</button>';
+    presetBtnsHtml += '<button class="loadout-preset-btn' + pActive + '" data-pidx="' + pi + '">' + (pi + 1) + '</button>';
   }
-  presetBar.innerHTML = '<div class="loadout-preset-btns">' + presetBtnsHtml + '</div>';
+  presetBar.innerHTML = presetBtnsHtml;
   c.appendChild(presetBar);
 
-  // Wire preset buttons — switch loadout; tap label on active preset = rename
+  // Wire preset chips — switch loadout (cards + heroes)
   presetBar.querySelectorAll('.loadout-preset-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
+    btn.addEventListener('click', function() {
       var pidx = parseInt(btn.dataset.pidx, 10);
-      // Tap label on active preset → rename
-      if (e.target.hasAttribute('data-rename') && pidx === (save.activePreset || 0)) {
-        var rIdx = parseInt(e.target.dataset.rename, 10);
-        var curName = (save.loadoutPresets[rIdx] && save.loadoutPresets[rIdx].name) || 'Loadout ' + (rIdx+1);
-        var newName = prompt('Rename loadout:', curName);
-        if (newName && newName.trim()) {
-          if (!save.loadoutPresets[rIdx]) save.loadoutPresets[rIdx] = { equippedCards: null, garrisonSlots: null };
-          save.loadoutPresets[rIdx].name = newName.trim().substring(0, 20);
-          persistSave();
-          renderSubmenu();
-        }
-        return;
-      }
       if (pidx === (save.activePreset || 0)) return;
       switchPreset(pidx);
     });
