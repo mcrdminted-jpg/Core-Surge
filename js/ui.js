@@ -928,6 +928,8 @@ let homeViewActive = true;
 // When a tab is active: those home sections hide; submenu content shown.
 function setHomeView(show) {
   homeViewActive = show;
+  const menu = document.getElementById('screen-menu');
+  if (menu) menu.classList.toggle('home-view', show);
   // Old hero + tier-select are replaced by the showcase in homePanels — hide them always
   const oldHero = document.querySelector('.menu-hero');
   const oldTier = document.querySelector('.tier-select');
@@ -1281,16 +1283,6 @@ function renderHomePanelsVisual() {
   const totalRanks = Object.keys(save.ranks).reduce((s, r) => s + ((save.ranks[r] && save.ranks[r].level) || 0), 0);
   const maxTier = highestUnlockedTier();
 
-  const coreAssets = {
-    sentinel: 'assets/cores/core_01_sentinel.png',
-    industrial: 'assets/cores/core_02_industrial.png',
-    verdant: 'assets/cores/core_03_verdant.png',
-    aegis: 'assets/cores/core_04_aegis.png',
-    frost: 'assets/cores/core_05_frost.png',
-    royal: 'assets/cores/core_06_royal.png'
-  };
-  const previewCore = save.equippedCoreSkin || 'sentinel';
-
   // Tier difficulty label
   const tierLabel = getTierLabel(sel);
 
@@ -1337,6 +1329,8 @@ function renderHomePanelsVisual() {
       '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
+      '<div class="mock-hero-copy-shell"></div>' +
+      '<div class="mock-hero-tier-aura"></div>' +
       '<div class="mock-hero-title">CORE<br>SURGE</div>' +
       '<div class="mock-hero-subtitle">&#8226; ENDLESS TOWER DEFENSE &#8226;</div>' +
       '<div class="mock-hero-tier-ghost">T' + sel + '</div>' +
@@ -1344,15 +1338,16 @@ function renderHomePanelsVisual() {
 
     // ─── TIER SELECTOR ───
     '<div class="mock-tier-box">' +
+      '<div class="mock-tier-art" aria-hidden="true"></div>' +
       '<div class="mock-tier-row">' +
-        '<button class="mock-tier-arrow" data-tier-dir="down"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
-        '<div class="mock-tier-center">' +
+        '<button class="mock-tier-arrow" data-tier-dir="down" aria-label="Previous tier"' + (sel <= 1 ? ' disabled' : '') + '>&#10094;</button>' +
+        '<div class="mock-tier-center" aria-live="polite">' +
           '<div class="mock-tier-num">T' + sel + '</div>' +
           '<div class="mock-tier-label">x' + tierMultiplier(sel).toFixed(2) + ' &#8226; ' + tierLabel.toUpperCase() + '</div>' +
+          '<div class="mock-tier-hint">' + tierHint + '</div>' +
         '</div>' +
-        '<button class="mock-tier-arrow" data-tier-dir="up"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
+        '<button class="mock-tier-arrow" data-tier-dir="up" aria-label="Next tier"' + (sel >= maxTier ? ' disabled' : '') + '>&#10095;</button>' +
       '</div>' +
-      '<div class="mock-tier-hint">' + tierHint + '</div>' +
     '</div>' +
 
     // ─── BEGIN DEFENSE BUTTON ───
@@ -1746,6 +1741,32 @@ function renderLabsTab(c) {
   html += `</div>`; // end mockup-bg-research
 
   // =========================================================
+  //  CORE UPGRADE CARD — prominent upgrade above rank rows
+  // =========================================================
+  const coreLevel = save.coreLevel || 1;
+  const coreMul = coreMultiplier(coreLevel);
+  const nextCoreCost = coreUpgradeCost(coreLevel);
+  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
+  const coreMaxed = coreLevel >= CORE_UPGRADE.maxLevel;
+
+  html += `<div class="core-upgrade-card">`;
+  html += `  <div class="core-upgrade-header">`;
+  html += `    <div class="core-upgrade-icon">⚛</div>`;
+  html += `    <div class="core-upgrade-info">`;
+  html += `      <div class="core-upgrade-title">Core Level ${coreLevel}</div>`;
+  html += `      <div class="core-upgrade-mul">All stats ×${coreMul.toFixed(2)}</div>`;
+  html += `    </div>`;
+  if (!coreMaxed) {
+    html += `  <button class="core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">`;
+    html += `    Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} ⊙`;
+    html += `  </button>`;
+  } else {
+    html += `  <div class="core-upgrade-maxed">MAXED</div>`;
+  }
+  html += `  </div>`;
+  html += `</div>`;
+
+  // =========================================================
   //  BUY MULTIPLIER TOGGLE — x1 / x10 / MAX
   // =========================================================
   const curMul = save.settings.buyMultiplier || 1;
@@ -1790,6 +1811,16 @@ function renderLabsTab(c) {
   }
 
   c.innerHTML = html;
+
+  // --- Wire core upgrade button ---
+  const btnCore = c.querySelector('#btnCoreUpgrade');
+  if (btnCore) btnCore.addEventListener('click', () => {
+    if (purchaseCoreUpgrade()) {
+      haptic('success');
+      renderLabsTab(c);
+      renderHud();
+    }
+  });
 
   // --- Wire sub-tab switches ---
   c.querySelectorAll('.mor-subtab').forEach(btn => {
@@ -2524,10 +2555,8 @@ function renderLoadoutTab(c) {
 // HEROES TAB — hero roster, garrison, core upgrade, leveling
 // ============================================================
 function renderHeroesTab(c) {
-  const coreLevel = save.coreLevel || 1;
   const unlocked = save.heroesUnlocked || [];
   const manuals = save.trainingManuals || 0;
-  const coreMul = coreMultiplier(coreLevel);
 
   // Ensure garrisonSlots has MAX_SLOTS entries
   if (!save.garrisonSlots) save.garrisonSlots = [];
@@ -2539,7 +2568,7 @@ function renderHeroesTab(c) {
   let html = `
     <div class="cards-header">
       <div class="cards-header-title">Equipped</div>
-      <div class="cards-header-sub">${filledCount} / ${MAX_SLOTS} hero slots &middot; Core Lv${coreLevel} (${coreMul.toFixed(1)}x)</div>
+      <div class="cards-header-sub">${filledCount} / ${MAX_SLOTS} hero slots</div>
     </div>
     <div class="card-slots">`;
 
@@ -2568,19 +2597,6 @@ function renderHeroesTab(c) {
     }
   }
   html += `</div>`;
-
-  // --- Core Upgrade + Manuals (compact bar) ---
-  const nextCoreCost = coreUpgradeCost(coreLevel);
-  const canUpgradeCore = coreLevel < CORE_UPGRADE.maxLevel && save.coins >= nextCoreCost;
-  html += `<div class="hero-core-bar">`;
-  if (coreLevel < CORE_UPGRADE.maxLevel) {
-    html += `<button class="hero-core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">
-      UPGRADE CORE &rarr; Lv${coreLevel + 1} &middot; ${formatNum(nextCoreCost)} scrap
-    </button>`;
-  } else {
-    html += `<div class="hero-core-maxed-label">CORE MAXED</div>`;
-  }
-  html += `<div class="hero-core-manuals">${manuals} manuals</div></div>`;
 
   // --- Hero Inventory (grid tiles, matches card-tile pattern) ---
   html += `<div class="cards-section-title">Heroes &middot; ${unlocked.length} / ${HERO_COUNT}</div>`;
@@ -2640,12 +2656,6 @@ function renderHeroesTab(c) {
   c.innerHTML = html;
 
   // --- Wire Events ---
-  // Core upgrade
-  const btnCore = c.querySelector('#btnCoreUpgrade');
-  if (btnCore) btnCore.addEventListener('click', function() {
-    if (purchaseCoreUpgrade()) renderSubmenu();
-  });
-
   // Train hero (level up)
   c.querySelectorAll('[data-levelup]').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
