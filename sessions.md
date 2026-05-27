@@ -1730,3 +1730,73 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - The actual blocker was a stale later CSS override, not missing markup or JS.
 - The unrelated experimental files under `assets/home-art/` and `dist/assets/home-art/` remain uncommitted and were intentionally left out of this batch.
 
+## 2026-05-26 - Codex - Home Hero Served Bundle Mismatch
+
+**What I did:**
+- Traced the mismatch between what the source files said and what the phone screenshot showed.
+- Confirmed the primary folder had fallen behind again and still contained the old home hero core overlay in `js/ui.js` and `css/menu.css`, then synced it forward from the push lane.
+- Rebuilt the bundle and isolated the deploy-facing home hero CSS so the served shell uses the brighter `bg_05_home_static.png` treatment without the old hero image stack dominating the screen.
+
+**Files changed:**
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The key issue was not only source code. The built `dist` asset being served had drifted from the intended home hero source state.
+- When the user says the live screen does not match the repo, verify both source files and the built `dist` files before pushing.
+
+## 2026-05-26 - Codex - Handoff For New Codex Window
+
+**Read this first:**
+- Source-of-truth repo is `C:\Users\admin\OneDrive - Atlas Home Services\Documents\tower-game-git`
+- Primary shared folder is `C:\Users\admin\OneDrive - Atlas Home Services\Tower Mobile App Game`
+- Git account rule is `MCRDminted`
+- Live tester host is `https://core-surge.pages.dev/`
+
+**Current stable state:**
+- The broken baked-text overlay experiment was already rolled back.
+- Stable live home hero uses a static background image with live text layered over it.
+- Latest hero logic is:
+  - `js/ui.js`: `.mock-hero-bg` has no inline skin/background URL anymore
+  - `js/ui.js`: `.mock-hero-tier-ghost` prints a live `T#` behind the selected core
+  - `css/menu.css`: `.mock-hero-bg` uses `assets/backgrounds/bg_05_home_static.png`
+- Do not reintroduce reference slices with baked words or numbers inside dynamic containers.
+
+**Hard constraints from Andy:**
+- Progress, Milestones, and Loadout must stay dynamic.
+- Only art-direct the containers and frames for those sections.
+- No baked labels, no baked milestones, no baked wave numbers, no baked loadout contents.
+
+**Current worktree status to be aware of:**
+- Tracked diff:
+  - `dist/css/core-surge.min.css`
+- Untracked experimental files that should stay OUT of normal pushes unless intentionally reused:
+  - `assets/home-art/loadout_slots_ref.png`
+  - `assets/home-art/progress_core.png`
+  - `dist/assets/home-art/loadout_slots_ref.png`
+  - `dist/assets/home-art/progress_core.png`
+
+**If the next task is to continue the hero/home art lane:**
+1. Keep `bg_05_home_static.png` as the static home backdrop unless replacing it with another text-free background.
+2. Keep live text in HTML/JS only:
+   - title `CORE SURGE`
+   - subtitle
+   - live `T#`
+3. If you improve the lower panels, change only the frame/chrome/background treatment. Do not paint content into the art.
+4. Before saying done:
+   - `npm.cmd run build`
+   - `npm.cmd run typecheck`
+   - `npm.cmd run test`
+5. If you push:
+   - verify `core-surge.pages.dev`
+   - confirm the live `data-app-shell` / title matches the intended version
+6. After repo work, sync the same source files back into `Tower Mobile App Game` and append a matching session note there.
+
+**Recommended user prompt for the new Codex window:**
+- `Read AGENTS.md and the last 5 entries in sessions.md for Core Surge. Continue the home-screen art lane from the stable static hero background state. Do not use baked text art. Only art-direct containers for Progress, Milestones, and Loadout. Verify build, typecheck, and test before any push.`
+

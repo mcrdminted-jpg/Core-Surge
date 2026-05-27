@@ -2007,24 +2007,19 @@ function renderMilestonesTab(c) {
     readyCounts[t] = n;
   }
 
-  // Tier hex progression bar — all 18 tiers, scrollable horizontally
-  let html = `<div class="tier-hex-strip">`;
-  for (let t = 1; t <= MAX_TIER; t++) {
-    const state = t > unlockedTier ? 'locked'
-                : t === activeGoalTier ? 'current'
-                : 'unlocked';
-    const badge = readyCounts[t] > 0 ? `<span class="tier-hex-badge">${readyCounts[t]}</span>` : '';
-    html += `<button class="tier-hex ${state}" data-ghex="${t}" ${t > unlockedTier ? 'disabled' : ''}>T${t}${badge}</button>`;
-  }
-  html += `</div>`;
-
-  // Tier tab bar (horizontal scroll if many tiers)
-  html += `<div class="goal-tier-tabs">`;
-  for (let t = 1; t <= unlockedTier; t++) {
-    const badge = readyCounts[t] > 0 ? `<span class="goal-tier-badge">${readyCounts[t]}</span>` : '';
-    html += `<button class="goal-tier-tab ${activeGoalTier === t ? 'active' : ''}" data-gt="${t}">T${t}${badge}</button>`;
-  }
-  html += `</div>`;
+  // Compact tier selector — ‹ T1 › arrows, no massive DOM loop
+  const totalReady = Object.values(readyCounts).reduce(function(s,v){return s+v;},0);
+  const tierReady = readyCounts[activeGoalTier] || 0;
+  let html = `
+    <div class="goal-tier-selector">
+      <button class="goal-tier-arrow" data-tierdir="prev" ${activeGoalTier <= 1 ? 'disabled' : ''}>&lsaquo;</button>
+      <div class="goal-tier-current">
+        <span>T${activeGoalTier}</span>
+        ${tierReady > 0 ? '<span class="goal-tier-badge">' + tierReady + '</span>' : ''}
+      </div>
+      <button class="goal-tier-arrow" data-tierdir="next" ${activeGoalTier >= unlockedTier ? 'disabled' : ''}>&rsaquo;</button>
+    </div>
+    <div class="goal-tier-range">Tier 1 – ${unlockedTier} unlocked${totalReady > 0 ? ' · ' + totalReady + ' claimable' : ''}</div>`;
 
   // Current tier's best
   html += `<div class="milestone-tier-header">Tier ${activeGoalTier} · best W${save.bestWavePerTier[activeGoalTier] || 0}</div>`;
@@ -2052,19 +2047,12 @@ function renderMilestonesTab(c) {
   }
 
   c.innerHTML = html;
-  c.querySelectorAll('.tier-hex').forEach(h => {
-    if (h.disabled) return;
-    h.addEventListener('click', () => {
-      const t = parseInt(h.dataset.ghex);
-      if (t && t <= highestUnlockedTier()) {
-        activeGoalTier = t;
-        renderMilestonesTab(c);
-      }
-    });
-  });
-  c.querySelectorAll('.goal-tier-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      activeGoalTier = parseInt(t.dataset.gt);
+  // Tier arrow navigation
+  c.querySelectorAll('.goal-tier-arrow').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var dir = btn.dataset.tierdir;
+      if (dir === 'prev' && activeGoalTier > 1) activeGoalTier--;
+      else if (dir === 'next' && activeGoalTier < highestUnlockedTier()) activeGoalTier++;
       renderMilestonesTab(c);
     });
   });
