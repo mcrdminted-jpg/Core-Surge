@@ -1962,3 +1962,23 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 **What other agents need to know:**
 - The lower selector shell is now CSS-built and transparent rather than image-backed.
 
+## 2026-05-26 - Codex - Selector Interior Detail Restore
+
+**What I did:**
+- I restored a darker interior fill and subtle grid/glow detail inside the selector shell after the fully transparent version felt too empty.
+- I kept the frame and live text treatment intact and changed only the interior shell styling.
+
+**Files changed:**
+- `css/menu.css`
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` currently fails on an unrelated existing assertion: `11 unlock families (got 12)`
+
+**What other agents need to know:**
+- This batch is visual only for the selector interior.
+- The current failing test is not tied to this CSS change and needs separate investigation in the gameplay/data lane.
+

@@ -4473,7 +4473,24 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
   position: absolute;
   inset: 8px 10px;
   border-radius: 18px;
-  background: transparent;
+  background-image:
+    radial-gradient(circle at 18% 28%, rgba(74, 210, 255, 0.12), transparent 18%),
+    radial-gradient(circle at 82% 34%, rgba(74, 154, 255, 0.10), transparent 20%),
+    linear-gradient(180deg, rgba(6, 18, 34, 0.54), rgba(4, 12, 24, 0.72)),
+    linear-gradient(rgba(74, 194, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 194, 255, 0.04) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    auto,
+    34px 34px,
+    34px 34px;
+  background-position:
+    center,
+    center,
+    center,
+    center,
+    center;
   border: 1px solid rgba(88, 226, 255, 0.42);
   box-shadow:
     inset 0 0 28px rgba(44, 206, 255, 0.12),
