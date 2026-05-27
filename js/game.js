@@ -341,14 +341,16 @@ function getMaxHpNext() {
   return Math.floor(val * (1 + cardBucket) * getHeroCoreMultiplier('coreHealth'));
 }
 
-// === Armor === (0.4% per effective level, cap 75% — matches RANK_DEFS flatPerRank)
+// === Armor === (0.4% per effective level, uncapped — diminishing returns)
+// Returns raw armor fraction (can exceed 1.0 = 100%).
+// Damage formula: baseDmg / (1 + armor).  250% armor → dmg/3.5 ≈ 29%.
 function getDefenseFraction() {
   const eff = effectiveLevel('defense');
-  return Math.min(0.75, (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  return (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor');
 }
 function getDefenseFractionNext() {
   const eff = effectiveLevel('defense') + 1;
-  return Math.min(0.75, (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor'));
+  return (eff * 0.004 + getCardBucket('defense')) * getHeroCoreMultiplier('armor');
 }
 
 // === Range ===
@@ -1067,7 +1069,7 @@ function update(dt, rawDt) {
         e.lastMeleeAt = now;
         const buffMul = e.auraBuffed ? 1.3 : 1;
         const baseDmg = damageToTowerForWave(game.wave) * (e.dmgMul || 1) * buffMul * HIT_FRAC;
-        const reduced = baseDmg * (1 - getDefenseFraction());
+        const reduced = baseDmg / (1 + getDefenseFraction());
         game.damageBlockedThisRun += baseDmg - reduced;
         const alive = applyDamageToTower(reduced);
         flashTower();
@@ -1127,7 +1129,7 @@ function update(dt, rawDt) {
     if (dist < 6) {
       ep.dead = true;
       const baseDmg = damageToTowerForWave(game.wave) * 0.5;
-      const reduced = baseDmg * (1 - getDefenseFraction());
+      const reduced = baseDmg / (1 + getDefenseFraction());
       game.damageBlockedThisRun += baseDmg - reduced;
       const alive = applyDamageToTower(reduced);
       flashTower();

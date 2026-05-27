@@ -3186,6 +3186,7 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
 
     <div class="dev-section">Progression</div>
+    <button class="dev-btn" style="border-color:var(--good);color:var(--good);font-weight:bold" data-act="unlockAll">⚡ UNLOCK ALL FEATURES</button>
     <button class="dev-btn" data-act="maxLabs">Max all labs</button>
     <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
     <button class="dev-btn" data-act="maxSpeed">Max game speed (3×)</button>
@@ -3241,6 +3242,24 @@ function devAct(act) {
     case 'coins1b':   save.coins += 1000000000; break;
     case 'gems100':   save.gems += 100; break;
     case 'gems10k':   save.gems += 10000; break;
+    case 'unlockAll':
+      // Unlock every feature without maxing stats
+      for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
+      for (const rid of Object.keys(RANK_DEFS)) {
+        if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
+        if (save.ranks[rid].level < 10) save.ranks[rid].level = 10;
+      }
+      for (let t = 1; t <= 10; t++) save.bestWavePerTier[t] = Math.max(save.bestWavePerTier[t] || 0, 100);
+      save.bestWave = Math.max(save.bestWave, 100);
+      for (const id of Object.keys(CARD_POOL)) {
+        if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
+      }
+      save.unlockedSlots = MAX_SLOTS;
+      while (save.equippedCards.length < MAX_SLOTS) save.equippedCards.push(null);
+      if (save.coins < 500000) save.coins = 500000;
+      if (save.gems < 1000) save.gems = 1000;
+      save.totalRuns = Math.max(save.totalRuns, 10);
+      break;
     case 'maxLabs':
       // Max all ranks + unlock all families
       for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
@@ -3429,6 +3448,7 @@ function renderDevPanel() {
     <button class="dev-btn" data-act="gems10k">+ 10,000 gems</button>
 
     <div class="dev-section">Progression</div>
+    <button class="dev-btn" style="border-color:var(--good);color:var(--good);font-weight:bold" data-act="unlockAll">⚡ UNLOCK ALL FEATURES</button>
     <button class="dev-btn" data-act="maxLabs">Max all labs</button>
     <button class="dev-btn" data-act="unlockTiers">Unlock all tiers</button>
     <button class="dev-btn" data-act="maxSpeed">Max game speed (3x)</button>
@@ -3509,6 +3529,30 @@ function devAct(act) {
       if (game.running) {
         game.cash += grantAmount;
         game.cashEarnedThisRun += grantAmount;
+      }
+      break;
+    case 'unlockAll':
+      // Unlock every feature without maxing stats — for testing all UI
+      for (const fid of Object.keys(UNLOCK_FAMILIES)) save.unlocks[fid] = true;
+      for (const rid of Object.keys(RANK_DEFS)) {
+        if (!save.ranks[rid]) save.ranks[rid] = { level: 0 };
+        if (save.ranks[rid].level < 10) save.ranks[rid].level = 10;
+      }
+      for (let t = 1; t <= 10; t++) save.bestWavePerTier[t] = Math.max(save.bestWavePerTier[t] || 0, 100);
+      save.bestWave = Math.max(save.bestWave, 100);
+      for (const id of Object.keys(CARD_POOL)) {
+        if (!save.cardInventory[id]) save.cardInventory[id] = { level: 1, copies: 1 };
+      }
+      save.unlockedSlots = MAX_SLOTS;
+      while (save.equippedCards.length < MAX_SLOTS) save.equippedCards.push(null);
+      if (save.coins < 500000) save.coins = 500000;
+      if (save.gems < 1000) save.gems = 1000;
+      save.totalRuns = Math.max(save.totalRuns, 10);
+      if (typeof HERO_DEFS !== 'undefined') {
+        if (!Array.isArray(save.heroesUnlocked)) save.heroesUnlocked = [];
+        for (const hid of Object.keys(HERO_DEFS)) {
+          if (!save.heroesUnlocked.includes(hid)) save.heroesUnlocked.push(hid);
+        }
       }
       break;
     case 'maxLabs':

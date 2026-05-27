@@ -863,7 +863,7 @@ const RANK_DEFS = {
     id: 'armor', name: 'Armor', family: null, startsUnlocked: true,
     base: 0, flatPerRank: 0.004, maxRank: 99999,
     cost0: 25, costMul: 1.447,
-    desc: '+0.4% damage reduction per rank (cap 75%)'
+    desc: '+0.4% armor per rank (diminishing returns)'
   },
   range: {
     id: 'range', name: 'Range', family: null, startsUnlocked: true,
