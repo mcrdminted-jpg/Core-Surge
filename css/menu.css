@@ -2874,40 +2874,36 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 /* ─── HERO SECTION ─── */
 .mock-hero {
   position: relative;
-  min-height: 340px;
+  min-height: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin: 8px -14px 0;
-  border-top: 1px solid rgba(89, 223, 255, 0.16);
-  border-bottom: 1px solid rgba(89, 223, 255, 0.16);
+  margin: 0 -14px 0;
+  border: none;
 }
 .mock-hero-bg {
-  position: absolute; inset: 0;
-  background-image: url("../assets/backgrounds/bg_05_home_static.png");
-  background-size: cover;
-  background-position: center 72%;
-  background-repeat: no-repeat;
-  filter: brightness(0.76) saturate(1.08);
-  opacity: 0.96;
-  transform: scale(1.05);
+  display: none;
 }
 .mock-hero-vignette {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 44%, rgba(4,8,16,0.02) 10%, rgba(4,8,16,0.18) 34%, rgba(4,8,16,0.62) 100%),
-    linear-gradient(180deg, rgba(4,8,16,0.06) 0%, rgba(4,8,16,0.20) 34%, rgba(4,8,16,0.56) 76%, rgba(4,8,16,0.74) 100%);
+  display: none;
 }
 .mock-hero-beam {
-  position: absolute;
-  left: 50%; top: 0;
-  width: 4px; height: 100%;
-  transform: translateX(-50%);
-  background: linear-gradient(180deg, rgba(0,220,255,0.7), rgba(0,220,255,0.1) 40%, rgba(0,220,255,0.05) 60%, rgba(0,220,255,0.6));
-  box-shadow: 0 0 30px rgba(0,220,255,0.4), 0 0 80px rgba(0,220,255,0.15);
-  z-index: 1;
+  display: none;
+}
+.mock-hero-logo {
+  position: relative;
+  z-index: 2;
+  width: min(96%, 430px);
+  height: 188px;
+  background-image: url("../assets/home-art/hero_frame.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% auto;
+  mix-blend-mode: screen;
+  opacity: 0.98;
+  pointer-events: none;
 }
 .mock-hero-copy-shell,
 .mock-hero-tier-aura {

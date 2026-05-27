@@ -1329,6 +1329,7 @@ function renderHomePanelsVisual() {
       '<div class="mock-hero-bg"></div>' +
       '<div class="mock-hero-vignette"></div>' +
       '<div class="mock-hero-beam"></div>' +
+      '<div class="mock-hero-logo" aria-hidden="true"></div>' +
     '</div>' +
 
     // ─── TIER SELECTOR ───
@@ -1693,10 +1694,50 @@ function renderLabsTab(c) {
   let html = '';
 
   // =========================================================
-  //  MOCKUP OVERLAY — title + sub-tabs + family cards
+  //  MOCKUP OVERLAY — sub-tabs + family cards
   // =========================================================
+  html += `<div class="mockup-bg-research">`;
+  html += `  <div class="mor-title">Research</div>`;
+
+  // Sub-tabs — 4 invisible click targets over painted frames
+  html += `<div class="mor-subtabs">`;
+  for (const st of RESEARCH_SUBTABS) {
+    const isActive = st.id === activeResearchTab;
+    html += `<button class="mor-subtab ${isActive ? 'active' : ''}" data-rtab="${st.id}">
+      <span class="mor-subtab-icon">${st.icon}</span>
+      <span class="mor-subtab-label">${st.label}</span>
+    </button>`;
+  }
+  html += `</div>`;
+
+  // Family cards — up to 4 slots, keyed to active sub-tab's relevant families
+  const famIds = (FAMILIES_BY_CATEGORY[activeResearchTab] || []).slice(0, 4);
+  html += `<div class="mor-families">`;
+  for (let i = 0; i < 4; i++) {
+    const fid = famIds[i];
+    if (!fid || !UNLOCK_FAMILIES[fid]) {
+      html += `<div class="mor-fam mor-fam-empty mor-fam-locked">
+        <div class="mor-fam-name">🔒</div>
+        <div class="mor-fam-cost">COMING SOON</div>
+      </div>`;
+      continue;
+    }
+    const fam = UNLOCK_FAMILIES[fid];
+    const owned = familyIsOwned(fid);
+    const can = save.coins >= fam.cost;
+    const clsMod = owned ? 'owned' : (can ? '' : 'cant-afford');
+    const costText = owned ? '✓ UNLOCKED' : `${formatNum(fam.cost)} ⊙`;
+    html += `<button class="mor-fam ${clsMod}" data-mor-fam="${fid}" ${owned || !can ? 'disabled' : ''}>
+      <div class="mor-fam-icon">${fam.icon || '⚙'}</div>
+      <div class="mor-fam-name">${fam.name}</div>
+      <div class="mor-fam-cost">${costText}</div>
+    </button>`;
+  }
+  html += `</div>`;
+  html += `</div>`; // end mockup-bg-research
+
   // =========================================================
-  //  CORE UPGRADE + GAME SPEED — right under Research header
+  //  CORE UPGRADE — right under the mockup
   // =========================================================
   const coreLevel = save.coreLevel || 1;
   const coreMul = coreMultiplier(coreLevel);
@@ -1767,46 +1808,6 @@ function renderLabsTab(c) {
   }
   html += `  </div>`;
   html += `</div>`;
-
-  html += `<div class="mockup-bg-research">`;
-  html += `  <div class="mor-title">Research</div>`;
-
-  // Sub-tabs — 4 invisible click targets over painted frames
-  html += `<div class="mor-subtabs">`;
-  for (const st of RESEARCH_SUBTABS) {
-    const isActive = st.id === activeResearchTab;
-    html += `<button class="mor-subtab ${isActive ? 'active' : ''}" data-rtab="${st.id}">
-      <span class="mor-subtab-icon">${st.icon}</span>
-      <span class="mor-subtab-label">${st.label}</span>
-    </button>`;
-  }
-  html += `</div>`;
-
-  // Family cards — up to 4 slots, keyed to active sub-tab's relevant families
-  const famIds = (FAMILIES_BY_CATEGORY[activeResearchTab] || []).slice(0, 4);
-  html += `<div class="mor-families">`;
-  for (let i = 0; i < 4; i++) {
-    const fid = famIds[i];
-    if (!fid || !UNLOCK_FAMILIES[fid]) {
-      html += `<div class="mor-fam mor-fam-empty mor-fam-locked">
-        <div class="mor-fam-name">🔒</div>
-        <div class="mor-fam-cost">COMING SOON</div>
-      </div>`;
-      continue;
-    }
-    const fam = UNLOCK_FAMILIES[fid];
-    const owned = familyIsOwned(fid);
-    const can = save.coins >= fam.cost;
-    const clsMod = owned ? 'owned' : (can ? '' : 'cant-afford');
-    const costText = owned ? '✓ UNLOCKED' : `${formatNum(fam.cost)} ⊙`;
-    html += `<button class="mor-fam ${clsMod}" data-mor-fam="${fid}" ${owned || !can ? 'disabled' : ''}>
-      <div class="mor-fam-icon">${fam.icon || '⚙'}</div>
-      <div class="mor-fam-name">${fam.name}</div>
-      <div class="mor-fam-cost">${costText}</div>
-    </button>`;
-  }
-  html += `</div>`;
-  html += `</div>`; // end mockup-bg-research
 
   // =========================================================
   //  BUY MULTIPLIER TOGGLE — x1 / x10 / MAX
