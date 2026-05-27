@@ -1924,3 +1924,22 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - This batch does not replace assets. It only corrects container fit and text sizing for the already-pushed selector art.
 - Untracked art leftovers remain intentionally out of git.
 
+## 2026-05-26 - Codex - Selector Matte Trim
+
+**What I did:**
+- I tightened the selector frame art placement to remove the visible black matte around the outside of the lower tier card.
+- I kept this as a single CSS-only follow-up so it could be rebuilt and pushed immediately.
+
+**Files changed:**
+- `css/menu.css`
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch only trims the outer matte around the selector frame art.
+

@@ -4462,7 +4462,7 @@ body[data-preview-bg="steel"]        #menuPreviewBg { background-image: url("../
 
 .mock-tier-art {
   position: absolute;
-  inset: 0;
+  inset: -10px -14px;
   background: url("../assets/home-art/tier_frame_bg_clean.png") center / 100% 100% no-repeat;
 }
 
