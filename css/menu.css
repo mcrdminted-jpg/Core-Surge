@@ -516,6 +516,48 @@
   padding: 8px 14px;
 }
 
+/* ==================== SPEED UPGRADE CARD ==================== */
+.speed-upgrade-card {
+  background: linear-gradient(135deg, rgba(255,180,0,0.06) 0%, rgba(255,100,0,0.04) 100%);
+  border-color: rgba(255,180,0,0.2);
+}
+.speed-unlock-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.speed-gem-btn {
+  border-color: rgba(180,0,255,0.4) !important;
+  color: #c084fc !important;
+  background: rgba(180,0,255,0.08) !important;
+  font-size: 11px !important;
+}
+.speed-gem-btn:hover:not(.disabled) {
+  background: rgba(180,0,255,0.18) !important;
+}
+.speed-tier-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.speed-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.speed-badge.owned {
+  background: rgba(0,200,100,0.15);
+  color: #34d399;
+  border: 1px solid rgba(0,200,100,0.3);
+}
+.speed-badge.locked {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 /* ==================== BUY MULTIPLIER BAR ==================== */
 .rank-buy-mul-bar {
   display: flex;

@@ -1754,7 +1754,7 @@ function renderLabsTab(c) {
   html += `    <div class="core-upgrade-icon">⚛</div>`;
   html += `    <div class="core-upgrade-info">`;
   html += `      <div class="core-upgrade-title">Core Level ${coreLevel}</div>`;
-  html += `      <div class="core-upgrade-mul">All stats ×${coreMul.toFixed(2)}</div>`;
+  html += `      <div class="core-upgrade-mul">All stats ×${coreMul.toFixed(2)} &middot; ${Math.min(coreLevel, MAX_SLOTS)} hero slots</div>`;
   html += `    </div>`;
   if (!coreMaxed) {
     html += `  <button class="core-upgrade-btn ${canUpgradeCore ? '' : 'disabled'}" id="btnCoreUpgrade">`;
@@ -1762,6 +1762,55 @@ function renderLabsTab(c) {
     html += `  </button>`;
   } else {
     html += `  <div class="core-upgrade-maxed">MAXED</div>`;
+  }
+  html += `  </div>`;
+  html += `</div>`;
+
+  // =========================================================
+  //  GAME SPEED UNLOCK CARD
+  // =========================================================
+  const curSpeed = save.settings.gameSpeed || 1;
+  const maxSpeed = maxUnlockedSpeed();
+  const speedTiers = typeof SPEED_TIERS !== 'undefined' ? SPEED_TIERS : [1, 2, 3, 5, 10];
+  const speedCosts = typeof SPEED_UNLOCK_COST !== 'undefined' ? SPEED_UNLOCK_COST : {};
+  // Find next locked tier
+  let nextTier = null;
+  for (const t of speedTiers) {
+    if (t > 1 && (!save.unlockedSpeeds || !save.unlockedSpeeds.includes(t))) {
+      nextTier = t;
+      break;
+    }
+  }
+  const allSpeedsUnlocked = !nextTier;
+  const nextCost = nextTier ? speedCosts[nextTier] : null;
+  const canAffordScrap = nextCost && save.coins >= nextCost.coins;
+  const canAffordGems = nextCost && save.gems >= nextCost.gems;
+
+  html += `<div class="core-upgrade-card speed-upgrade-card">`;
+  html += `  <div class="core-upgrade-header">`;
+  html += `    <div class="core-upgrade-icon">⚡</div>`;
+  html += `    <div class="core-upgrade-info">`;
+  html += `      <div class="core-upgrade-title">Game Speed</div>`;
+  html += `      <div class="core-upgrade-mul">Current: ×${maxSpeed} max unlocked</div>`;
+  html += `    </div>`;
+  if (!allSpeedsUnlocked && nextCost) {
+    html += `  <div class="speed-unlock-btns">`;
+    html += `    <button class="core-upgrade-btn ${canAffordScrap ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="coins">`;
+    html += `      ×${nextTier} &middot; ${formatNum(nextCost.coins)} ⊙`;
+    html += `    </button>`;
+    html += `    <button class="core-upgrade-btn speed-gem-btn ${canAffordGems ? '' : 'disabled'}" data-speed-buy="${nextTier}" data-speed-currency="gems">`;
+    html += `      ${nextCost.gems} 💎`;
+    html += `    </button>`;
+    html += `  </div>`;
+  } else {
+    html += `  <div class="core-upgrade-maxed">ALL UNLOCKED</div>`;
+  }
+  html += `  </div>`;
+  // Show tier badges
+  html += `  <div class="speed-tier-badges">`;
+  for (const t of speedTiers) {
+    const owned = t === 1 || (save.unlockedSpeeds && save.unlockedSpeeds.includes(t));
+    html += `<span class="speed-badge ${owned ? 'owned' : 'locked'}">×${t}</span>`;
   }
   html += `  </div>`;
   html += `</div>`;
@@ -1820,6 +1869,19 @@ function renderLabsTab(c) {
       renderLabsTab(c);
       renderHud();
     }
+  });
+
+  // --- Wire speed unlock buttons ---
+  c.querySelectorAll('[data-speed-buy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tier = parseInt(btn.dataset.speedBuy, 10);
+      const useGems = btn.dataset.speedCurrency === 'gems';
+      if (purchaseSpeedTier(tier, useGems)) {
+        haptic('success');
+        renderLabsTab(c);
+        renderHud();
+      }
+    });
   });
 
   // --- Wire sub-tab switches ---
@@ -2132,11 +2194,12 @@ function loadPreset(idx) {
   save.equippedCards = cards;
   if (Array.isArray(preset.garrisonSlots)) {
     var unlocked = save.heroesUnlocked || [];
+    var cap = heroSlotCap();
     var heroes = preset.garrisonSlots.map(function(hid) {
       return (hid && unlocked.includes(hid)) ? hid : null;
     });
-    while (heroes.length < MAX_SLOTS) heroes.push(null);
-    heroes.length = MAX_SLOTS;
+    while (heroes.length < cap) heroes.push(null);
+    heroes.length = cap;
     save.garrisonSlots = heroes;
   }
   save.activePreset = idx;
@@ -2557,23 +2620,24 @@ function renderLoadoutTab(c) {
 function renderHeroesTab(c) {
   const unlocked = save.heroesUnlocked || [];
   const manuals = save.trainingManuals || 0;
+  const cap = heroSlotCap();
 
-  // Ensure garrisonSlots has MAX_SLOTS entries
+  // Ensure garrisonSlots has enough entries
   if (!save.garrisonSlots) save.garrisonSlots = [];
-  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+  while (save.garrisonSlots.length < cap) save.garrisonSlots.push(null);
   const garrison = save.garrisonSlots;
-  const filledCount = garrison.filter(Boolean).length;
+  const filledCount = garrison.slice(0, cap).filter(Boolean).length;
 
-  // --- Header (matches cards: "Equipped  N / 12 slots") ---
+  // --- Header (matches cards: "Equipped  N / cap slots") ---
   let html = `
     <div class="cards-header">
       <div class="cards-header-title">Equipped</div>
-      <div class="cards-header-sub">${filledCount} / ${MAX_SLOTS} hero slots</div>
+      <div class="cards-header-sub">${filledCount} / ${cap} hero slots</div>
     </div>
     <div class="card-slots">`;
 
   // --- Garrison Slot Grid (matches card-slot pattern) ---
-  for (let i = 0; i < MAX_SLOTS; i++) {
+  for (let i = 0; i < cap; i++) {
     const hid = garrison[i];
     const selecting = heroSelectingSlot === i;
     if (hid && HERO_DEFS[hid]) {
@@ -3738,8 +3802,9 @@ function devAct(act) {
       break;
     case 'fillGarrison': {
       const unlocked = Array.isArray(save.heroesUnlocked) ? save.heroesUnlocked.slice() : [];
-      save.garrisonSlots = unlocked.slice(0, MAX_SLOTS);
-      while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+      const cap = heroSlotCap();
+      save.garrisonSlots = unlocked.slice(0, cap);
+      while (save.garrisonSlots.length < cap) save.garrisonSlots.push(null);
       clearHeroDevState();
       break;
     }

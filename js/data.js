@@ -1313,28 +1313,37 @@ function purchaseCoreUpgrade() {
   return true;
 }
 
-// Garrison a hero into the next available slot (up to MAX_SLOTS)
+// Hero slot cap = core level (1 slot per core level, max MAX_SLOTS)
+function heroSlotCap() {
+  return Math.min(save.coreLevel || 1, MAX_SLOTS);
+}
+
+// Garrison a hero into the next available slot (up to heroSlotCap)
 function garrisonHero(heroId) {
   if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
   if (isHeroGarrisoned(heroId)) return false;
   if (!save.garrisonSlots) save.garrisonSlots = [];
-  // Pad to MAX_SLOTS with nulls
-  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
-  // Find first empty slot
-  var idx = save.garrisonSlots.indexOf(null);
-  if (idx === -1) return false;
-  save.garrisonSlots[idx] = heroId;
-  persistSave();
-  return true;
+  const cap = heroSlotCap();
+  while (save.garrisonSlots.length < cap) save.garrisonSlots.push(null);
+  // Find first empty slot within cap
+  for (var idx = 0; idx < cap; idx++) {
+    if (save.garrisonSlots[idx] === null || save.garrisonSlots[idx] === undefined) {
+      save.garrisonSlots[idx] = heroId;
+      persistSave();
+      return true;
+    }
+  }
+  return false; // all slots full
 }
 
 // Garrison a hero into a specific slot index
 function garrisonHeroAt(heroId, slotIdx) {
   if (!save.heroesUnlocked || save.heroesUnlocked.indexOf(heroId) === -1) return false;
   if (isHeroGarrisoned(heroId)) return false;
-  if (slotIdx < 0 || slotIdx >= MAX_SLOTS) return false;
+  const cap = heroSlotCap();
+  if (slotIdx < 0 || slotIdx >= cap) return false;
   if (!save.garrisonSlots) save.garrisonSlots = [];
-  while (save.garrisonSlots.length < MAX_SLOTS) save.garrisonSlots.push(null);
+  while (save.garrisonSlots.length < cap) save.garrisonSlots.push(null);
   if (save.garrisonSlots[slotIdx] !== null) return false;
   save.garrisonSlots[slotIdx] = heroId;
   persistSave();
