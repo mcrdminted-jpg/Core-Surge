@@ -1750,6 +1750,54 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 - The key issue was not only source code. The built `dist` asset being served had drifted from the intended home hero source state.
 - When the user says the live screen does not match the repo, verify both source files and the built `dist` files before pushing.
 
+## 2026-05-26 - Codex - Hero Text Removed, Home Background Extended
+
+**What I did:**
+- Removed the `CORE SURGE`, `ENDLESS TOWER DEFENSE`, and ghost `T#` layers from the home hero.
+- Replaced the text stack with a live combat tableau built from the equipped core art plus enemy sprites, range rings, shots, and card-stack chrome.
+- Extended the static `bg_05_home_static.png` treatment behind the full home scroll lane so the same scene continues below the hero and reveals more as the user scrolls.
+- Synced the verified source and built files back into `Tower Mobile App Game`.
+
+**Files changed:**
+- `css/menu.css`
+- `js/ui.js`
+- `dist/css/core-surge.min.css`
+- `dist/js/core-surge.min.js`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch intentionally removes hero text from the art stack and uses only live asset composition.
+- The home background continuation is controlled by `#screen-menu.home-view` plus the hero scene classes in `css/menu.css`.
+- Experimental crops under `assets/home-art/` and `dist/assets/home-art/` remain out of scope and uncommitted.
+
+## 2026-05-26 - Codex - Restore Hero Text, Improve Overlay Only
+
+**What I did:**
+- Reverted the unpushed hero scene replacement after the user clarified that `CORE SURGE`, `ENDLESS TOWER DEFENSE`, and the ghost `T#` must stay.
+- Kept the full home-screen background continuation through the entire menu scroll lane.
+- Added a cleaner holographic overlay shell behind the existing hero copy and `T#` so the selector area reads better without changing the words themselves.
+
+**Files changed:**
+- `css/menu.css`
+- `js/ui.js`
+- `dist/css/core-surge.min.css`
+- `dist/js/core-surge.min.js`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The current local state preserves the original title, subtitle, and ghost `T#`.
+- The background now runs through the full home menu via `#screen-menu.home-view`.
+- This batch is local only and has not been pushed.
+
 ## 2026-05-26 - Codex - Handoff For New Codex Window
 
 **Read this first:**
@@ -1799,4 +1847,59 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 
 **Recommended user prompt for the new Codex window:**
 - `Read AGENTS.md and the last 5 entries in sessions.md for Core Surge. Continue the home-screen art lane from the stable static hero background state. Do not use baked text art. Only art-direct containers for Progress, Milestones, and Loadout. Verify build, typecheck, and test before any push.`
+
+## 2026-05-26 - Codex - Static Tier Selector Plate
+
+**What I did:**
+- I converted the tier selector card from live rendered center text into a baked static art panel for the current `T4` look.
+- I generated and added `assets/home-art/tier_frame_static_t4.png`, then wired the selector so the panel art is visible while the left and right arrows stay live as click targets on top.
+- I kept the dynamic tier values only as hidden accessibility text so the selector still exposes live state without showing mismatched labels on screen.
+- I verified the local preview after the swap and kept the earlier full-home background continuation intact.
+
+**Files changed:**
+- `assets/home-art/tier_frame_static_t4.png`
+- `css/menu.css`
+- `js/ui.js`
+- `dist/assets/home-art/tier_frame_static_t4.png`
+- `dist/css/core-surge.min.css`
+- `dist/js/core-surge.min.js`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The hero title and ghost `T#` remain live and unchanged in this batch.
+- Only the tier selector card is now baked static art, by user request.
+- Experimental crops under `assets/home-art/` and `dist/assets/home-art/` remain out of scope and uncommitted.
+
+## 2026-05-26 - Codex - Clean Tier Selector Background Push Batch
+
+**What I did:**
+- I replaced the old full baked tier plate with a cleaner selector treatment built from a separate background asset plus separate arrow pod button art.
+- I restored live overlaid selector copy for `T4` and the multiplier/title line on top of the new clean box art.
+- I kept this batch isolated to the selector background lane so it can be pushed and checked live immediately.
+
+**Files changed:**
+- `assets/home-art/tier_frame_bg_clean.png`
+- `assets/home-art/tier_arrow_pod_right.png`
+- `css/menu.css`
+- `js/ui.js`
+- `dist/assets/home-art/tier_frame_bg_clean.png`
+- `dist/assets/home-art/tier_arrow_pod_right.png`
+- `dist/css/core-surge.min.css`
+- `dist/js/core-surge.min.js`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- This batch intentionally avoids the older fully baked `tier_frame_static_t4.png` selector treatment.
+- The selector now uses clean box art under live copy, with arrow pods as separate art-backed buttons.
+- Untracked experimental crops and source leftovers should stay out of the push unless explicitly requested.
 
