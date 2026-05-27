@@ -1943,3 +1943,22 @@ pm.cmd run test passed with 274 passed, 0 failed`r
 **What other agents need to know:**
 - This batch only trims the outer matte around the selector frame art.
 
+## 2026-05-26 - Codex - Selector Transparent Shell
+
+**What I did:**
+- I removed the image-backed selector fill and replaced it with a pure transparent CSS shell so the lower tier card no longer carries a black background rectangle.
+- I kept the live text and separate arrow pods in place while switching only the shell treatment.
+
+**Files changed:**
+- `css/menu.css`
+- `dist/css/core-surge.min.css`
+- `sessions.md`
+
+**Verification:**
+- `npm.cmd run build` passed
+- `npm.cmd run typecheck` passed
+- `npm.cmd run test` passed with `274 passed, 0 failed`
+
+**What other agents need to know:**
+- The lower selector shell is now CSS-built and transparent rather than image-backed.
+
